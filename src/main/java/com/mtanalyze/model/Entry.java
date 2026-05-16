@@ -25,7 +25,6 @@ import java.util.Map;
 /**
  * One row in the entry table. Wraps the flat key/value data together with
  * the two SWIFT block contexts needed for display and deletion.
- *
  * {@code data} is mutable so that synthetic columns (MT type, file, entry type)
  * can be added after parsing.
  */

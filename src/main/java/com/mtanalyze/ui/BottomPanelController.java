@@ -99,14 +99,7 @@ class BottomPanelController {
         titleLabel = new JLabel(MtAnalyzeFrame.BOOKMARKS);
         titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD));
 
-        JButton closeBtn = new JButton("✕");
-        closeBtn.setFocusPainted(false);
-        closeBtn.setBorderPainted(false);
-        closeBtn.setContentAreaFilled(false);
-        closeBtn.setOpaque(false);
-        closeBtn.setFont(closeBtn.getFont().deriveFont(10f));
-        closeBtn.setPreferredSize(new Dimension(20, 20));
-        closeBtn.addActionListener(e -> collapse());
+        JButton closeBtn = FrameLayout.makeCloseButton(this::collapse);
 
         pasteBtn = new JButton(ToolbarIcons.menuPaste());
         pasteBtn.setToolTipText("Paste Table");
@@ -223,10 +216,23 @@ class BottomPanelController {
 
     private void onFilterModeClick() {
         boolean or;
-        if      (SECURITIES.equals(activeCard))      { securitiesPanel.setFinFilterOrMode(!securitiesPanel.isFinFilterOrMode());       or = securitiesPanel.isFinFilterOrMode(); }
-        else if (CASH.equals(activeCard))            { cashPanel.setFinFilterOrMode(!cashPanel.isFinFilterOrMode());                   or = cashPanel.isFinFilterOrMode(); }
-        else if (ACCOUNT_MAPPING.equals(activeCard)) { accountMappingPanel.setFinFilterOrMode(!accountMappingPanel.isFinFilterOrMode()); or = accountMappingPanel.isFinFilterOrMode(); }
-        else return;
+        switch (activeCard) {
+            case SECURITIES -> {
+                securitiesPanel.setFinFilterOrMode(!securitiesPanel.isFinFilterOrMode());
+                or = securitiesPanel.isFinFilterOrMode();
+            }
+            case CASH -> {
+                cashPanel.setFinFilterOrMode(!cashPanel.isFinFilterOrMode());
+                or = cashPanel.isFinFilterOrMode();
+            }
+            case ACCOUNT_MAPPING -> {
+                accountMappingPanel.setFinFilterOrMode(!accountMappingPanel.isFinFilterOrMode());
+                or = accountMappingPanel.isFinFilterOrMode();
+            }
+            case null, default -> {
+                return;
+            }
+        }
         filterModeBtn.setIcon(or ? ToolbarIcons.filterOr() : ToolbarIcons.filterAnd());
         filterModeBtn.setToolTipText(or ? TOOLTIP_OR : TOOLTIP_AND);
     }

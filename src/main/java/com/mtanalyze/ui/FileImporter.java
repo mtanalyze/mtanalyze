@@ -68,7 +68,7 @@ final class FileImporter {
                 chunks = MtFileIO.splitIntoMessages(content);
             }
             ImportBatch batch = ctx.importService().parseChunks(
-                chunks, mtOverride, file.getAbsolutePath(), ctx.config().getMaxEntries());
+                chunks, mtOverride, file.getAbsolutePath(), origin, ctx.config().getMaxEntries());
             ctx.onFileLoaded(batch, file);
         } catch (IOException ex) {
             ctx.fileError("loading", ex);
@@ -121,9 +121,10 @@ final class FileImporter {
         importDirectoryWithProgress(sourceDir, files, detectDirMtOverride(files));
     }
 
-    int appendFromContent(List<String> chunks, String mtTypeOverride, String sourceFile, MessageOrigin origin) {
+    int appendFromContent(List<String> chunks, String mtTypeOverride, String sourceFile,
+                          MessageOrigin origin) {
         ImportBatch batch = ctx.importService().parseChunks(
-            chunks, mtTypeOverride, sourceFile, ctx.config().getMaxEntries());
+            chunks, mtTypeOverride, sourceFile, origin, ctx.config().getMaxEntries());
         if (batch.totalParsed == 0) return 0;
         ctx.onContentAppended(batch);
         return batch.totalParsed;
@@ -224,7 +225,7 @@ final class FileImporter {
                 for (int i = 0; i < chunks.size(); i++) {
                     if (isCancelled() || batch.entryCount >= maxEntries) break;
                     ctx.importService().parseChunkIntoBatch(
-                        chunks.get(i), null, batch, file.getAbsolutePath(), maxEntries);
+                        chunks.get(i), null, batch, file.getAbsolutePath(), MessageOrigin.LOG_FILE, maxEntries);
                     publish(i + 1);
                 }
                 return batch;

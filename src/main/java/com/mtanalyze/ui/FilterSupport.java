@@ -84,11 +84,11 @@ public final class FilterSupport {
         if (dropFilters.isEmpty() && quickFilters.isEmpty()) {
             sorter.setRowFilter(null);
         } else {
-            sorter.setRowFilter(new RowFilter<M, Integer>() {
+            sorter.setRowFilter(new RowFilter<>() {
                 @Override
                 public boolean include(Entry<? extends M, ? extends Integer> e) {
                     return passesDropFilter(e, dropFilters)
-                        && (orMode ? passesQuickFilterOr(e, quickFilters) : passesQuickFilter(e, quickFilters));
+                            && (orMode ? passesQuickFilterOr(e, quickFilters) : passesQuickFilter(e, quickFilters));
                 }
             });
         }

@@ -16,6 +16,7 @@
 package com.mtanalyze.ui.filter;
 
 import com.mtanalyze.ui.ColumnDef;
+import com.mtanalyze.ui.FrameLayout;
 
 import javax.swing.*;
 import javax.swing.border.LineBorder;
@@ -307,14 +308,7 @@ public class FinFilterRow extends AbstractFilterRow {
         JMenuItem copyItem  = new JMenuItem("Copy");
         JMenuItem cutItem   = new JMenuItem("Cut");
         JMenuItem pasteItem = new JMenuItem("Paste");
-        copyItem .setEnabled(hasSelection);
-        cutItem  .setEnabled(hasSelection);
-        copyItem .addActionListener(ae -> src.copy());
-        cutItem  .addActionListener(ae -> src.cut());
-        pasteItem.addActionListener(ae -> src.paste());
-        popup.add(copyItem);
-        popup.add(cutItem);
-        popup.add(pasteItem);
+        FrameLayout.wireTextMenuItems(src, hasSelection, copyItem, cutItem, pasteItem, popup::add);
         popup.addSeparator();
 
         if (onSaveRequested != null) {

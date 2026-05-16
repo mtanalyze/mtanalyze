@@ -15,6 +15,7 @@
  */
 package com.mtanalyze.ui;
 
+import com.mtanalyze.model.MessageOrigin;
 import com.mtanalyze.model.SwiftMessage;
 import com.mtanalyze.parser.MtFileIO;
 import com.prowidesoftware.swift.model.mt.AbstractMT;
@@ -38,16 +39,20 @@ final class ImportService {
         try {
             String content = new String(Files.readAllBytes(file.toPath()));
             List<String> chunks;
+            MessageOrigin origin;
             if (isLogFile(file)) {
                 chunks = MtFileIO.splitLogIntoSwiftMessages(content, logSwiftStart, logNewlineToken);
+                origin = MessageOrigin.LOG_FILE;
             } else if (MtFileIO.isCsvSwiftContent(content)) {
                 chunks = MtFileIO.splitCsvIntoSwiftMessages(content);
+                origin = MessageOrigin.NAME_VALUE;
             } else {
                 chunks = MtFileIO.splitIntoMessages(content);
+                origin = MessageOrigin.SWIFT_FILE;
             }
             for (String chunk : chunks) {
                 if (batch.entryCount >= maxEntries) break;
-                parseChunkIntoBatch(chunk, mtOverride, batch, file.getAbsolutePath(), maxEntries);
+                parseChunkIntoBatch(chunk, mtOverride, batch, file.getAbsolutePath(), origin, maxEntries);
             }
         } catch (IOException ex) {
             batch.errors++;
@@ -55,21 +60,21 @@ final class ImportService {
     }
 
     ImportBatch parseChunks(List<String> chunks, String mtTypeOverride, String sourceFile,
-                            int maxEntries) {
+                            MessageOrigin origin, int maxEntries) {
         ImportBatch batch = new ImportBatch();
         for (String chunk : chunks) {
-            parseChunkIntoBatch(chunk, mtTypeOverride, batch, sourceFile, maxEntries);
+            parseChunkIntoBatch(chunk, mtTypeOverride, batch, sourceFile, origin, maxEntries);
         }
         return batch;
     }
 
     void parseChunkIntoBatch(String chunk, String mtOverride, ImportBatch batch,
-                             String sourceFile, int maxEntries) {
+                             String sourceFile, MessageOrigin origin, int maxEntries) {
         if (batch.entryCount >= maxEntries) { batch.limitReached = true; return; }
         try {
             AbstractMT mt = AbstractMT.parse(MtFileIO.wrapBlock4IfNeeded(chunk, mtOverride));
             if (mt == null) return;
-            SwiftMessage msg = new SwiftMessage(mt, sourceFile != null ? new File(sourceFile) : null);
+            SwiftMessage msg = new SwiftMessage(mt, sourceFile != null ? new File(sourceFile) : null, origin);
             batch.messages.add(msg);
             batch.entryCount += EntryPanelModel.parseAndDecorate(msg, batch.knownKeys, batch.columnDefs).size();
             batch.totalParsed++;

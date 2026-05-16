@@ -107,7 +107,7 @@ public final class HintDictionary {
 
     /** File where user-defined entries are persisted. */
     public File getUserDictFile() {
-        return new File(System.getProperty("user.home"), ".mtanalyzeapp/" + USER_DICT_FILENAME);
+        return new File(System.getProperty("user.home"), ".mtanalyze/" + USER_DICT_FILENAME);
     }
 
     /** Loads user-defined entries from {@link #getUserDictFile()}. */
@@ -222,7 +222,7 @@ public final class HintDictionary {
 
     private static void loadCsvFromFileOrResource(String resource, int minCols, RowConsumer consumer) {
         String fileName = resource.startsWith("/") ? resource.substring(1) : resource;
-        File userFile = new File(System.getProperty("user.home"), ".mtanalyzeapp/" + fileName);
+        File userFile = new File(System.getProperty("user.home"), ".mtanalyze/" + fileName);
         if (userFile.isFile()) {
             loadCsvFromFile(userFile, minCols, consumer);
         } else {

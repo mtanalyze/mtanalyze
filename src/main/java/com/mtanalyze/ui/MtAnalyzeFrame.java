@@ -375,14 +375,7 @@ public class MtAnalyzeFrame extends JFrame {
             copyItem .setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_C, menuMask));
             cutItem  .setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_X, menuMask));
             pasteItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_V, menuMask));
-            copyItem .setEnabled(hasSel);
-            cutItem  .setEnabled(hasSel);
-            copyItem .addActionListener(e -> tf.copy());
-            cutItem  .addActionListener(e -> tf.cut());
-            pasteItem.addActionListener(e -> tf.paste());
-            menu.add(copyItem);
-            menu.add(cutItem);
-            menu.add(pasteItem);
+            FrameLayout.wireTextMenuItems(tf, hasSel, copyItem, cutItem, pasteItem, menu::add);
             return;
         }
         if (tryPopulatePostingPanel(menu)) return;
@@ -609,12 +602,12 @@ public class MtAnalyzeFrame extends JFrame {
     }
 
     private void navigateToBookmark(Bookmark b) {
-        if (!b.filePath.isEmpty() && !entryPanel.isFileLoaded(b.filePath)) {
+        if (!b.filePath().isEmpty() && !entryPanel.isFileLoaded(b.filePath())) {
             int choice = JOptionPane.showConfirmDialog(this,
-                "File not loaded:\n" + b.filePath + "\n\nLoad it now?",
+                "File not loaded:\n" + b.filePath() + "\n\nLoad it now?",
                 "File Not Loaded", JOptionPane.YES_NO_OPTION);
             if (choice != JOptionPane.YES_OPTION) return;
-            importer.loadFile(new File(b.filePath));
+            importer.loadFile(new File(b.filePath()));
         }
         int modelRow = findBookmarkRow(b);
         if (modelRow < 0) {
@@ -627,22 +620,22 @@ public class MtAnalyzeFrame extends JFrame {
 
     private int findBookmarkRow(Bookmark b) {
         // ISIN + file is the most specific match: one entry per ISIN per file
-        if (!b.isin.isEmpty() && !b.filePath.isEmpty()) {
-            int row = entryPanel.findRowByFileAndIsin(b.filePath, b.isin);
+        if (!b.isin().isEmpty() && !b.filePath().isEmpty()) {
+            int row = entryPanel.findRowByFileAndIsin(b.filePath(), b.isin());
             if (row >= 0) return row;
         }
         // RELA is entry-level but may be "NONREF" (non-unique); try only if it looks specific
-        if (!b.rela.isEmpty() && !b.rela.equalsIgnoreCase("NONREF")) {
-            int row = entryPanel.findRowByTagValue("RELA", b.rela);
+        if (!b.rela().isEmpty() && !b.rela().equalsIgnoreCase("NONREF")) {
+            int row = entryPanel.findRowByTagValue("RELA", b.rela());
             if (row >= 0) return row;
         }
         // SEME is message-level and shared across all entries of the same message; use as last resort
-        if (!b.seme.isEmpty()) {
-            int row = entryPanel.findRowByTagValue("SEME", b.seme);
+        if (!b.seme().isEmpty()) {
+            int row = entryPanel.findRowByTagValue("SEME", b.seme());
             if (row >= 0) return row;
         }
-        if (!b.rela.isEmpty()) {
-            int row = entryPanel.findRowByTagValue("RELA", b.rela);
+        if (!b.rela().isEmpty()) {
+            int row = entryPanel.findRowByTagValue("RELA", b.rela());
             if (row >= 0) return row;
         }
         return -1;
@@ -883,12 +876,7 @@ public class MtAnalyzeFrame extends JFrame {
             "SWIFT Files (*.txt, *.swift, *.mt5xx, *.mt9xx, *.ste, *.log, *.csv)",
             "txt", "swift", "mt527", "mt536", "mt558", "mt940", "mt950", "ste", "log", "csv"));
         fc.setAcceptAllFileFilterUsed(true);
-        String lastFile = PREFS.get(PREF_LAST_FILE, "");
-        if (!lastFile.isEmpty()) {
-            File lastDir = new File(lastFile).getParentFile();
-            if (lastDir != null && lastDir.exists()) fc.setCurrentDirectory(lastDir);
-        }
-        return fc;
+        return restoreLastDir(fc, PREF_LAST_FILE);
     }
 
     private void onOpenSession() {
@@ -935,7 +923,11 @@ public class MtAnalyzeFrame extends JFrame {
         fc.setFileFilter(new FileNameExtensionFilter(
             "MT Session Files (*." + SESSION_EXT + ")", SESSION_EXT));
         fc.setAcceptAllFileFilterUsed(true);
-        String lastFile = PREFS.get(PREF_LAST_SESSION_FILE, "");
+        return restoreLastDir(fc, PREF_LAST_SESSION_FILE);
+    }
+
+    private JFileChooser restoreLastDir(JFileChooser fc, String prefKey) {
+        String lastFile = PREFS.get(prefKey, "");
         if (!lastFile.isEmpty()) {
             File lastDir = new File(lastFile).getParentFile();
             if (lastDir != null && lastDir.exists()) fc.setCurrentDirectory(lastDir);
@@ -1261,7 +1253,6 @@ public class MtAnalyzeFrame extends JFrame {
     static boolean isDarkTheme(String theme) {
         return switch (theme) {
             case "Dark", "Darcula"      -> true;
-            case THEME_LIGHT, "IntelliJ" -> false;
             default                      -> false;
         };
     }

@@ -99,7 +99,7 @@ public class NotificationPanel extends RoundedPanel {
     }
 
     public void addNotification(Type type, String title, String message) {
-        entries.add(0, new Entry(type, title, message));
+        entries.addFirst(new Entry(type, title, message));
         refresh();
         if (onAdded != null) onAdded.run();
     }
@@ -152,12 +152,11 @@ public class NotificationPanel extends RoundedPanel {
     }
 
     private static JPanel getJPanel(Entry e) {
-        Color accent;
-        switch (e.type) {
-            case WARNING: accent = ACCENT_WARNING; break;
-            case ERROR:   accent = ACCENT_ERROR;   break;
-            default:      accent = ACCENT_INFO;    break;
-        }
+        Color accent = switch (e.type) {
+            case WARNING -> ACCENT_WARNING;
+            case ERROR -> ACCENT_ERROR;
+            default -> ACCENT_INFO;
+        };
 
         JPanel item = new JPanel(new BorderLayout(6, 0));
         item.setOpaque(false);

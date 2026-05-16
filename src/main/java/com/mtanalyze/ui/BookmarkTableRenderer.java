@@ -37,9 +37,9 @@ public final class BookmarkTableRenderer extends DefaultTableCellRenderer {
         super.getTableCellRendererComponent(t, val, sel, focus, row, col);
         List<Bookmark> bm = manager.items();
         if (col == 0 && row < bm.size())
-            setToolTipText(bm.get(row).filePath);
+            setToolTipText(bm.get(row).filePath());
         else if (col == 2 && row < bm.size())
-            setToolTipText(bm.get(row).note.isEmpty() ? null : bm.get(row).note);
+            setToolTipText(bm.get(row).note().isEmpty() ? null : bm.get(row).note());
         else
             setToolTipText(null);
         return this;

@@ -35,74 +35,51 @@ final class SettingsDialog {
 
     private SettingsDialog() {}
 
-    static final class Config {
-        static final class CsvKeys {
-            final String fieldSep;
-            final String decimalSep;
+    record Config(CsvKeys csv, ThemeConfig theme, MtKeys mt, PowerUserConfig powerUser) {
+            static final class CsvKeys {
+                final String fieldSep;
+                final String decimalSep;
 
-            CsvKeys(String fieldSep, String decimalSep) {
-                this.fieldSep = fieldSep;
-                this.decimalSep = decimalSep;
+                CsvKeys(String fieldSep, String decimalSep) {
+                    this.fieldSep = fieldSep;
+                    this.decimalSep = decimalSep;
+                }
             }
-        }
 
-        static final class MtKeys {
-            final String sender;
-            final String receiver;
+            static final class MtKeys {
+                final String sender;
+                final String receiver;
 
-            MtKeys(String sender, String receiver) {
-                this.sender = sender;
-                this.receiver = receiver;
+                MtKeys(String sender, String receiver) {
+                    this.sender = sender;
+                    this.receiver = receiver;
+                }
             }
-        }
-
 
 
         static final class ThemeConfig {
-            final String prefKey;
-            final Consumer<String> onChange;
+                final String prefKey;
+                final Consumer<String> onChange;
 
-            ThemeConfig(String prefKey, Consumer<String> onChange) {
-                this.prefKey  = prefKey;
-                this.onChange = onChange;
+                ThemeConfig(String prefKey, Consumer<String> onChange) {
+                    this.prefKey = prefKey;
+                    this.onChange = onChange;
+                }
             }
-        }
 
-        static final class PowerUserConfig {
-            final String prefKey;
-            final Runnable onChange;
+            static final class PowerUserConfig {
+                final String prefKey;
+                final Runnable onChange;
 
-            PowerUserConfig(String prefKey, Runnable onChange) {
-                this.prefKey  = prefKey;
-                this.onChange = onChange;
+                PowerUserConfig(String prefKey, Runnable onChange) {
+                    this.prefKey = prefKey;
+                    this.onChange = onChange;
+                }
             }
-        }
 
-        final CsvKeys         csv;
-        final ThemeConfig     theme;
-        final MtKeys          mt;
-        final PowerUserConfig powerUser;
-
-        Config(CsvKeys csv, ThemeConfig theme, MtKeys mt, PowerUserConfig powerUser) {
-            this.csv       = csv;
-            this.theme     = theme;
-            this.mt        = mt;
-            this.powerUser = powerUser;
-        }
     }
 
-    private static final class FormFields {
-        final JTextField fieldSep;
-        final JTextField decimalSep;
-        final JTextField sender;
-        final JTextField receiver;
-        FormFields(JTextField fieldSep, JTextField decimalSep,
-                   JTextField sender, JTextField receiver) {
-            this.fieldSep   = fieldSep;
-            this.decimalSep = decimalSep;
-            this.sender     = sender;
-            this.receiver   = receiver;
-        }
+    private record FormFields(JTextField fieldSep, JTextField decimalSep, JTextField sender, JTextField receiver) {
     }
 
     static void show(Frame owner, Preferences prefs, Config cfg, HintDictionary dict) {

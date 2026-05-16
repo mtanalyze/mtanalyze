@@ -27,14 +27,7 @@ import java.util.*;
  */
 public class SavedColumnLayouts {
 
-    private static final class ParsedProfile {
-        private final String name;
-        private final LinkedHashMap<String, String> cols;
-
-        private ParsedProfile(String name, LinkedHashMap<String, String> cols) {
-            this.name = name;
-            this.cols = cols;
-        }
+    private record ParsedProfile(String name, LinkedHashMap<String, String> cols) {
     }
 
     public Map<String, LinkedHashMap<String, String>> deserialize(String pref) {

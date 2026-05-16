@@ -19,12 +19,44 @@ import com.mtanalyze.ui.view.MessageSourcePanel;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.text.JTextComponent;
 import java.awt.*;
+import java.util.function.Consumer;
 
 /** Static factory helpers for common frame layout patterns. */
 public final class FrameLayout {
 
     private FrameLayout() {}
+
+    /** Flat ✕ close button (no border/fill, 20×20). Calls {@code onClose} on click. */
+    public static JButton makeCloseButton(Runnable onClose) {
+        JButton btn = new JButton("✕");
+        btn.setFocusPainted(false);
+        btn.setBorderPainted(false);
+        btn.setContentAreaFilled(false);
+        btn.setOpaque(false);
+        btn.setFont(btn.getFont().deriveFont(10f));
+        btn.setPreferredSize(new Dimension(20, 20));
+        btn.addActionListener(e -> onClose.run());
+        return btn;
+    }
+
+    /**
+     * Wires copy/cut/paste actions from {@code src} onto pre-created menu items,
+     * then passes each item to {@code addItem} (e.g. {@code menu::add}).
+     */
+    public static void wireTextMenuItems(JTextComponent src, boolean hasSel,
+                                         JMenuItem copy, JMenuItem cut, JMenuItem paste,
+                                         Consumer<JMenuItem> addItem) {
+        copy.setEnabled(hasSel);
+        cut.setEnabled(hasSel);
+        copy.addActionListener(e -> src.copy());
+        cut.addActionListener(e -> src.cut());
+        paste.addActionListener(e -> src.paste());
+        addItem.accept(copy);
+        addItem.accept(cut);
+        addItem.accept(paste);
+    }
 
     /** Icon-only toolbar button that looks flat (no border / fill). */
     public static JButton makeNavButton(Icon icon, String tooltip) {
@@ -93,14 +125,7 @@ public final class FrameLayout {
     /** Overload accepting a pre-built {@code JLabel} as the title. */
     public static JPanel wrapDetailCard(JComponent content, JLabel titleLabel,
                                         Runnable onClose, JButton... extraBtns) {
-        JButton closeBtn = new JButton("✕");
-        closeBtn.setFocusPainted(false);
-        closeBtn.setBorderPainted(false);
-        closeBtn.setContentAreaFilled(false);
-        closeBtn.setOpaque(false);
-        closeBtn.setFont(closeBtn.getFont().deriveFont(10f));
-        closeBtn.setPreferredSize(new Dimension(20, 20));
-        closeBtn.addActionListener(e -> onClose.run());
+        JButton closeBtn = makeCloseButton(onClose);
 
         JPanel btns = new JPanel(new FlowLayout(FlowLayout.RIGHT, 2, 2));
         btns.setOpaque(false);

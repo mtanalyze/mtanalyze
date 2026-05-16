@@ -76,12 +76,12 @@ public final class BookmarkManager {
         StringBuilder sb = new StringBuilder();
         for (Bookmark b : items) {
             if (!sb.isEmpty()) sb.append(RS);
-            sb.append(b.isin).append(FS)
-              .append(b.seme).append(FS)
-              .append(b.rela).append(FS)
-              .append(b.filePath).append(FS)
-              .append(b.note).append(FS)
-              .append(b.timestamp);
+            sb.append(b.isin()).append(FS)
+              .append(b.seme()).append(FS)
+              .append(b.rela()).append(FS)
+              .append(b.filePath()).append(FS)
+              .append(b.note()).append(FS)
+              .append(b.timestamp());
         }
         prefs.put(prefKey, sb.toString());
     }

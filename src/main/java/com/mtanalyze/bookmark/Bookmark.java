@@ -18,22 +18,15 @@ package com.mtanalyze.bookmark;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
-public final class Bookmark {
+public record Bookmark(String isin, String seme, String rela, String filePath, String note, String timestamp) {
     public static final DateTimeFormatter TS_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
-    public final String isin;
-    public final String seme;
-    public final String rela;
-    public final String filePath;
-    public final String note;
-    public final String timestamp;
-
     public Bookmark(String isin, String seme, String rela, String filePath, String note, String timestamp) {
-        this.isin      = nvl(isin);
-        this.seme      = nvl(seme);
-        this.rela      = nvl(rela);
-        this.filePath  = nvl(filePath);
-        this.note      = nvl(note);
+        this.isin = nvl(isin);
+        this.seme = nvl(seme);
+        this.rela = nvl(rela);
+        this.filePath = nvl(filePath);
+        this.note = nvl(note);
         this.timestamp = nvl(timestamp);
     }
 
@@ -50,5 +43,7 @@ public final class Bookmark {
         return i >= 0 ? filePath.substring(i + 1) : filePath;
     }
 
-    private static String nvl(String s) { return s != null ? s : ""; }
+    private static String nvl(String s) {
+        return s != null ? s : "";
+    }
 }

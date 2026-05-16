@@ -123,13 +123,22 @@ final class EntryPanelModel {
         }
         if (knownKeys.add(TYPE_COL_KEY)) outCols.addFirst(new ColumnDef("", "_TYPE_", "", 1, "Typ"));
         newEntries.forEach(e -> e.data().put(TYPE_COL_KEY, computeEntryType(e.data())));
-        if (msg.sourceFile() != null) {
+        String fileLabel = fileLabel(msg);
+        if (fileLabel != null) {
             if (knownKeys.add(FILE_COL_KEY)) outCols.add(new ColumnDef("", "_FILE_", "", 1, "File"));
-            String srcPath = msg.sourceFile().getAbsolutePath();
-            newEntries.forEach(e -> e.data().put(FILE_COL_KEY, srcPath));
+            newEntries.forEach(e -> e.data().put(FILE_COL_KEY, fileLabel));
         }
         newEntries.forEach(msg::addEntry);
         return newEntries;
+    }
+
+    private static String fileLabel(SwiftMessage msg) {
+        return switch (msg.origin()) {
+            case SWIFT_FILE -> msg.sourceFile() != null ? msg.sourceFile().getAbsolutePath() : null;
+            case LOG_FILE   -> "Log";
+            case NAME_VALUE -> "Name/Value";
+            case CLIPBOARD  -> "Clipboard";
+        };
     }
 
     /** Removes the entry at {@code modelRow} from all backing structures. Caller fires the table event. */

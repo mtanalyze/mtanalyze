@@ -21,6 +21,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * A parsed SWIFT message with its provenance metadata.
@@ -30,17 +31,20 @@ import java.util.List;
  */
 public class SwiftMessage {
 
-    private final AbstractMT    raw;
-    private final File          sourceFile;
-    private final List<Entry>   entries = new ArrayList<>();
+    private final AbstractMT      raw;
+    private final File            sourceFile;
+    private final MessageOrigin   origin;
+    private final List<Entry>     entries = new ArrayList<>();
 
-    public SwiftMessage(AbstractMT raw, File sourceFile) {
-        this.raw          = raw;
-        this.sourceFile   = sourceFile;
+    public SwiftMessage(AbstractMT raw, File sourceFile, MessageOrigin origin) {
+        this.raw        = raw;
+        this.sourceFile = sourceFile;
+        this.origin     = Objects.requireNonNull(origin);
     }
 
     public AbstractMT    raw()          { return raw; }
     public File          sourceFile()   { return sourceFile; }
+    public MessageOrigin origin()       { return origin; }
 
     public List<Entry> entries()         { return Collections.unmodifiableList(entries); }
     public void addEntry(Entry e)        { entries.add(e); }

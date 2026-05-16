@@ -126,6 +126,9 @@ public final class MtFileIO {
         }
         // Unquoted Mainframe-encoded content: lines start with ä (= '{') instead of '"',
         // optionally preceded by a short prefix (e.g. "00ä" → "00{1:").
+        // Must contain ä or ü; without them fixMainframeEncoding is a no-op and any
+        // regular SWIFT message starting with {1: would be falsely detected as CSV.
+        if (trimmed.indexOf('ä') < 0 && trimmed.indexOf('ü') < 0) return false;
         String decoded = fixMainframeEncoding(trimmed);
         int idx = decoded.indexOf("{1:");
         return idx >= 0 && idx <= 5 && decoded.contains("{4:");

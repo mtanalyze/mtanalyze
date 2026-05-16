@@ -27,15 +27,12 @@ import java.util.*;
  */
 public class SavedDetailFilters {
 
-    public static class Profile {
-        public final Set<String> hiddenSeqs;
-        public final Set<String> hiddenTags;
-
-        public Profile(Set<String> hiddenSeqs, Set<String> hiddenTags) {
-            this.hiddenSeqs = new LinkedHashSet<>(hiddenSeqs);
-            this.hiddenTags = new LinkedHashSet<>(hiddenTags);
+    public record Profile(Set<String> hiddenSeqs, Set<String> hiddenTags) {
+            public Profile(Set<String> hiddenSeqs, Set<String> hiddenTags) {
+                this.hiddenSeqs = new LinkedHashSet<>(hiddenSeqs);
+                this.hiddenTags = new LinkedHashSet<>(hiddenTags);
+            }
         }
-    }
 
     public Map<String, Profile> deserialize(String pref) {
         LinkedHashMap<String, Profile> result = new LinkedHashMap<>();

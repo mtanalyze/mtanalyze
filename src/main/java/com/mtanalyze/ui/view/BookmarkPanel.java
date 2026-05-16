@@ -54,7 +54,7 @@ public class BookmarkPanel extends RoundedPanel implements EditMenuContributor {
     public void refresh() {
         tableModel.setRowCount(0);
         for (Bookmark b : manager.items())
-            tableModel.addRow(new Object[]{b.fileDisplayName(), b.isin, b.note});
+            tableModel.addRow(new Object[]{b.fileDisplayName(), b.isin(), b.note()});
     }
 
     // -----------------------------------------------------------------------

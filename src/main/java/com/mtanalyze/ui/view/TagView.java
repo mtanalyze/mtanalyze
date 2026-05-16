@@ -662,9 +662,9 @@ public class TagView extends RoundedPanel implements EntrySelectionListener {
         SavedDetailFilters.Profile profile = savedDetailFilters.get(name);
         if (profile == null) return;
         detailHiddenSeqs.clear();
-        detailHiddenSeqs.addAll(profile.hiddenSeqs);
+        detailHiddenSeqs.addAll(profile.hiddenSeqs());
         detailHiddenTags.clear();
-        detailHiddenTags.addAll(profile.hiddenTags);
+        detailHiddenTags.addAll(profile.hiddenTags());
         applyDetailFilters();
     }
 
