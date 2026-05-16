@@ -57,6 +57,7 @@ public class MtAnalyzeFrame extends JFrame {
     private static final String MSG_PLURAL   = " messages";
     public static final String BOOKMARKS = "Bookmarks";
     private static final String APP_NAME                 = "MT Analyze";
+    private static final String GITHUB_URL               = "https://github.com/mtanalyze/mtanalyze";
     private static final String LABEL_SECURITIES        = "Securities Posting";
     private static final String LABEL_CASH              = "Cash Posting";
     private static final String LABEL_ACCOUNT_MAPPING   = "Account Mapping";
@@ -1170,13 +1171,26 @@ public class MtAnalyzeFrame extends JFrame {
         dep1.setFont(dep1.getFont().deriveFont(Font.PLAIN, 11f));
         dep1.setAlignmentX(Component.CENTER_ALIGNMENT);
 
+        JLabel github = new JLabel("<html><a href=''>github.com/mtanalyze/mtanalyze</a></html>", SwingConstants.CENTER);
+        github.setFont(github.getFont().deriveFont(Font.PLAIN, 11f));
+        github.setAlignmentX(Component.CENTER_ALIGNMENT);
+        github.setMaximumSize(new Dimension(Integer.MAX_VALUE, github.getPreferredSize().height));
+        github.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        github.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override public void mouseClicked(java.awt.event.MouseEvent e) {
+                try { Desktop.getDesktop().browse(new java.net.URI(GITHUB_URL)); }
+                catch (Exception ex) { JOptionPane.showMessageDialog(null, ex.getMessage()); }
+            }
+        });
+
         JLabel swift = new JLabel("SWIFT is a trademark of S.W.I.F.T. SCRL. (www.swift.com)");
         swift.setFont(swift.getFont().deriveFont(Font.PLAIN, 10f));
         swift.setForeground(new Color(100, 100, 140));
         swift.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         panel.add(title); panel.add(Box.createVerticalStrut(6));
-        panel.add(version); panel.add(Box.createVerticalStrut(12));
+        panel.add(version); panel.add(Box.createVerticalStrut(4));
+        panel.add(github); panel.add(Box.createVerticalStrut(12));
         panel.add(new JSeparator()); panel.add(Box.createVerticalStrut(4));
         panel.add(copy); panel.add(Box.createVerticalStrut(4));
         panel.add(license); panel.add(Box.createVerticalStrut(12));
