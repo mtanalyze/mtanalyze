@@ -1,6 +1,7 @@
 # MT Analyze
 **SWIFT MT analysis for migration and change projects — and day-to-day business use.**
 
+[![Release Build](https://github.com/mtanalyze/mtanalyze/actions/workflows/release.yml/badge.svg)](https://github.com/mtanalyze/mtanalyze/actions/workflows/release.yml)
 [![SonarQube](https://sonarcloud.io/api/project_badges/measure?project=mtanalyze_mtanalyze&metric=alert_status)](https://sonarcloud.io/summary/overall?id=mtanalyze_mtanalyze)
 [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=mtanalyze_mtanalyze&metric=security_rating)](https://sonarcloud.io/summary/overall?id=mtanalyze_mtanalyze)
 [![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=mtanalyze_mtanalyze&metric=vulnerabilities)](https://sonarcloud.io/summary/overall?id=mtanalyze_mtanalyze)
@@ -10,10 +11,6 @@ MT Analyze is a lightweight open-source desktop tool for analysing SWIFT MT mess
 Statement messages such as MT 536 or MT 940 — which carry many entries per message — and single-entry messages such as settlement instructions or confirmations are handled uniformly: any mix loads into one table, one row per entry, ready to sort, filter, and compare across the full dataset.
 
 Built on [Prowide Core](https://github.com/prowide/prowide-core). Minimal dependencies. Self-contained JAR — no installation, no admin rights.
-
-![MT Analyze GUI](doc/images/gui.png)
-
-*MT 536 Statement of Transactions loaded from the [Citibank MSS sample](https://www.citigroup.com/mss/sa/dcc/swift/iso_15022/msg_fmt_matrix.html) — parsed and decoded.*
 
 ---
 
@@ -85,6 +82,7 @@ Two dependencies. That is all.
 ## Security
 
 Every release ships:
+- **Automated release build** — JAR is built from source via GitHub Actions on each release; no pre-built binaries committed to the repository
 - **SonarCloud** scan results (badges above)
 - **GitHub Dependabot** — automated dependency vulnerability alerts and pull requests
 
