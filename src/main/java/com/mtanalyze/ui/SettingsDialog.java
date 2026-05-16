@@ -15,10 +15,8 @@
  */
 package com.mtanalyze.ui;
 
-import com.mtanalyze.ui.MtAnalyzeFrame;
 import com.mtanalyze.export.CsvExport;
 import com.mtanalyze.parser.HintDictionary;
-import com.mtanalyze.ui.FormPanel;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;

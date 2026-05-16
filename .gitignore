@@ -1,0 +1,9 @@
+/.idea/
+/target/
+/.claude/
+/.vscode/
+/CLAUDE.md
+/dependency-reduced-pom.xml
+/misc
+/.sonarlint/connectedMode.json
+.DS_Store

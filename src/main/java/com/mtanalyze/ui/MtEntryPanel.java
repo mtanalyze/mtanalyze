@@ -20,16 +20,11 @@ import com.mtanalyze.model.Project;
 import com.mtanalyze.model.SwiftMessage;
 import com.prowidesoftware.swift.model.SwiftTagListBlock;
 
-import com.mtanalyze.ui.ColumnDef;
 import com.mtanalyze.parser.HintDictionary;
 import com.mtanalyze.profile.SavedColumnLayouts;
 import com.mtanalyze.profile.SavedQuickFilters;
-import com.mtanalyze.ui.ColumnChooser;
 import com.mtanalyze.ui.view.MessageSourcePanel;
-import com.mtanalyze.ui.FileListTransferHandler;
-import com.mtanalyze.ui.FilterSupport;
 import com.mtanalyze.ui.view.RoundedPanel;
-import com.mtanalyze.ui.ToolbarIcons;
 import com.mtanalyze.ui.filter.ColumnFilterRow;
 import com.mtanalyze.ui.filter.FinFilterRow;
 
@@ -81,22 +76,7 @@ public class MtEntryPanel extends JPanel {
     // -----------------------------------------------------------------------
     // Preference-key bundle
     // -----------------------------------------------------------------------
-    public static final class PrefKeys {
-        private final String colOrder;
-        private final String colVis;
-        private final String quickFilterProfiles;
-        private final String colLayoutProfiles;
-        public PrefKeys(String colOrder, String colVis, String quickFilterProfiles, String colLayoutProfiles) {
-            this.colOrder = colOrder;
-            this.colVis = colVis;
-            this.quickFilterProfiles = quickFilterProfiles;
-            this.colLayoutProfiles = colLayoutProfiles;
-        }
-        public String colOrder() { return colOrder; }
-        public String colVis() { return colVis; }
-        public String quickFilterProfiles() { return quickFilterProfiles; }
-        public String colLayoutProfiles() { return colLayoutProfiles; }
-    }
+    public record PrefKeys(String colOrder, String colVis, String quickFilterProfiles, String colLayoutProfiles) {}
 
 
     private static final String TOOLTIP_FILTER_AND  = "Quick Filter columns: AND – Click to switch to OR";
@@ -147,8 +127,8 @@ public class MtEntryPanel extends JPanel {
 
     // Quick-filter combo (also placed in the menu bar by the main app)
     JComboBox<String>  quickFilterCombo;
-    private final SavedQuickFilters  quickFilterCodec   = new SavedQuickFilters();
-    private final SavedColumnLayouts columnLayoutCodec  = new SavedColumnLayouts();
+    private final transient SavedQuickFilters  quickFilterCodec   = new SavedQuickFilters();
+    private final transient SavedColumnLayouts columnLayoutCodec  = new SavedColumnLayouts();
 
     private final LinkedHashMap<String, Map<String, String>> savedQuickFilters = new LinkedHashMap<>();
     private transient ActionListener quickFilterComboListener;
@@ -173,7 +153,7 @@ public class MtEntryPanel extends JPanel {
     // -----------------------------------------------------------------------
     // Data model
     // -----------------------------------------------------------------------
-    private final EntryPanelModel model = new EntryPanelModel();
+    private final transient EntryPanelModel model = new EntryPanelModel();
 
     // -----------------------------------------------------------------------
     // Constructor
@@ -294,7 +274,41 @@ public class MtEntryPanel extends JPanel {
         columnFilterRow = new ColumnFilterRow(this::applyFinFilters, this::convertDropToQuickFilter);
         finFilterRow    = new FinFilterRow(this::applyFinFilters, this::onSaveQuickFilter);
 
-        mtEntryTable = new JTable(entryTableModel) {
+        mtEntryTable = createMtEntryTable();
+        mtEntryTable.setRowHeight(22);
+        mtEntryTable.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+        mtEntryTable.setFillsViewportHeight(true);
+        mtEntryTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+        mtEntryTable.getTableHeader().setReorderingAllowed(true);
+
+        setupPositionTableMouseListeners();
+        bindSpaceToDetailTable();
+        bindDeleteKeyToPositionTable();
+
+        mtEntryScrollPane = new JScrollPane();
+        mtEntryScrollPane.setViewport(createHintViewport());
+        mtEntryScrollPane.setViewportView(mtEntryTable);
+
+        rowSorter = new TableRowSorter<>(entryTableModel);
+        mtEntryTable.setRowSorter(rowSorter);
+        rowSorter.addRowSorterListener(e -> { repackPositionRows(); updateRowCountLabel(); });
+
+        TransferHandler dropHandler = buildEntriesDropHandler();
+        mtEntryTable.setTransferHandler(dropHandler);
+        mtEntryScrollPane.setTransferHandler(dropHandler);
+
+        mtEntryTable.addComponentListener(new java.awt.event.ComponentAdapter() {
+            @Override public void componentResized(java.awt.event.ComponentEvent e) {
+                columnFilterRow.refreshLayout();
+                finFilterRow.refreshLayout();
+            }
+        });
+
+        setupEntryTableSelectionListener();
+    }
+
+    private JTable createMtEntryTable() {
+        return new JTable(entryTableModel) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
             @Override
             protected JTableHeader createDefaultTableHeader() {
@@ -315,17 +329,10 @@ public class MtEntryPanel extends JPanel {
                 FilterSupport.installFilterRowsInScrollPane(mtEntryScrollPane, getTableHeader(), columnFilterRow, finFilterRow);
             }
         };
-        mtEntryTable.setRowHeight(22);
-        mtEntryTable.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
-        mtEntryTable.setFillsViewportHeight(true);
-        mtEntryTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-        mtEntryTable.getTableHeader().setReorderingAllowed(true);
+    }
 
-        setupPositionTableMouseListeners();
-        bindSpaceToDetailTable();
-        bindDeleteKeyToPositionTable();
-
-        JViewport hintViewport = new JViewport() {
+    private JViewport createHintViewport() {
+        return new JViewport() {
             @Override protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
                 if (!model.allEntries().isEmpty()) return;
@@ -333,42 +340,28 @@ public class MtEntryPanel extends JPanel {
                     "Drop a SWIFT MT file here", "to load it into the Entries view");
             }
         };
-        mtEntryScrollPane = new JScrollPane();
-        mtEntryScrollPane.setViewport(hintViewport);
-        mtEntryScrollPane.setViewportView(mtEntryTable);
+    }
 
-        rowSorter = new TableRowSorter<>(entryTableModel);
-        mtEntryTable.setRowSorter(rowSorter);
-        rowSorter.addRowSorterListener(e -> { repackPositionRows(); updateRowCountLabel(); });
-
-        TransferHandler dropHandler = buildEntriesDropHandler();
-        mtEntryTable.setTransferHandler(dropHandler);
-        mtEntryScrollPane.setTransferHandler(dropHandler);
-
-        mtEntryTable.addComponentListener(new java.awt.event.ComponentAdapter() {
-            @Override public void componentResized(java.awt.event.ComponentEvent e) {
-                columnFilterRow.refreshLayout();
-                finFilterRow.refreshLayout();
-            }
-        });
-
+    private void setupEntryTableSelectionListener() {
         mtEntryTable.getSelectionModel().addListSelectionListener(e -> {
             if (e.getValueIsAdjusting()) return;
             int[] viewRows = mtEntryTable.getSelectedRows();
             if (viewRows.length == 0) { host.onRowDeselected(); return; }
             if (viewRows.length > 1) {
-                List<Entry> entries = new ArrayList<>();
-                for (int vr : viewRows) {
-                    int mr = mtEntryTable.convertRowIndexToModel(vr);
-                    com.mtanalyze.model.Entry entry = model.getEntryForRow(mr);
-                    if (entry != null) entries.add(entry);
-                }
-                host.onMultipleRowsSelected(entries);
+                notifyMultipleSelected(viewRows);
                 return;
             }
-            int modelRow = mtEntryTable.convertRowIndexToModel(viewRows[0]);
-            host.onRowSelected(modelRow);
+            host.onRowSelected(mtEntryTable.convertRowIndexToModel(viewRows[0]));
         });
+    }
+
+    private void notifyMultipleSelected(int[] viewRows) {
+        List<Entry> entries = new ArrayList<>();
+        for (int vr : viewRows) {
+            com.mtanalyze.model.Entry entry = model.getEntryForRow(mtEntryTable.convertRowIndexToModel(vr));
+            if (entry != null) entries.add(entry);
+        }
+        host.onMultipleRowsSelected(entries);
     }
 
     private TransferHandler buildEntriesDropHandler() {
@@ -775,7 +768,7 @@ public class MtEntryPanel extends JPanel {
             filterCombineOr = orMode;
             syncFilterModeButton(orMode);
         }
-        rowSorter.setRowFilter(new RowFilter<EntryTableModel, Integer>() {
+        rowSorter.setRowFilter(new RowFilter<>() {
             @Override
             public boolean include(Entry<? extends EntryTableModel, ? extends Integer> e) {
                 return passesDropFilter(e, dropFilters)

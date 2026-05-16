@@ -28,8 +28,8 @@ import java.awt.event.KeyEvent;
 import java.io.IOException;
 import java.util.List;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.function.ToIntFunction;
 
 /**
  * Modal dialog for pasting and parsing raw SWIFT MT text.
@@ -43,7 +43,6 @@ public final class AppendTextDialog {
      * Shows the dialog and blocks until the user closes it.
      *
      * @param owner        parent frame for the modal dialog
-     * @param mtFileIO     used for content detection and encoding fix
      * @param promptMtType called when the MT type cannot be auto-detected; returns the user choice or null
      * @param onParseText  called with (strippedText, mtTypeOverride) for plain-text content; returns count parsed
      * @param onParseCsv   called with CSV chunks for name-value content; returns count parsed
@@ -52,7 +51,7 @@ public final class AppendTextDialog {
             Frame owner,
             Supplier<String> promptMtType,
             BiFunction<String, String, Integer> onParseText,
-            Function<List<String>, Integer> onParseCsv) {
+            ToIntFunction<List<String>> onParseCsv) {
 
         JDialog dialog = new JDialog(owner, "Paste MT Snippet", true);
         dialog.setLayout(new BorderLayout(8, 8));
@@ -103,16 +102,7 @@ public final class AppendTextDialog {
         Runnable doParse = () -> {
             String raw = textArea.getText();
             if (raw.trim().isEmpty()) return;
-            int parsed;
-            if (MtFileIO.isCsvSwiftContent(raw)) {
-                parsed = onParseCsv.apply(MtFileIO.splitCsvIntoSwiftMessages(raw));
-            } else {
-                String text = MtFileIO.stripIndentation(raw);
-                String mtOverride = MtFileIO.tryDetectMtType(text);
-                if (mtOverride == null && MtFileIO.needsMtTypeOverride(text))
-                    mtOverride = promptMtType.get();
-                parsed = onParseText.apply(text, mtOverride);
-            }
+            int parsed = parseContent(raw, promptMtType, onParseText, onParseCsv);
             if (parsed > 0) dialog.dispose();
         };
 
@@ -150,5 +140,17 @@ public final class AppendTextDialog {
         dialog.pack();
         dialog.setLocationRelativeTo(owner);
         dialog.setVisible(true);
+    }
+
+    private static int parseContent(String raw, Supplier<String> promptMtType,
+            BiFunction<String, String, Integer> onParseText,
+            ToIntFunction<List<String>> onParseCsv) {
+        if (MtFileIO.isCsvSwiftContent(raw))
+            return onParseCsv.applyAsInt(MtFileIO.splitCsvIntoSwiftMessages(raw));
+        String text = MtFileIO.stripIndentation(raw);
+        String mtOverride = MtFileIO.tryDetectMtType(text);
+        if (mtOverride == null && MtFileIO.needsMtTypeOverride(text))
+            mtOverride = promptMtType.get();
+        return onParseText.apply(text, mtOverride);
     }
 }

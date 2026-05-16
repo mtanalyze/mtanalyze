@@ -293,8 +293,8 @@ public class MessageSourcePanel extends RoundedPanel implements EditMenuContribu
         for (TreePath path : paths) {
             DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
             Object userObj = node.getUserObject();
-            if (userObj instanceof File && ((File) userObj).isFile())
-                files.add((File) userObj);
+            if (userObj instanceof File f && f.isFile())
+                files.add(f);
         }
         return files;
     }
@@ -332,10 +332,10 @@ public class MessageSourcePanel extends RoundedPanel implements EditMenuContribu
 
     private void addImportDirItem(JPopupMenu popup, DefaultMutableTreeNode node) {
         Object userObj = node.getUserObject();
-        if (!(userObj instanceof File) || !((File) userObj).isDirectory()) return;
+        if (!(userObj instanceof File f) || !f.isDirectory()) return;
         if (popup.getComponentCount() > 0) popup.addSeparator();
         JMenuItem item = new JMenuItem("Import Directory", ToolbarIcons.menuImportDir());
-        item.addActionListener(ae -> onImportDir.accept((File) userObj));
+        item.addActionListener(ae -> onImportDir.accept(f));
         popup.add(item);
     }
 
@@ -353,13 +353,12 @@ public class MessageSourcePanel extends RoundedPanel implements EditMenuContribu
         if (selected.size() != 1) return;
         if (popup.getComponentCount() > 0) popup.addSeparator();
         JMenuItem item = new JMenuItem("View Source", ToolbarIcons.menuViewInEditor());
-        item.addActionListener(ae -> onViewInEditor.accept(selected.get(0)));
+        item.addActionListener(ae -> onViewInEditor.accept(selected.getFirst()));
         popup.add(item);
     }
 
     private void addSetDescriptionItem(JPopupMenu popup, DefaultMutableTreeNode node) {
-        if (node.getParent() != treeRoot || !(node.getUserObject() instanceof File)) return;
-        File dir = (File) node.getUserObject();
+        if (node.getParent() != treeRoot || !(node.getUserObject() instanceof File dir)) return;
         if (popup.getComponentCount() > 0) popup.addSeparator();
         JMenuItem item = new JMenuItem("Set Description…");
         item.addActionListener(ae -> {
@@ -420,7 +419,7 @@ public class MessageSourcePanel extends RoundedPanel implements EditMenuContribu
         if (root != null && c.isShowing()) {
             Point p = SwingUtilities.convertPoint(c, 0, 0, root);
             int localY = root.getHeight() / 3 - p.y - blockH / 2;
-            return Math.max(4, Math.min(localY, c.getHeight() - blockH - 4));
+            return Math.clamp(localY, 4, c.getHeight() - blockH - 4);
         }
         return (c.getHeight() - blockH) / 2;
     }
@@ -452,10 +451,9 @@ public class MessageSourcePanel extends RoundedPanel implements EditMenuContribu
         public Component getTreeCellRendererComponent(JTree tree, Object value,
                 boolean sel, boolean expanded, boolean leaf, int row, boolean hasFocus) {
             super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, hasFocus);
-            if (!(value instanceof DefaultMutableTreeNode)) return this;
-            DefaultMutableTreeNode node = (DefaultMutableTreeNode) value;
+            if (!(value instanceof DefaultMutableTreeNode node)) return this;
             Object userObj = node.getUserObject();
-            if (userObj instanceof File) applyFileLabel((File) userObj, node.getParent() == treeRoot);
+            if (userObj instanceof File f) applyFileLabel(f, node.getParent() == treeRoot);
             return this;
         }
 

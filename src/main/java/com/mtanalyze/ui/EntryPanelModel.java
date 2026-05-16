@@ -25,7 +25,6 @@ import com.prowidesoftware.swift.model.mt.AbstractMT;
 
 import java.util.*;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 /**
  * All data state for the entry panel in one place.
@@ -71,7 +70,7 @@ final class EntryPanelModel {
             @Override public Map<String, String> get(int i) { return toNoSeqRow(allEntries.get(i).data()); }
             @Override public int size()                      { return allEntries.size(); }
         };
-        return allEntries.stream().map(Entry::data).collect(Collectors.toList());
+        return allEntries.stream().map(Entry::data).toList();
     }
 
     // ── Bulk load ──────────────────────────────────────────────────────────
@@ -122,7 +121,7 @@ final class EntryPanelModel {
             if (knownKeys.add(MT_COL_KEY)) outCols.add(new ColumnDef("", "_MT_", "", 1, MT_COL_LABEL));
             newEntries.forEach(e -> e.data().put(MT_COL_KEY, mtType));
         }
-        if (knownKeys.add(TYPE_COL_KEY)) outCols.add(0, new ColumnDef("", "_TYPE_", "", 1, "Typ"));
+        if (knownKeys.add(TYPE_COL_KEY)) outCols.addFirst(new ColumnDef("", "_TYPE_", "", 1, "Typ"));
         newEntries.forEach(e -> e.data().put(TYPE_COL_KEY, computeEntryType(e.data())));
         if (msg.sourceFile() != null) {
             if (knownKeys.add(FILE_COL_KEY)) outCols.add(new ColumnDef("", "_FILE_", "", 1, "File"));
@@ -246,7 +245,7 @@ final class EntryPanelModel {
         allColumnDefs.forEach(cd -> knownKeys.add(cd.key));
         for (ColumnDef cd : incoming) {
             if (!knownKeys.add(cd.key)) continue;
-            if (TYPE_COL_KEY.equals(cd.key)) allColumnDefs.add(0, cd);
+            if (TYPE_COL_KEY.equals(cd.key)) allColumnDefs.addFirst(cd);
             else allColumnDefs.add(cd);
         }
     }
@@ -254,12 +253,20 @@ final class EntryPanelModel {
     private void accumulateNoSeqColumnDefs(List<Map<String, String>> newSeqRows) {
         Set<String> knownKeys = new HashSet<>();
         for (ColumnDef cd : allNoSeqColumnDefs) knownKeys.add(cd.key);
+        addSystemNoSeqColumnDefs(knownKeys);
+        addDataNoSeqColumnDefs(newSeqRows, knownKeys);
+    }
+
+    private void addSystemNoSeqColumnDefs(Set<String> knownKeys) {
         for (ColumnDef cd : allColumnDefs) {
             if (cd.tagName.startsWith("_") && knownKeys.add(cd.key)) {
-                if (TYPE_COL_KEY.equals(cd.key)) allNoSeqColumnDefs.add(0, cd);
+                if (TYPE_COL_KEY.equals(cd.key)) allNoSeqColumnDefs.addFirst(cd);
                 else allNoSeqColumnDefs.add(cd);
             }
         }
+    }
+
+    private void addDataNoSeqColumnDefs(List<Map<String, String>> newSeqRows, Set<String> knownKeys) {
         for (Map<String, String> seqRow : newSeqRows) {
             Map<String, Integer> localOcc = new LinkedHashMap<>();
             for (String seqKey : seqRow.keySet()) {

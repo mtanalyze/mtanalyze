@@ -30,7 +30,8 @@ import java.util.function.Consumer;
 
 public final class MtExport {
 
-    private static final String FALLBACK_BIC = "BANKBEBBAXXX";
+    private static final String FALLBACK_BIC  = "BANKBEBBAXXX";
+    private static final String BLOCK_CLOSE   = "}\r\n";
 
     /** Block1 value produced by MtFileIO.buildSwiftWrapper for content without an original header. */
     private static final String SYNTHETIC_BLOCK1_VALUE = "F01" + FALLBACK_BIC + "0000000000";
@@ -145,26 +146,33 @@ public final class MtExport {
 
         StringBuilder sb = new StringBuilder();
         if (hasOriginalHeader) {
-            sb.append("{1:").append(b1Value).append("}\r\n");
-            com.prowidesoftware.swift.model.SwiftBlock2 b2 = sm.getBlock2();
-            if (b2 != null && b2.getValue() != null && !b2.getValue().isEmpty()) {
-                sb.append("{2:").append(b2.getValue()).append("}\r\n");
-            }
-            com.prowidesoftware.swift.model.SwiftBlock3 b3 = sm.getBlock3();
-            if (b3 != null && !b3.isEmpty()) {
-                sb.append("{3:");
-                for (Tag t : b3.getTags()) {
-                    sb.append("{").append(t.getName()).append(":")
-                      .append(t.getValue() != null ? t.getValue() : "").append("}");
-                }
-                sb.append("}\r\n");
-            }
+            appendOriginalHeaders(sb, sm, b1Value);
         } else {
             sb.append("{1:F01").append(sender).append("0000000000}\r\n");
             sb.append("{2:I").append(getMtType(mt)).append(receiver).append("U3003}\r\n");
         }
+        appendBlock4(sb, sm.getBlock4());
+        return sb.toString();
+    }
+
+    private static void appendOriginalHeaders(StringBuilder sb,
+            com.prowidesoftware.swift.model.SwiftMessage sm, String b1Value) {
+        sb.append("{1:").append(b1Value).append(BLOCK_CLOSE);
+        com.prowidesoftware.swift.model.SwiftBlock2 b2 = sm.getBlock2();
+        if (b2 != null && b2.getValue() != null && !b2.getValue().isEmpty())
+            sb.append("{2:").append(b2.getValue()).append(BLOCK_CLOSE);
+        com.prowidesoftware.swift.model.SwiftBlock3 b3 = sm.getBlock3();
+        if (b3 != null && !b3.isEmpty()) {
+            sb.append("{3:");
+            for (Tag t : b3.getTags())
+                sb.append("{").append(t.getName()).append(":")
+                  .append(t.getValue() != null ? t.getValue() : "").append("}");
+            sb.append(BLOCK_CLOSE);
+        }
+    }
+
+    private static void appendBlock4(StringBuilder sb, SwiftTagListBlock b4) {
         sb.append("{4:\r\n");
-        SwiftTagListBlock b4 = sm.getBlock4();
         if (b4 != null) {
             for (Tag t : b4.getTags()) {
                 sb.append(":").append(t.getName()).append(":");
@@ -173,7 +181,6 @@ public final class MtExport {
             }
         }
         sb.append("-}");
-        return sb.toString();
     }
 
     private static String getMtType(AbstractMT mt) {

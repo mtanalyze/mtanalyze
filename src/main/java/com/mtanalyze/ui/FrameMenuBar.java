@@ -275,8 +275,8 @@ public final class FrameMenuBar {
         JMenu menu = new JMenu("Edit");
         menu.addMenuListener(new MenuListener() {
             @Override public void menuSelected(MenuEvent e) { menu.removeAll(); populate.accept(menu); }
-            @Override public void menuDeselected(MenuEvent e) {}
-            @Override public void menuCanceled(MenuEvent e)   {}
+            @Override public void menuDeselected(MenuEvent e) { /* nothing to do on deselect */ }
+            @Override public void menuCanceled(MenuEvent e)   { /* nothing to do on cancel */ }
         });
         return menu;
     }

@@ -22,7 +22,6 @@ import com.mtanalyze.model.MessageOrigin;
 import com.mtanalyze.model.SwiftMessage;
 import com.mtanalyze.bookmark.Bookmark;
 import com.mtanalyze.config.SystemConfig;
-import com.mtanalyze.ui.ColumnDef;
 import com.mtanalyze.parser.MtFileIO;
 import com.mtanalyze.parser.MtParser;
 import com.mtanalyze.parser.HintDictionary;
@@ -30,18 +29,11 @@ import com.mtanalyze.bookmark.BookmarkManager;
 import com.mtanalyze.export.CsvExport;
 import com.mtanalyze.export.MtExport;
 import com.mtanalyze.export.ProjectIO;
-import com.mtanalyze.ui.AppIcon;
-import com.mtanalyze.ui.FilterSupport;
 import com.mtanalyze.ui.view.BookmarkPanel;
-import com.mtanalyze.ui.view.DiffPanel;
 import com.mtanalyze.ui.view.MessageSourcePanel;
-import com.mtanalyze.ui.HelpDialog;
 import com.mtanalyze.ui.view.NotificationPanel;
-import com.mtanalyze.ui.HintDictionaryDialog;
 import com.mtanalyze.ui.view.SourcePanel;
 import com.mtanalyze.ui.view.TagView;
-import com.mtanalyze.ui.ToolbarIcons;
-import com.mtanalyze.ui.ToolWindowButton;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -49,20 +41,17 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
-import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import java.util.prefs.Preferences;
 
-public class MtAnalyzeFrame extends JFrame implements ImportContext {
+public class MtAnalyzeFrame extends JFrame {
 
     private static final String MSG_SINGULAR = " message";
     private static final String MSG_PLURAL   = " messages";
@@ -78,12 +67,12 @@ public class MtAnalyzeFrame extends JFrame implements ImportContext {
     private final List<EntrySelectionListener> selectionListeners = new ArrayList<>();
 
     // -----------------------------------------------------------------------
-    private final SystemConfig        config    = new SystemConfig();
-    private final CsvExport           csvExport = new CsvExport();
-    private final MtExport            mtExport  = new MtExport();
-    private final ImportService       importService = new ImportService();
-    private final HintDictionary      dict          = new HintDictionary();
-    private final FileImporter        importer;
+    private final transient SystemConfig        config    = new SystemConfig();
+    private final transient CsvExport           csvExport = new CsvExport();
+    private final transient MtExport            mtExport  = new MtExport();
+    private final transient ImportService       importService = new ImportService();
+    private final transient HintDictionary      dict          = new HintDictionary();
+    private final transient FileImporter        importer;
 
     // UI fields
     // -----------------------------------------------------------------------
@@ -127,7 +116,7 @@ public class MtAnalyzeFrame extends JFrame implements ImportContext {
 
     private MessageSourcePanel           messageSourcePanel;
     private BookmarkPanel              bookmarkPanel;
-    private BottomPanelController      bottomCtrl;
+    private transient BottomPanelController      bottomCtrl;
     private JPanel         navPanel;
     private CardLayout     navCardLayout;
     private JCheckBoxMenuItem    menuExplorer;
@@ -143,11 +132,11 @@ public class MtAnalyzeFrame extends JFrame implements ImportContext {
     private ToolWindowButton  explorerTwBtn;
     private ToolWindowButton  bookmarksTwBtn;
     private JSplitPane    explorerSplit;
-    private JSplitPane    bottomSplit;
+
     private ToolWindowButton       securitiesTwBtn;
     private ToolWindowButton       cashTwBtn;
     private ToolWindowButton       accountMappingTwBtn;
-    private DetailPanelController  detailCtrl;
+    private transient DetailPanelController  detailCtrl;
     private boolean       explorerCollapsed    = false;
     private final transient BookmarkManager bookmarkManager;
 
@@ -175,8 +164,8 @@ public class MtAnalyzeFrame extends JFrame implements ImportContext {
         entryPanel = new MtEntryPanel(createEntryPanelHost(), PREFS,
             new MtEntryPanel.PrefKeys(PREF_COL_ORDER, PREF_COL_VIS,
                                       PREF_QUICK_FILTER_PROFILES, PREF_COL_LAYOUT_PROFILES), dict);
+        importer = new FileImporter(createImportContext());
         initUI();
-        importer = new FileImporter(this);
     }
 
     private MtEntryPanel.Host createEntryPanelHost() {
@@ -240,8 +229,8 @@ public class MtAnalyzeFrame extends JFrame implements ImportContext {
         tagPanel = new TagView(createTagPanelHost(), PREFS, dict);
         selectionListeners.add(tagPanel);
         tagPanel.setOnComponentsToggled(active -> {
-            if (active) switchToComponents();
-            else        deactivateComponents(true);
+            if (Boolean.TRUE.equals(active)) switchToComponents();
+            else                             deactivateComponents(true);
         });
         trackFocus(tagPanel.getTable());
         bindLeftToPositionTable();
@@ -377,8 +366,7 @@ public class MtAnalyzeFrame extends JFrame implements ImportContext {
 
     private void populateEditMenu(JMenu menu) {
         java.awt.Component fo = KeyboardFocusManager.getCurrentKeyboardFocusManager().getPermanentFocusOwner();
-        if (fo instanceof JTextField) {
-            JTextField tf = (JTextField) fo;
+        if (fo instanceof JTextField tf) {
             boolean hasSel = tf.getSelectedText() != null && !tf.getSelectedText().isEmpty();
             int menuMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
             JMenuItem copyItem  = new JMenuItem("Copy",  ToolbarIcons.menuCopy());
@@ -441,8 +429,7 @@ public class MtAnalyzeFrame extends JFrame implements ImportContext {
         for (java.awt.Component c : popup.getComponents()) {
             if (c instanceof JSeparator) {
                 menu.addSeparator();
-            } else if (c instanceof JMenuItem) {
-                JMenuItem src  = (JMenuItem) c;
+            } else if (c instanceof JMenuItem src) {
                 JMenuItem copy = new JMenuItem(src.getText(), src.getIcon());
                 copy.setEnabled(src.isEnabled());
                 copy.setAccelerator(src.getAccelerator());
@@ -456,7 +443,7 @@ public class MtAnalyzeFrame extends JFrame implements ImportContext {
         AppendTextDialog.show(
             this,
             () -> promptMtType("Select the message type for this content."),
-            (text, mt) -> importer.appendFromContent(text, mt),
+                importer::appendFromContent,
             chunks -> importer.appendFromContent(chunks, null, null, MessageOrigin.NAME_VALUE)
         );
     }
@@ -751,6 +738,7 @@ public class MtAnalyzeFrame extends JFrame implements ImportContext {
     }
 
     private void assembleMainLayout(JSplitPane outerSplit) {
+        JSplitPane    bottomSplit;
         explorerTwBtn   = new ToolWindowButton("Explorer",           ToolbarIcons.folderIcon());
         bookmarksTwBtn  = new ToolWindowButton(BOOKMARKS,            ToolbarIcons.bookmarkRibbon());
         securitiesTwBtn    = new ToolWindowButton(LABEL_SECURITIES,    ToolbarIcons.securitiesIcon());
@@ -823,7 +811,7 @@ public class MtAnalyzeFrame extends JFrame implements ImportContext {
 
     private JSplitPane buildOuterSplit(JSplitPane innerSplit) {
         messageSourcePanel = new MessageSourcePanel(
-            loadExplorerRoots(), this::loadExplorerFiles, file -> importer.importDirectory(file),
+            loadExplorerRoots(), this::loadExplorerFiles, importer::importDirectory,
             this::showFileInEditor, this::saveExplorerRoots, this::collapseExplorer);
         bookmarkPanel = new BookmarkPanel(bookmarkManager, this::navigateToBookmark, this::collapseBottomPanel);
 
@@ -956,15 +944,29 @@ public class MtAnalyzeFrame extends JFrame implements ImportContext {
     }
 
     // -----------------------------------------------------------------------
-    // ImportContext implementations
+    // ImportContext – kept private so package-private types stay unexposed
     // -----------------------------------------------------------------------
 
-    @Override public Frame         frame()         { return this; }
-    @Override public SystemConfig  config()        { return config; }
-    @Override public ImportService importService() { return importService; }
+    private ImportContext createImportContext() {
+        return new ImportContext() {
+            @Override public Frame         frame()                          { return MtAnalyzeFrame.this; }
+            @Override public SystemConfig  config()                         { return MtAnalyzeFrame.this.config(); }
+            @Override public ImportService importService()                  { return MtAnalyzeFrame.this.importService(); }
+            @Override public String        promptMtType(String m)           { return MtAnalyzeFrame.this.promptMtType(m); }
+            @Override public void          onNew()                          { MtAnalyzeFrame.this.onNew(); }
+            @Override public void          onFileLoaded(ImportBatch b, File f)              { MtAnalyzeFrame.this.onFileLoaded(b, f); }
+            @Override public void          onDirectoryLoaded(ImportBatch b, File d, int n)  { MtAnalyzeFrame.this.onDirectoryLoaded(b, d, n); }
+            @Override public void          onContentAppended(ImportBatch b)                  { MtAnalyzeFrame.this.onContentAppended(b); }
+            @Override public void          onFileAppended(File f)           { MtAnalyzeFrame.this.onFileAppended(f); }
+            @Override public void          error(String m)                  { MtAnalyzeFrame.this.error(m); }
+            @Override public void          fileError(String v, Exception e) { MtAnalyzeFrame.this.fileError(v, e); }
+        };
+    }
 
-    @Override
-    public void onFileLoaded(ImportBatch batch, File file) {
+    private SystemConfig  config()        { return config; }
+    private ImportService importService() { return importService; }
+
+    private void onFileLoaded(ImportBatch batch, File file) {
         if (batch.totalParsed == 0) { error("No valid SWIFT messages found."); return; }
         tagPanel.clear();
         entryPanel.loadBatch(batch.messages, batch.columnDefs);
@@ -983,8 +985,7 @@ public class MtAnalyzeFrame extends JFrame implements ImportContext {
         if (batch.limitReached) warnLimitReached();
     }
 
-    @Override
-    public void onDirectoryLoaded(ImportBatch batch, File dir, int fileCount) {
+    private void onDirectoryLoaded(ImportBatch batch, File dir, int fileCount) {
         entryPanel.mergeBatch(batch.messages, batch.columnDefs);
         entryPanel.applyColumnPrefs();
         entryPanel.rebuildPositionTable();
@@ -1002,8 +1003,7 @@ public class MtAnalyzeFrame extends JFrame implements ImportContext {
         if (batch.limitReached) warnLimitReached();
     }
 
-    @Override
-    public void onContentAppended(ImportBatch batch) {
+    private void onContentAppended(ImportBatch batch) {
         entryPanel.mergeBatch(batch.messages, batch.columnDefs);
         entryPanel.applyColumnPrefs();
         entryPanel.rebuildPositionTable();
@@ -1012,8 +1012,7 @@ public class MtAnalyzeFrame extends JFrame implements ImportContext {
         if (batch.limitReached) warnLimitReached();
     }
 
-    @Override
-    public void onFileAppended(File file) {
+    private void onFileAppended(File file) {
         int total = entryPanel.getLoadedMessages().size();
         statusLabel.setText("Appended: " + file.getAbsolutePath());
         detailCtrl.notificationPanel().addNotification(NotificationPanel.Type.INFO, "File appended",
@@ -1043,7 +1042,7 @@ public class MtAnalyzeFrame extends JFrame implements ImportContext {
         importer.importDirectory(fc.getSelectedFile());
     }
 
-    @Override public void onNew() {
+    private void onNew() {
         detailCtrl.showCard(DetailPanelController.INSPECTOR);
         entryPanel.clear();
         entryPanel.rebuildPositionTable();
@@ -1078,7 +1077,7 @@ public class MtAnalyzeFrame extends JFrame implements ImportContext {
      * Shows a combo-box dialog asking the user to choose a message type.
      * Returns the type number (e.g. "536") or null for Auto-detect / cancelled.
      */
-    @Override public String promptMtType(String message) {
+    private String promptMtType(String message) {
         JComboBox<String> combo = new JComboBox<>(MtFileIO.getMtTypeItems());
         int result = JOptionPane.showConfirmDialog(this,
                 new Object[]{message, combo},
@@ -1121,7 +1120,7 @@ public class MtAnalyzeFrame extends JFrame implements ImportContext {
         dlg.setVisible(true);
     }
 
-    @Override public void fileError(String verb, Exception ex) {
+    private void fileError(String verb, Exception ex) {
         error("Error: " + ex.getMessage());
         JOptionPane.showMessageDialog(this, "Error " + verb + " file:\n" + ex.getMessage(),
             ERROR_TITLE, JOptionPane.ERROR_MESSAGE);
@@ -1260,15 +1259,14 @@ public class MtAnalyzeFrame extends JFrame implements ImportContext {
     }
 
     static boolean isDarkTheme(String theme) {
-        switch (theme) {
-            case "Dark": case "Darcula": return true;
-            case THEME_LIGHT: case "IntelliJ": return false;
-            default: break;
-        }
-        return false;
+        return switch (theme) {
+            case "Dark", "Darcula"      -> true;
+            case THEME_LIGHT, "IntelliJ" -> false;
+            default                      -> false;
+        };
     }
 
-    @Override public void error(String msg) {
+    private void error(String msg) {
         statusLabel.setText(msg);
         if (detailCtrl != null)
             detailCtrl.notificationPanel().addNotification(NotificationPanel.Type.ERROR, ERROR_TITLE, msg);

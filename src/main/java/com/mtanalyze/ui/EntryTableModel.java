@@ -28,8 +28,8 @@ import java.util.Map;
  */
 final class EntryTableModel extends AbstractTableModel {
 
-    private final List<Entry> allEntries;
-    private List<ColumnDef>   visibleCols = List.of();
+    private final transient List<Entry> allEntries;
+    private transient List<ColumnDef>   visibleCols = List.of();
     private boolean           seqMode     = true;
 
     private int                 cachedNoSeqRow  = -1;

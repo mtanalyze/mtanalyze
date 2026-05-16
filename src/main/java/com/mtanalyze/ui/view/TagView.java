@@ -97,8 +97,8 @@ public class TagView extends RoundedPanel implements EntrySelectionListener {
     // -----------------------------------------------------------------------
     private JComboBox<String>                                         detailFilterCombo;
     private transient java.awt.event.ActionListener                   detailFilterComboListener;
-    private final SavedDetailFilters detailFilterCodec  = new SavedDetailFilters();
-    private final DataHelper         dataHelper         = new DataHelper();
+    private final transient SavedDetailFilters detailFilterCodec  = new SavedDetailFilters();
+    private final transient DataHelper         dataHelper         = new DataHelper();
 
     private final LinkedHashMap<String, SavedDetailFilters.Profile>   savedDetailFilters = new LinkedHashMap<>();
 
@@ -579,7 +579,7 @@ public class TagView extends RoundedPanel implements EntrySelectionListener {
         if (filters.isEmpty()) {
             detailRowSorter.setRowFilter(null);
         } else if (filters.size() == 1) {
-            detailRowSorter.setRowFilter(filters.get(0));
+            detailRowSorter.setRowFilter(filters.getFirst());
         } else {
             detailRowSorter.setRowFilter(RowFilter.andFilter(filters));
         }
@@ -634,13 +634,13 @@ public class TagView extends RoundedPanel implements EntrySelectionListener {
     }
 
     private int defaultDetailColWidth(int colIndex) {
-        switch (colIndex) {
-            case 0: case 2: return 80;
-            case 1: return 50;
-            case 3: return showComponents ? 130 : 350;
-            case 4: return 250;
-            default: return 100;
-        }
+        return switch (colIndex) {
+            case 0, 2 -> 80;
+            case 1    -> 50;
+            case 3    -> showComponents ? 130 : 350;
+            case 4    -> 250;
+            default   -> 100;
+        };
     }
 
     // -----------------------------------------------------------------------

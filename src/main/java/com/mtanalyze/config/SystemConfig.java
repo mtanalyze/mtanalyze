@@ -45,7 +45,9 @@ public final class SystemConfig {
                     p.load(in);
                 }
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+            // Config file is optional; proceed with empty/default properties
+        }
         return p;
     }
 

@@ -20,6 +20,8 @@ import java.util.regex.*;
 
 public final class MtFileIO {
 
+    private MtFileIO() {}
+
     private static final String[] MT_TYPE_ITEMS = {
         "Auto-detect", "MT 527", "MT 535", "MT 536", "MT 537",
         "MT 540", "MT 541", "MT 542", "MT 543",
