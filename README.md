@@ -36,7 +36,7 @@ Built on [Prowide Core](https://github.com/prowide/prowide-core). Minimal depend
 
 **Requirements:** Java 17 or higher.
 
-MT Analyze is a single self-contained JAR — all libraries are bundled inside. No installation, no configuration files, no admin rights required.
+MT Analyze is a single self-contained JAR — all libraries are bundled inside. No installation, no admin rights required. An optional `mtanalyze.properties` file placed next to the JAR controls advanced settings (see [Configuration](#configuration)).
 
 1. Go to [Releases](https://github.com/mtanalyze/mtanalyze/releases)
 2. Download the latest `MT-Analyze-<version>.jar`
@@ -61,7 +61,7 @@ java -jar MT-Analyze-1.0.0.jar
 - **Reference Search** — resolves linked settlement messages (MT 540–548) by SEME, RELA, PREV, and TRCI reference fields.
 - **Bookmarks** — right-click any row to bookmark it with a note; bookmarks persist across sessions.
 - **Log File Import** — load SWIFT messages embedded in application log files; multi-line messages are reassembled automatically.
-- **Paste & Parse** — paste raw SWIFT text directly via **Edit → Paste MT Snippet**.
+- **Paste & Parse** — paste raw SWIFT text directly via **Edit → Paste MT Snippet**. Includes a Fix Encoding button that corrects Mainframe EBCDIC CP273 mis-conversions (`ä→{`, `ü→}`).
 - **Export** — CSV (full or component-expanded), and raw MT file export with configurable BIC headers.
 - **User Dictionary** — custom qualifier-value descriptions that extend the built-in ISO 15022 dictionary.
 - **Account Mapping** — lookup table mapping SAFE identifiers to account numbers and descriptions.
@@ -85,6 +85,21 @@ MT Analyze uses the [Prowide Core](https://github.com/prowide/prowide-core) pars
 | MT 940     | Customer Statement Message                       |
 
 Files containing multiple message types are supported. If the message type cannot be detected automatically, MT Analyze will prompt the user to select it.
+
+---
+
+## Configuration
+
+Place an `mtanalyze.properties` file next to the JAR to override defaults. All settings are optional.
+
+| Property | Default | Description |
+|---|---|---|
+| `max.entries` | `1000` | Maximum entries loaded per session |
+| `log.swift.start` | `{1:` | String marking the start of an embedded SWIFT message in log files |
+| `log.newline.token` | `\n` | Token representing a newline within a log-embedded message |
+| `experimental.mode` | `false` | Enable work-in-progress features |
+
+A documented template is available in [`doc/mtanalyze.properties`](doc/mtanalyze.properties).
 
 ---
 

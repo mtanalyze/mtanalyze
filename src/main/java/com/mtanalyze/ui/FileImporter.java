@@ -62,9 +62,11 @@ final class FileImporter {
                 chunks = MtFileIO.splitCsvIntoSwiftMessages(content);
             } else {
                 origin = MessageOrigin.SWIFT_FILE;
-                mtOverride = MtFileIO.tryDetectMtType(content);
-                if (mtOverride == null && MtFileIO.needsMtTypeOverride(content))
-                    mtOverride = ctx.promptMtType("Select the message type for: " + file.getName());
+                if (!MtFileIO.isNameValueContent(content)) {
+                    mtOverride = MtFileIO.tryDetectMtType(content);
+                    if (mtOverride == null && MtFileIO.needsMtTypeOverride(content))
+                        mtOverride = ctx.promptMtType("Select the message type for: " + file.getName());
+                }
                 chunks = MtFileIO.splitIntoMessages(content);
             }
             ImportBatch batch = ctx.importService().parseChunks(
@@ -89,9 +91,12 @@ final class FileImporter {
                     MtFileIO.splitCsvIntoSwiftMessages(content),
                     null, file.getAbsolutePath(), MessageOrigin.NAME_VALUE);
             } else {
-                String mtOverride = MtFileIO.tryDetectMtType(content);
-                if (mtOverride == null && MtFileIO.needsMtTypeOverride(content))
-                    mtOverride = ctx.promptMtType("Select the message type for: " + file.getName());
+                String mtOverride = null;
+                if (!MtFileIO.isNameValueContent(content)) {
+                    mtOverride = MtFileIO.tryDetectMtType(content);
+                    if (mtOverride == null && MtFileIO.needsMtTypeOverride(content))
+                        mtOverride = ctx.promptMtType("Select the message type for: " + file.getName());
+                }
                 parsed = appendFromContent(
                     MtFileIO.splitIntoMessages(content),
                     mtOverride, file.getAbsolutePath(), MessageOrigin.SWIFT_FILE);

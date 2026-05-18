@@ -259,7 +259,7 @@ public final class MtFileIO {
     }
 
     /** Returns true if the first non-empty line of content has more than NAME_VALUE_MIN_SEPARATORS semicolons. */
-    private static boolean isNameValueContent(String content) {
+    public static boolean isNameValueContent(String content) {
         for (String line : content.split(NEWLINE_PATTERN)) {
             String trimmedLine = line.trim();
             if (!trimmedLine.isEmpty()) return isNameValueLine(trimmedLine);
@@ -351,7 +351,9 @@ public final class MtFileIO {
      * that affects SWIFT block delimiters: ä→{  ü→}
      */
     public static String fixMainframeEncoding(String text) {
-        return text.replace('ä', '{').replace('ü', '}');
+        return text.replace("\"00ä", "\"{")
+                   .replace('ä', '{')
+                   .replace('ü', '}');
     }
 
     public static String stripIndentation(String text) {

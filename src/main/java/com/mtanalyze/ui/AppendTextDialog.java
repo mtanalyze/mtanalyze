@@ -148,9 +148,12 @@ public final class AppendTextDialog {
         if (MtFileIO.isCsvSwiftContent(raw))
             return onParseCsv.applyAsInt(MtFileIO.splitCsvIntoSwiftMessages(raw));
         String text = MtFileIO.stripIndentation(raw);
-        String mtOverride = MtFileIO.tryDetectMtType(text);
-        if (mtOverride == null && MtFileIO.needsMtTypeOverride(text))
-            mtOverride = promptMtType.get();
+        String mtOverride = null;
+        if (!MtFileIO.isNameValueContent(text)) {
+            mtOverride = MtFileIO.tryDetectMtType(text);
+            if (mtOverride == null && MtFileIO.needsMtTypeOverride(text))
+                mtOverride = promptMtType.get();
+        }
         return onParseText.apply(text, mtOverride);
     }
 }
