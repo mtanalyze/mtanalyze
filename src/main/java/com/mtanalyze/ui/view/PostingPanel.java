@@ -251,7 +251,7 @@ public abstract class PostingPanel extends RoundedPanel implements EditMenuContr
             }
         }
         if (rows.isEmpty()) return;
-        String[] headers = rows.getFirst();
+        String[] headers = rows.get(0);
         tableModel.setColumnIdentifiers(headers);
         tableModel.setRowCount(0);
         for (int i = 1; i < rows.size(); i++) {

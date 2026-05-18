@@ -14,9 +14,27 @@ Built on [Prowide Core](https://github.com/prowide/prowide-core). Minimal depend
 
 ---
 
+## Screenshots
+
+**Entries table with Tag View**
+![Tag View](doc/images/tag_view.png)
+
+**Entries table with Components View**
+![Tag View](doc/images/component_view.png)
+
+
+**Entries table with Diff View**
+![Tag View](doc/images/diff_view.png)
+
+
+**Entries table with Source View**
+![Source View](doc/images/source_view.png)
+
+---
+
 ## Getting Started
 
-**Requirements:** Java 21 or higher.
+**Requirements:** Java 17 or higher.
 
 MT Analyze is a single self-contained JAR — all libraries are bundled inside. No installation, no configuration files, no admin rights required.
 

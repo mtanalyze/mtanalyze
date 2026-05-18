@@ -353,7 +353,7 @@ public class MessageSourcePanel extends RoundedPanel implements EditMenuContribu
         if (selected.size() != 1) return;
         if (popup.getComponentCount() > 0) popup.addSeparator();
         JMenuItem item = new JMenuItem("View Source", ToolbarIcons.menuViewInEditor());
-        item.addActionListener(ae -> onViewInEditor.accept(selected.getFirst()));
+        item.addActionListener(ae -> onViewInEditor.accept(selected.get(0)));
         popup.add(item);
     }
 
@@ -419,7 +419,7 @@ public class MessageSourcePanel extends RoundedPanel implements EditMenuContribu
         if (root != null && c.isShowing()) {
             Point p = SwingUtilities.convertPoint(c, 0, 0, root);
             int localY = root.getHeight() / 3 - p.y - blockH / 2;
-            return Math.clamp(localY, 4, c.getHeight() - blockH - 4);
+            return Math.max(4, Math.min(localY, c.getHeight() - blockH - 4));
         }
         return (c.getHeight() - blockH) / 2;
     }

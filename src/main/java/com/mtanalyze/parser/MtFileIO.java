@@ -419,12 +419,13 @@ public final class MtFileIO {
     /**
      * Converts the Name-Value format (...;N_TAG:QUAL=VALUE;...)
      * into SWIFT block 4 content.
-     * Section prefix format: {Letter}{optional-digit}_{tag}, e.g. A_28E, A1_95P, B_98B.
+     * Section prefix format: {Letter}{optional-digit}_{tag} or {digits}_{tag},
+     * e.g. A_28E, A1_95P, B_98B, 1_16R, 10_22F.
      * Optional whitespace before the colon separator is tolerated.
      */
     public static String convertNameValueToBlock4(String content) {
         StringBuilder sb  = new StringBuilder();
-        Pattern       pat = Pattern.compile("^[A-Z]\\d*_(\\d{2}[A-Z]+\\s*:.*)$");
+        Pattern       pat = Pattern.compile("^(?:[A-Z]\\d*|\\d+)_(\\d{2}[A-Z]+\\s*:.*)$");
         String decoded = decodeXmlCharRefs(content.trim());
         for (String part : decoded.split(";")) {
             processNameValuePart(part.trim(), sb, pat);
