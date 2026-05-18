@@ -579,7 +579,7 @@ public class TagView extends RoundedPanel implements EntrySelectionListener {
         if (filters.isEmpty()) {
             detailRowSorter.setRowFilter(null);
         } else if (filters.size() == 1) {
-            detailRowSorter.setRowFilter(filters.getFirst());
+            detailRowSorter.setRowFilter(filters.get(0));
         } else {
             detailRowSorter.setRowFilter(RowFilter.andFilter(filters));
         }

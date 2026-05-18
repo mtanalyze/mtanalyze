@@ -229,7 +229,7 @@ class BottomPanelController {
                 accountMappingPanel.setFinFilterOrMode(!accountMappingPanel.isFinFilterOrMode());
                 or = accountMappingPanel.isFinFilterOrMode();
             }
-            case null, default -> {
+            default -> {
                 return;
             }
         }

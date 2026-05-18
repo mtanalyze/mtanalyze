@@ -183,7 +183,7 @@ final class FileImporter {
 
             @Override
             protected void process(List<Integer> chunks) {
-                int n = chunks.getLast();
+                int n = chunks.get(chunks.size() - 1);
                 bar.setValue(n);
                 bar.setString(n + " / " + files.length);
             }
@@ -233,7 +233,7 @@ final class FileImporter {
 
             @Override
             protected void process(List<Integer> vals) {
-                int v = vals.getLast();
+                int v = vals.get(vals.size() - 1);
                 if (v <= 0) {
                     bar.setIndeterminate(false);
                     bar.setMaximum(Math.max(1, -v));

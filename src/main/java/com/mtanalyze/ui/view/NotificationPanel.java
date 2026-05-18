@@ -99,7 +99,7 @@ public class NotificationPanel extends RoundedPanel {
     }
 
     public void addNotification(Type type, String title, String message) {
-        entries.addFirst(new Entry(type, title, message));
+        entries.add(0, new Entry(type, title, message));
         refresh();
         if (onAdded != null) onAdded.run();
     }

@@ -121,7 +121,7 @@ class DetailPanelController {
         FrameToolbars.styleDetailButton(compareBtn);
         FrameToolbars.styleDetailButton(editorBtn);
         return FrameToolbars.buildDetailRight(FrameToolbars.separatorBorder(true),
-            notifBtn, tagBtn, compareBtn, editorBtn, tagPanel.componentsToggle());
+                notifBtn, tagBtn, tagPanel.componentsToggle(), compareBtn, editorBtn);
     }
 
     void setSplit(JSplitPane split) { this.split = split; }
@@ -131,6 +131,9 @@ class DetailPanelController {
     // -----------------------------------------------------------------------
 
     void showCard(String card) {
+        if (INSPECTOR.equals(card) && tagPanel.isComponentsMode()) {
+            tagPanel.rebuildModel(false);
+        }
         activeCard = card;
         if (INSPECTOR.equals(card) && titleLabel != null) titleLabel.setText("Tags");
         updateTwButtons(card);
@@ -138,6 +141,8 @@ class DetailPanelController {
         syncTwButtons();
         if (collapsed) toggle();
     }
+
+    void syncButtons() { syncTwButtons(); }
 
     void showComponentsMode() {
         activeCard = INSPECTOR;

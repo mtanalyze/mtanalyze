@@ -59,9 +59,9 @@ public final class DiffPanel extends JPanel implements EntrySelectionListener {
         List<String> labels   = new ArrayList<>();
         List<List<String[]>> rows = new ArrayList<>();
         for (int i = 0; i < entries.size(); i++) {
-            Entry e   = entries.get(i);
+            Entry e    = entries.get(i);
             String seq = e.getValue(MtParser.SEQ_KEY);
-            labels.add(seq.isEmpty() ? "#" + (i + 1) : seq);
+            labels.add("Entry " + (i + 1));
             rows.add(collectEntryRows(e.fullDisplaySequence(), baseSeq(seq)));
         }
         removeAll();

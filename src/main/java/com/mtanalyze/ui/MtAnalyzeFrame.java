@@ -561,6 +561,7 @@ public class MtAnalyzeFrame extends JFrame {
         detailCtrl.resetTitleToTags();
         if (!tagPanel.isComponentsMode()) return;
         if (rebuildModel) tagPanelRebuild(false);
+        detailCtrl.syncButtons();
     }
 
     private void switchToComponents() {
@@ -856,10 +857,10 @@ public class MtAnalyzeFrame extends JFrame {
 
     private void loadExplorerFiles(List<File> files) {
         if (files.isEmpty()) return;
-        if (files.size() == 1) { importer.loadFile(files.getFirst()); return; }
+        if (files.size() == 1) { importer.loadFile(files.get(0)); return; }
         File[] arr = files.toArray(new File[0]);
-        File dir = files.getFirst().getParentFile();
-        importer.importFileBatch(arr, dir != null ? dir : files.getFirst());
+        File dir = files.get(0).getParentFile();
+        importer.importFileBatch(arr, dir != null ? dir : files.get(0));
     }
 
     private void saveWindowPrefs() {

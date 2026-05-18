@@ -121,7 +121,7 @@ final class EntryPanelModel {
             if (knownKeys.add(MT_COL_KEY)) outCols.add(new ColumnDef("", "_MT_", "", 1, MT_COL_LABEL));
             newEntries.forEach(e -> e.data().put(MT_COL_KEY, mtType));
         }
-        if (knownKeys.add(TYPE_COL_KEY)) outCols.addFirst(new ColumnDef("", "_TYPE_", "", 1, "Typ"));
+        if (knownKeys.add(TYPE_COL_KEY)) outCols.add(0, new ColumnDef("", "_TYPE_", "", 1, "Typ"));
         newEntries.forEach(e -> e.data().put(TYPE_COL_KEY, computeEntryType(e.data())));
         String fileLabel = fileLabel(msg);
         if (fileLabel != null) {
@@ -254,7 +254,7 @@ final class EntryPanelModel {
         allColumnDefs.forEach(cd -> knownKeys.add(cd.key));
         for (ColumnDef cd : incoming) {
             if (!knownKeys.add(cd.key)) continue;
-            if (TYPE_COL_KEY.equals(cd.key)) allColumnDefs.addFirst(cd);
+            if (TYPE_COL_KEY.equals(cd.key)) allColumnDefs.add(0, cd);
             else allColumnDefs.add(cd);
         }
     }
@@ -269,7 +269,7 @@ final class EntryPanelModel {
     private void addSystemNoSeqColumnDefs(Set<String> knownKeys) {
         for (ColumnDef cd : allColumnDefs) {
             if (cd.tagName.startsWith("_") && knownKeys.add(cd.key)) {
-                if (TYPE_COL_KEY.equals(cd.key)) allNoSeqColumnDefs.addFirst(cd);
+                if (TYPE_COL_KEY.equals(cd.key)) allNoSeqColumnDefs.add(0, cd);
                 else allNoSeqColumnDefs.add(cd);
             }
         }
