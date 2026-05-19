@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.mtanalyze</groupId>
-    <artifactId>mtsrc/main/java/com/mtanalyze/parser/MtFileIO.javaanalyze</artifactId>
+    <artifactId>mtanalyze</artifactId>
     <version>0.9.7</version>
     <packaging>jar</packaging>
 
