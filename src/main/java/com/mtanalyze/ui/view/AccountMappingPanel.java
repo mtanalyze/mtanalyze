@@ -76,6 +76,7 @@ public class AccountMappingPanel extends RoundedPanel implements EditMenuContrib
     }
 
     public JTable      getTable()     { return table; }
+    @Override
     public JPopupMenu  getPopupMenu() { return buildPopup(); }
 
     public boolean isFinFilterOrMode() { return finFilterRow.isOrMode(); }

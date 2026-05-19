@@ -208,6 +208,7 @@ public abstract class PostingPanel extends RoundedPanel implements EditMenuContr
         applyFilters();
     }
 
+    @Override
     public JPopupMenu getPopupMenu() {
         copyCellItem.setEnabled(FilterSupport.hasCellSelection(table));
         return popupMenu;

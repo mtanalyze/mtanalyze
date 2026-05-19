@@ -523,9 +523,6 @@ public class TagView extends RoundedPanel implements EntrySelectionListener {
         });
     }
 
-    // SonarQube S4968 suppressed: this method intentionally delegates quick-filter evaluation
-    // to FilterSupport.passesQuickFilter(...), so no local stream/loop refactor is applied here.
-    @SuppressWarnings("java:S4968")
     private void buildDetailQuickFilter(List<RowFilter<DefaultTableModel, Integer>> filters) {
         if (detailFinFilterRow == null) return;
         Map<Integer, String> quickFilters = detailFinFilterRow.getActiveFilters();
@@ -730,7 +727,7 @@ public class TagView extends RoundedPanel implements EntrySelectionListener {
                 try {
                     area.getHighlighter().addHighlight(idx, idx + st.length(), HIGHLIGHT_PAINTER);
                 } catch (javax.swing.text.BadLocationException ex) {
-                    // position is derived from the same string – cannot occur
+                    throw new AssertionError("Highlight position out of range – idx derived from same text", ex);
                 }
                 idx = lower.indexOf(st, idx + 1);
             }

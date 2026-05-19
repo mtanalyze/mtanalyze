@@ -51,8 +51,8 @@ final class EntryPanelModel {
     private boolean              seqMode            = true;
 
     // ── Package-private accessors (EntryTableModel + column-pref methods) ─
-    List<Entry>    allEntries() { return allEntries; }
-    List<ColumnDef> columnDefs() { return allColumnDefs; }
+    List<Entry>     allEntries() { return Collections.unmodifiableList(allEntries); }
+    List<ColumnDef> columnDefs() { return Collections.unmodifiableList(allColumnDefs); }
 
     // ── Public accessors ───────────────────────────────────────────────────
     public Project            getProject()        { return project; }

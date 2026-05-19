@@ -314,6 +314,7 @@ public class MessageSourcePanel extends RoundedPanel implements EditMenuContribu
         if (row >= 0 && !tree.isRowSelected(row)) tree.setSelectionRow(row);
     }
 
+    @Override
     public JPopupMenu getPopupMenu() { return buildContextMenu(); }
 
     private JPopupMenu buildContextMenu() {

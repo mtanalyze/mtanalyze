@@ -50,7 +50,7 @@ public final class MtFileIO {
     private static final int MULTI_LINE_NV_MIN_FIELD_LINES = 3;
     /** Detects a SWIFT field line in multi-line name-value format: PREFIX[_ ]TAG:...=... */
     private static final Pattern MULTI_LINE_NV_FIELD_PAT =
-        Pattern.compile("^(?:[A-Z][A-Z0-9]*|\\d+)[_ ]\\d{2}[A-Z]+\\s*:.*=.*$");
+        Pattern.compile("^(?:[A-Z][A-Z0-9]*|\\d+)[_ ]\\d{2}[A-Z]+\\s*:[^=]*=.*$");
     /** Parses a field line; groups: (1) tag, (2) qualifier, (3) value. */
     private static final Pattern MULTI_LINE_NV_PARSE_PAT =
         Pattern.compile("^(?:[A-Z][A-Z0-9]*|\\d+)[_ ](\\d{2}[A-Z]+)\\s*:\\s*([A-Z0-9]*)\\s*=\\s*(.*)$");
@@ -271,7 +271,20 @@ public final class MtFileIO {
             }
             return msgs.isEmpty() ? Collections.singletonList(trimmed) : msgs;
         }
+        if (trimmed.contains("{1:")) {
+            List<String> msgs = splitOnBlock1Boundaries(trimmed);
+            if (!msgs.isEmpty()) return msgs;
+        }
         return Collections.singletonList(trimmed);
+    }
+
+    private static List<String> splitOnBlock1Boundaries(String content) {
+        List<String> msgs = new ArrayList<>();
+        for (String part : content.split("(?=\\{1:)")) {
+            String msg = part.trim();
+            if (isCompleteSwiftMessage(msg)) msgs.add(deduplicateBlockClose(msg));
+        }
+        return msgs;
     }
 
     private static List<String> splitMultiLineNameValueMessages(String content) {
@@ -280,19 +293,19 @@ public final class MtFileIO {
         for (String line : content.split(NEWLINE_PATTERN)) {
             String t = line.trim();
             if (t.matches("MT\\s*=\\s*\\d{3}")) {
-                if (current != null) {
-                    String msg = current.toString().trim();
-                    if (!msg.isEmpty()) messages.add(msg);
-                }
+                collectNvMessage(current, messages);
                 current = new StringBuilder();
             }
             if (current != null) current.append(t).append('\n');
         }
-        if (current != null) {
-            String msg = current.toString().trim();
-            if (!msg.isEmpty()) messages.add(msg);
-        }
+        collectNvMessage(current, messages);
         return messages.isEmpty() ? Collections.singletonList(content.trim()) : messages;
+    }
+
+    private static void collectNvMessage(StringBuilder current, List<String> messages) {
+        if (current == null) return;
+        String msg = current.toString().trim();
+        if (!msg.isEmpty()) messages.add(msg);
     }
 
     /** Returns true if the first non-empty line of content has more than NAME_VALUE_MIN_SEPARATORS semicolons. */
@@ -389,10 +402,14 @@ public final class MtFileIO {
         int last = 0;
         while (m.find()) {
             sb.append(s, last, m.start());
-            int cp = m.group(1) != null
-                ? Integer.parseInt(m.group(1), 16)
-                : Integer.parseInt(m.group(2));
-            sb.appendCodePoint(cp);
+            try {
+                int cp = m.group(1) != null
+                    ? Integer.parseInt(m.group(1), 16)
+                    : Integer.parseInt(m.group(2));
+                sb.appendCodePoint(cp);
+            } catch (IllegalArgumentException ignored) {
+                sb.append(m.group());  // keep original text for out-of-range references
+            }
             last = m.end();
         }
         sb.append(s, last, s.length());

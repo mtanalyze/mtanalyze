@@ -42,7 +42,6 @@ import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
-import java.awt.Desktop;
 import java.io.File;
 import java.net.URI;
 import java.util.*;
@@ -513,8 +512,8 @@ public class MtEntryPanel extends JPanel {
                             "https://www.iso20022.org/15022/uhb/finmt" + mtNum.toLowerCase() + ".htm"));
                     } catch (Exception ex) {
                         JOptionPane.showMessageDialog(MtEntryPanel.this,
-                            "Browser konnte nicht geöffnet werden:\n" + ex.getMessage(),
-                            "Fehler", JOptionPane.ERROR_MESSAGE);
+                            "Browser could not be opened:\n" + ex.getMessage(),
+                            "Error", JOptionPane.ERROR_MESSAGE);
                     }
                 });
                 popup.add(isoDocItem);
@@ -990,7 +989,7 @@ public class MtEntryPanel extends JPanel {
     }
 
     private void applyColumnLayout(LinkedHashMap<String, String> layout) {
-        List<ColumnDef> cols = model.columnDefs();
+        List<ColumnDef> cols = new ArrayList<>(model.columnDefs());
         Map<String, ColumnDef> byKey = new LinkedHashMap<>();
         for (ColumnDef cd : cols) byKey.put(cd.key.replace('\t', '|'), cd);
         List<ColumnDef> ordered = new ArrayList<>(cols.size());
@@ -1064,7 +1063,7 @@ public class MtEntryPanel extends JPanel {
         if (orderPref.isEmpty()) return;
         String[] savedKeys = orderPref.split("\n", -1);
         String[] savedVis  = visPref.split("\n", -1);
-        List<ColumnDef> cols = model.columnDefs();
+        List<ColumnDef> cols = new ArrayList<>(model.columnDefs());
         Map<String, ColumnDef> byKey = new LinkedHashMap<>();
         for (ColumnDef cd : cols) byKey.put(cd.key, cd);
         List<ColumnDef> ordered = new ArrayList<>(cols.size());

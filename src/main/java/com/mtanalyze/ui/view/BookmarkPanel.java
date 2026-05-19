@@ -106,6 +106,7 @@ public class BookmarkPanel extends RoundedPanel implements EditMenuContributor {
         onCollapse.run();
     }
 
+    @Override
     public JPopupMenu getPopupMenu() {
         boolean hasSelection = table.getSelectedRow() >= 0;
         JPopupMenu popup = new JPopupMenu();
