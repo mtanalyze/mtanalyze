@@ -1,0 +1,368 @@
+qualifier;value;description
+# -----------------------------------------------------------------------
+# MT 940 / MT 950 – component-label-based value lookups
+# The detail-table tooltip renderer first tries the component label as
+# the qualifier, so these entries appear as value tooltips automatically.
+# -----------------------------------------------------------------------
+
+# D/C Mark (fields :60F: :60M: :61: :62F: :62M: :64: :65:)
+D/C Mark;C;Credit – funds credited to the account (balance increases)
+D/C Mark;D;Debit – funds debited from the account (balance decreases)
+D/C Mark;RC;Reversal of Credit – correction entry reversing a previous credit
+D/C Mark;RD;Reversal of Debit – correction entry reversing a previous debit
+
+# Transaction Type Indicator (field :61: component 6)
+Transaction Type;S;SWIFT transfer – transaction was initiated via the SWIFT network
+Transaction Type;N;Non-SWIFT – transaction with no SWIFT-specific information
+Transaction Type;F;First Advice – first advice of a SWIFT-initiated transaction
+
+# -----------------------------------------------------------------------
+# MT 5xx – qualifier-based value lookups (existing entries below)
+# -----------------------------------------------------------------------
+
+# Beneficial Ownership Indicator (BENE qualifier in 22F)
+BENE;NBEN;NCBO - No Change of Beneficial Ownership (NCBO)
+BENE;YBEN;CBO - Change of Beneficial Ownership (CBO)
+
+# Block Trade Indicator (BLOC qualifier in 22F)
+BLOC;BLCH;Block Trade Child - Transaction is a block trade child
+BLOC;BLPA;Block Trade Parent - Transaction is a block trade parent
+
+# Corporate Action Event Type (CAEV qualifier in 22F)
+CAEV;ACCU;Accumulation - Funds related event in which the income (for example accumulation units) that accrues during an accounting ...
+CAEV;ACTV;Trading Status: Active - Trading in the security has commenced or security has been re-activated after a suspension in trading
+CAEV;ATTI;Attachment - Combination of different security types to create a unit
+CAEV;BIDS;Repurchase Offer/Issuer Bid/Reverse Rights - Offer to existing holders by the issuing company to repurchase its own securities
+CAEV;BMET;Bond Holder Meeting - Physical meeting of bond holders
+CAEV;BONU;Bonus Issue/Capitalisation Issue - Bonus or capitalisation issue
+CAEV;BPUT;Put Redemption - Early redemption of a security at the election of the holder subject to the terms and condition of the issu...
+CAEV;BRUP;Bankruptcy - Legal status of a company unable to pay creditors
+CAEV;CAPD;Capital Distribution - The corporate event pays shareholders an amount in cash issued from the capital account
+CAEV;CAPG;Capital Gains Distribution - Distribution of profits resulting from the sale of company assets, for example, Shareholders of Mutual Fund...
+CAEV;CAPI;Capitalisation - Increase of the current principal of a debt instrument without increasing the nominal value
+CAEV;CERT;Non-US TEFRA D Certification - Non-US beneficial owner certification requirement for exchange of temporary to permanent notes
+CAEV;CHAN;Change - Information regarding a change further described in the corporate action details
+CAEV;CLSA;Class Action/Proposed Settlement - Situation where interested parties seek restitution for financial loss
+CAEV;CMET;Court Meeting - Announcement of a meeting at a Court
+CAEV;CONS;Consent - Procedure that aims to obtain consent of holder to a proposal by the issuer or a third party without conven...
+CAEV;CONV;Conversion - Conversion of securities (generally convertible bonds or preferred shares) into another form of securities ...
+CAEV;COOP;Company Option - A company option may be granted by the company, allowing the holder to take up shares at some future date(s...
+CAEV;CREV;Credit Event - An occurrence of credit derivative for which the issuer of one or several underlying securities is unable t...
+CAEV;DECR;Decrease in Value - Reduction of face value of a single share or the value of fund assets
+CAEV;DETI;Detachment - Separation of components that comprise a security, for example, usually units comprised of warrants and bon...
+CAEV;DFLT;Bond Default - Failure by the company to perform obligations defined as default events under the bond agreement and that h...
+CAEV;DLST;Trading Status: Delisted - Security is no longer able to comply with the listing requirements of a stock exchange and is removed from ...
+CAEV;DRAW;Drawing - Securities are redeemed in part before the scheduled final maturity date
+CAEV;DRCA;Cash Distribution From Non-Eligible Securities Sales - Distribution to shareholders of cash resulting from the selling of non-eligible securities, for example, in...
+CAEV;DRIP;Dividend Reinvestment - Dividend payment where holders can keep cash or have the cash reinvested in the market by the issuer into a...
+CAEV;DSCL;Disclosure - Requirement for holders or beneficial owners to disclose their name, location and holdings of any issue to ...
+CAEV;DTCH;Dutch Auction - An action by a party wishing to acquire a security
+CAEV;DVCA;Cash Dividend - Distribution of cash to holders, in proportion to their equity holding
+CAEV;DVOP;Dividend Option - Distribution of a dividend to holders with a choice of benefit to receive additional securities or cash
+CAEV;DVSC;Scrip Dividend/Payment - Dividend or interest paid in the form of scrip
+CAEV;DVSE;Stock Dividend - Dividend paid to shareholders in the form of equities of the issuing corporation
+CAEV;EXOF;Exchange - Exchange of holdings for other securities and/or cash
+CAEV;EXRI;Call on Intermediate Securities - Call or exercise on nil paid securities or intermediate securities resulting from an intermediate securitie...
+CAEV;EXTM;Maturity Extension - As stipulated in the security's Terms and Conditions, the issuer or the holder may prolong the maturity dat...
+CAEV;EXWA;Warrant Exercise - Option offered to holders to buy (call warrant) or to sell (put warrant) a specific amount of stock, cash, ...
+CAEV;INCR;Increase in Value - Increase in the face value of a single security
+CAEV;INFO;Information - Information provided by the issuer having no accounting/financial impact on the holder
+CAEV;INTR;Interest Payment - Interest payment distributed to holders of an interest bearing asset
+CAEV;LIQU;Liquidation Dividend/Liquidation Payment - A distribution of cash, assets or both
+CAEV;MCAL;Full Call/Early Redemption - The redemption of an entire issue outstanding of securities, for example, bonds, preferred equity, funds, b...
+CAEV;MEET;Annual General Meeting - Annual general meeting
+CAEV;MRGR;Merger - Exchange of outstanding securities, initiated by the issuer which may include options, as the result of two...
+CAEV;NOOF;Non-Official Offer - Offers that are not supervised or regulated by an official entity and being offered by a party, for example...
+CAEV;ODLT;Odd Lot Sale/Purchase - Sale or purchase of odd-lots to/from the issuing company, initiated either by the holder of the security or...
+CAEV;OMET;Ordinary General Meeting - Ordinary general meeting
+CAEV;OTHR;Other Event - Other event, use only when no other event type applies, for example, a new event type
+CAEV;PARI;Pari-Passu - Occurs when securities with different characteristics, for example, shares with different entitlements to d...
+CAEV;PCAL;Partial Redemption Without Pool Factor Reduction - Securities are redeemed in part before their scheduled final maturity date
+CAEV;PDEF;Partial Defeasance/Pre-Funding - Issuer has money set aside to redeem a portion of an issue and the indenture states that the securities cou...
+CAEV;PINK;Pay In Kind - Interest payment, in any kind except cash, distributed to holders of an interest bearing asset
+CAEV;PLAC;Place of Incorporation - Changes in the state of incorporation for US companies and changes in the place of incorporation for foreig...
+CAEV;PPMT;Instalment Call - An instalment towards the purchase of equity capital, subject to an agreement between an issuer and a purch...
+CAEV;PRED;Partial Redemption With Pool Factor Reduction - Securities are redeemed in part before their scheduled final maturity date
+CAEV;PRIO;Priority Issue - Form of open or public offer where, due to a limited amount of securities available, priority is given to e...
+CAEV;RCLA;Reclassification - Securities related event which reclassifies the distribution in various types of income for US tax withhold...
+CAEV;REDM;Final Maturity - The redemption of an entire issue outstanding of securities, for example, bonds, preferred equity, funds, b...
+CAEV;REDO;Redenomination - Event by which the unit (currency and/or nominal) of a security is restated, for example, nominal/par value...
+CAEV;REMK;Remarketing Agreement - Purchase and sale of remarketed preferred equities/bonds through the negotiation of interest rate between t...
+CAEV;RHDI;Intermediate Securities Distribution - The distribution of intermediate securities that gives the holder the right to take part in a future event
+CAEV;RHTS;Rights Issue/Subscription Rights/Rights Offer - Offer to holders of a security to subscribe for additional securities via the distribution of an intermedia...
+CAEV;SHPR;Shares Premium Dividend - This corporate event pays shareholders an amount in cash issued from the shares premium reserve
+CAEV;SMAL;Smallest Negotiable Unit - Modification of the smallest negotiable unit of shares in order to obtain a new negotiable unit
+CAEV;SOFF;Spin-Off - A distribution of securities issued by another company
+CAEV;SPLF;Stock Split/Change in Nominal Value/Subdivision - Increase in a corporation's number of outstanding equities without any change in the shareholder's equity o...
+CAEV;SPLR;Reverse Stock Split/Change in Nominal Value - Decrease in a company's number of outstanding equities without any change in the shareholder's equity or th...
+CAEV;SUSP;Trading Status: Suspended - Trading in the security has been suspended
+CAEV;TEND;Tender/Acquisition/Takeover/Purchase Offer - An offer made to holders by a third party, requesting them to sell (tender) or exchange their securities
+CAEV;TNDP;Tax On Non-Distributed Proceeds - Taxable component on non-distributed proceeds, for example, Australian deemed income or US 871m income regu...
+CAEV;TREC;Tax Reclaim - Event related to tax reclaim activities
+CAEV;WRTH;Worthless - Booking out of valueless securities
+CAEV;WTRC;Withholding Tax Relief Certification - Certification process for withholding tax reduction or exemption based on the tax status of the holder
+CAEV;XMET;Extraordinary or Special General Meeting - Extraordinary or special general meeting
+
+# Cash Settlement System Indicator (CASY qualifier in 22F)
+CASY;GROS;Gross Settlement System - Settle money through gross settlement system
+CASY;NETS;Net Settlement System - Settle money through net settlement system
+
+# CCP Eligibility Indicator (CCPT qualifier in 22F)
+CCPT;NCCP;Not CCP Eligible - Settlement instruction is not CCP eligible
+CCPT;YCCP;CCP Eligible - Settlement instruction is CCP eligible
+
+# Complete/Updates Indicator (CODE qualifier in 22F)
+CODE;COMP;Complete - Statement gives complete information (including information (positions, instruction statuses) which is unch...
+CODE;DELT;Delta - Statement contains changes which have not yet been reported (delta report, that is, changes only)
+
+# Letter of Guarantee Indicator (LEOG qualifier in 22F)
+LEOG;NLEG;Letter of Guarantee Not Accepted - Letter of guarantee is not accepted
+LEOG;YLEG;Letter of Guarantee Accepted - Letter of guarantee is accepted
+
+# Market/Client Side Indicator (MACL qualifier in 22F)
+MACL;CLNT;Client Side - Instruction is for a client side transaction
+MACL;MAKT;Market Side - Instruction is for a market side transaction
+
+# Movement Status (MOVE qualifier in 25D)
+MOVE;REVE;Reversal - Reversal of a previously reported movement
+
+# Netting Eligibility Indicator (NETT qualifier in 22F)
+NETT;NNET;Not Netting Eligible - Settlement instruction is not eligible for netting
+NETT;YNET;Netting Eligible - Settlement instruction is eligible for netting
+
+# Payment Indicator (PAYM qualifier in 22H)
+PAYM;APMT;Against Payment - Against payment
+PAYM;FREE;Free - Free
+
+# Receive/Deliver Indicator (REDE qualifier in 22H)
+REDE;DELI;Deliver - Financial Instruments have been debited from the safekeeping account
+REDE;RECE;Receive - Financial Instruments have been credited to the safekeeping account
+
+# Registration Indicator (REGT qualifier in 22F)
+REGT;NREG;Street Name - Hold the securities in street name
+REGT;YREG;Register - Register on receipt
+
+# Repurchase Type Indicator (REPT qualifier in 22F)
+REPT;CADJ;Swap/Substitution - Relates to a repo collateral substitution
+REPT;CALL;Repo Call - Relates to the early closing/maturity date for a term repo or the termination date of an open repo with und...
+REPT;PADJ;Principal/Exposure Adjustment - Relates to a principal adjustment
+REPT;PAIR;Pair-Off - Relates to a repo that is part of a pair-off
+REPT;RATE;Repo Rate - Relates to a change in the repo rate
+REPT;ROLP;Repo Contract Rollover - Relates to a repo rollover of a contract extending the closing or maturity date without impacting underlyin...
+REPT;TOPU;Top-Up - Relates to a cover of securities position due to deficit of collateral following mark to market valuation
+REPT;WTHD;Withdrawal - Relates to a return of securities position due to excess of collateral following mark to market valuation
+
+# Transfer Restriction Indicator (REST qualifier in 22F)
+REST;144A;Pursuant to 144A - Ownership or transfer of an unregistered security issued, pursuant to US legal restrictions 144A
+REST;NRST;Not Subject to Restrictions - Ownership or transfer of a security that is not subject to restrictions
+REST;RSTR;Subject to Restrictions (not pursuant to 144A) - Ownership or transfer of a security that is subject to restrictions, and not pursuant to 144A
+
+# RTGS Settlement Indicator (RTGS qualifier in 22F)
+RTGS;NRTG;Non-RTGS - Settle through the non-RTGS system
+RTGS;YRTG;RTGS - Settle through the RTGS system
+
+# Settlement Transaction Type (SETR qualifier in 22F)
+SETR;BSBK;Buy Sell Back - Relates to a buy sell back transaction
+SETR;BYIY;Buy In - The transaction relates to a buy-in by the market following a delivery transaction failure
+SETR;CLAI;Market Claim - Transaction resulting from a market claim
+SETR;CNCB;Central Bank Collateral Operation - Relates to a collateral delivery/receipt to a National Central Bank for central bank credit operations
+SETR;COLI;Collateral In - Relates to a collateral transaction, from the point of view of the collateral taker or its agent
+SETR;COLO;Collateral Out - Relates to a collateral transaction, from the point of view of the collateral giver or its agent
+SETR;CONV;DR Conversion - Relates to a depository receipt conversion
+SETR;ETFT;Exchange Traded Funds - Relates to an exchange traded fund (ETF) creation or redemption
+SETR;FCTA;Factor Update - Relates to a factor update
+SETR;INSP;Move of Stock - Relates to a movement of shares into or out of a pooled account
+SETR;INTT;Traded Interest Changed - Relates to a cash movement resulting from a change in traded interest pursuant to a coupon rate adjustment
+SETR;ISSU;Issuance - Relates to the issuance of a security such as an equity or a depository receipt
+SETR;MKDW;Mark-Down - Relates to the decrease of positions held by an ICSD at the common depository due to custody operations (re...
+SETR;MKUP;Mark-Up - Relates to the increase of positions held by an ICSD at the common depository due to custody operations (re...
+SETR;NETT;Netting - Relates to the netting of settlement instructions
+SETR;NSYN;Non Syndicated - Relates to the issue of medium and short term paper (CP, CD, MTN, notes ...) under a program and without sy...
+SETR;OWNE;External Account Transfer - Relates to an account transfer involving more than one instructing party (messages sender) and/or account s...
+SETR;OWNI;Internal Account Transfer - Relates to an account transfer involving one instructing party (messages sender) at one account servicer (m...
+SETR;PAIR;Pair-Off - Relates to a pair-off: the transaction is paired off and netted against one or more previous transactions
+SETR;PLAC;Placement - Relates to the placement/new issue of a financial instrument
+SETR;PORT;Portfolio Move - Relates to a portfolio move from one investment manager to another and/or from an account servicer to another
+SETR;REAL;Realignment - Relates to a realignment of positions
+SETR;REDI;Withdrawal - Relates to the withdrawal of specified amounts from specified sub-accounts
+SETR;REDM;Redemption (Funds) - Relates to a redemption of Funds (Funds Industry ONLY)
+SETR;RELE;DR Release/Cancellation - Relates to a release (into/from local) of Depository Receipt operation
+SETR;REPU;Repo - Relates to a repurchase agreement transaction
+SETR;RODE;Return of Delivery Without Matching - Relates to the return of financial instruments resulting from a rejected delivery without matching operation
+SETR;RVPO;Reverse Repo - Relates to a reverse repurchase agreement transaction
+SETR;SBBK;Sell Buy Back - Relates to a sell buy back transaction
+SETR;SBRE;Borrowing Reallocation - Internal reallocation of a borrowed holding from one safekeeping account to another
+SETR;SECB;Securities Borrowing - Relates to a securities borrowing operation
+SETR;SECL;Securities Lending - Relates to a securities lending operation
+SETR;SLRE;Lending Reallocation - Internal reallocation of a holding on loan from one safekeeping account to another
+SETR;SUBS;Subscription (Funds) - Relates to a subscription to funds (Funds Industry ONLY)
+SETR;SWIF;Switch From - Transaction is a change of an investment from one sub-fund to another sub-fund (redemption-leg)
+SETR;SWIT;Switch To - Transaction is a change of an investment from one sub-fund to another sub-fund (subscription-leg)
+SETR;SYND;Syndicate of Underwriters - Relates to the issue of financial instruments through a syndicate of underwriters and a Lead Manager
+SETR;TBAC;TBA Closing - Relates to a To Be Announced (TBA) closing trade
+SETR;TRAD;Trade - Relates to the settlement of a trade
+SETR;TRPO;Triparty Repo - Relates to a triparty repurchase agreement
+SETR;TRVO;Triparty Reverse Repo - Relates to a triparty reverse repurchase agreement
+SETR;TURN;Turnaround - Relates to a turnaround: the same security is bought and sold to settle the same day, to or from different ...
+
+# Settlement System/Method Indicator (SETS qualifier in 22F)
+SETS;NSET;Default Settlement System/Method - Settle through the default settlement system/method
+SETS;YSET;Alternate Settlement System/Method - Settle through the alternate settlement system/method
+
+# Statement Frequency (SFRE qualifier in 22F)
+SFRE;ADHO;Ad-Hoc - Statement is sent following a request by the Receiver
+SFRE;DAIL;Daily - Statement is sent daily (once per day, end-of-day)
+SFRE;INDA;Intra-Day - Statement is sent intra-day (multiple reports during the day)
+SFRE;MNTH;Monthly - Statement is sent monthly (once per month)
+SFRE;WEEK;Weekly - Statement is sent weekly (once per week)
+SFRE;YEAR;Yearly - Statement is sent yearly (once per year)
+
+# Statement Basis (STBA qualifier in 22F)
+STBA;SETT;Settled - Statement is based on actual settlement date positions
+STBA;TRAD;Traded - Statement is based on trade date positions
+
+# Settlement Transaction Condition (STCO qualifier in 22F)
+STCO;ASGN;Assignment - Transfer of ownership of the asset to another party during the closing of an option
+STCO;BPSS;Partial Successful Buy-In - Identification of settlement instructions created as a result of a partial successful buy-in
+STCO;BUTC;Buy to Cover - Settlement transaction is a buy to cover
+STCO;CLEN;Tax-Exempt - Tax-exempt financial instruments are to be settled
+STCO;DIRT;Non Tax-Exempt - Taxable financial instruments are to be settled
+STCO;DLWM;Delivery Without Matching - Matching receipt instruction not required (only for concerned ICSD and CSD)
+STCO;DRAW;Drawn - Settlement transactions relates to drawn securities
+STCO;EXER;Exercised - Settlement transaction relates to options, futures or derivatives that are exercised
+STCO;EXPI;Expired - Settlement transaction relates to options, futures or derivatives that have expired
+STCO;FRCL;Free Clean Settlement - Delivery will be made free of payment but a clean payment order will be sent
+STCO;INTS;Internalised Settlement - The instruction was settled by the settlement internaliser/account servicer (for example, custodian) in its...
+STCO;KNOC;Knocked Out - Settlement transaction relates to options, futures or derivatives that are expired worthless
+STCO;NACT;Not Accounting Related - Security transaction is not for accounting
+STCO;NOMC;No Automatic Market Claim - No market claim should be automatically generated
+STCO;NPAR;No Partial Settlement Allowed - Partial settlement is not allowed
+STCO;PART;Partial Settlement - Partial settlement is allowed
+STCO;PENS;Pending Sale - Accounting information that the position to cover the pending sale will be available by contractual settlem...
+STCO;PHYS;Physical - Securities are to be physically settled
+STCO;RESI;CSD Payment Only - Relates to transaction on a security that is not eligible at the Central Securities Depository (CSD) but fo...
+STCO;RHYP;Re-hypothecation - Collateral position is available for other purposes (for example, onwards delivery)
+STCO;RPTO;Reporting - Relates to a transaction that is for reporting purposes only
+STCO;SHOR;Short Sale Indicator - Settlement transaction will create a short position
+STCO;SPDL;Special Delivery - Settlement transactions to be settled with special delivery
+STCO;SPST;Split Settlement - Money and financial instruments settle in different locations
+STCO;TRAN;Transformation - Transaction resulting from a transformation
+STCO;UNEX;Unexposed - Delivery cannot be performed until money is received
+
+# Tax Capacity Party Indicator (TCPI qualifier in 22F)
+TCPI;AGEN;Agent - Acting as an agent for tax liability
+TCPI;PRIN;Principal - Acting as a principal for tax liability
+
+# Transaction Activity Type (TRAN qualifier in 22F)
+TRAN;BOLE;Borrowing/Lending Activity - Transaction relates to lending/borrowing
+TRAN;CLAI;Market Claim - Transaction relates to a market claim following a corporate action
+TRAN;COLL;Collateral Activity - Transaction relates to collateral
+TRAN;CORP;Corporate Action Activity - Transaction relates to corporate action
+TRAN;SETT;Settlement and Clearing Activity - Transaction relates to settlement and clearing
+
+# Party Capacity Indicator (TRCA qualifier in 22F)
+TRCA;CUST;Settling as a Custodian - Settlement party is a custodian
+TRCA;RISP;Settling as Riskless Principal - Party settles trades that were simultaneously offset
+TRCA;SAGE;Settling as an Agent - Party settles trades on behalf of his client for which he also traded
+TRCA;SPRI;Settling as a Principal - Party settles its own trades
+
+# Place of Settlement (PSET) - Central Securities Depositories and Clearing Systems
+PSET;CEDE;Clearstream Banking Luxembourg - Luxembourg international CSD
+PSET;EUCL;Euroclear Bank SA/NV - Belgium international CSD
+PSET;DTCA;DTC - Depository Trust Company, New York / USA
+PSET;XCLR;Clearstream Banking Frankfurt - German CSD (Deutsche Boerse Group)
+PSET;NESD;Euroclear UK & International (formerly CREST) - UK/Ireland CSD
+PSET;ESES;Euroclear ESES - joint platform for France, Belgium and Netherlands
+PSET;MEDE;Monte Titoli S.p.A. - Italian CSD (Euronext)
+PSET;CRCB;Oesterreichische Kontrollbank AG (OeKB) - Austrian CSD
+PSET;SICV;SIX SIS Ltd. - Swiss CSD (formerly SIS SegaInterSettle)
+PSET;NICA;NBB-SSS - National Bank of Belgium Securities Settlement System
+PSET;VPDO;VP Securities A/S - Danish CSD
+PSET;BOGS;Fedwire Securities Service - operated by the US Federal Reserve
+PSET;PABO;Interbolsa - Portuguese CSD (Euronext Lisbon)
+PSET;KAOL;KELER Ltd. - Hungarian CSD
+PSET;CDSL;Central Depository Services Ltd. - Indian CSD, Mumbai
+PSET;NSDL;National Securities Depository Ltd. - Indian CSD, Mumbai
+PSET;HKEX;CCASS - Central Clearing and Settlement System, Hong Kong
+PSET;JASD;JASDEC - Japan Securities Depository Center
+PSET;KSEI;KSEI - Indonesian Central Securities Depository
+PSET;SGSP;CDP - Central Depository Pte Ltd, Singapore
+
+# Settlement/Processing Status (STAT qualifier in 13A/22F)
+STAT;NMAT;Non-Matched - transaction not yet matched with the counterparty's instruction
+STAT;MACH;Matched - instruction paired and matched with the counterparty
+STAT;PEND;Pending - settlement is awaiting processing or confirmation
+STAT;PAIR;Paired-Off - offsetting transaction has been paired against this instruction
+STAT;REBO;Repurchase - transaction relates to a repo or reverse-repo
+STAT;CANP;Cancellation Pending - a cancellation request has been submitted
+STAT;CNCL;Cancelled - transaction has been cancelled
+STAT;SETT;Settled - transaction has been fully and finally settled
+STAT;PPRC;Partially Processed - a portion of the settlement has been completed
+STAT;ASTM;All Settled Matched - all sub-transactions are settled and matched
+STAT;NACT;No Activity - no settlement activity during the reporting period
+
+# Form of Securities (FORM qualifier in 22F)
+FORM;REGD;Registered - security held and transferred in registered form
+FORM;BEAR;Bearer - security held in bearer form (ownership by possession)
+FORM;DMAT;Dematerialised - security held in electronic book-entry form at a CSD
+
+# Short Sale Indicator (SSAL qualifier in 22F)
+SSAL;SHOR;Short Sale - securities sold short, not owned at the time of the trade
+SSAL;LONG;Long Sale - securities are owned and will be delivered from the account
+
+# Quantity Type Code (component value in 36B fields, various qualifiers)
+FIOP;FAMT;Face Amount - quantity expressed as nominal or face value of the security
+FIOP;UNIT;Units - quantity expressed as the number of individual securities
+FIOP;AMOR;Amortised Value - quantity expressed as current amortised (book) value
+FICL;FAMT;Face Amount - quantity expressed as nominal or face value of the security
+FICL;UNIT;Units - quantity expressed as the number of individual securities
+FICL;AMOR;Amortised Value - quantity expressed as current amortised (book) value
+PSTA;FAMT;Face Amount - quantity expressed as nominal or face value of the security
+PSTA;UNIT;Units - quantity expressed as the number of individual securities
+PSTA;AMOR;Amortised Value - quantity expressed as current amortised (book) value
+PNET;FAMT;Face Amount - quantity expressed as nominal or face value of the security
+PNET;UNIT;Units - quantity expressed as the number of individual securities
+PNET;AMOR;Amortised Value - quantity expressed as current amortised (book) value
+ESTT;FAMT;Face Amount - quantity expressed as nominal or face value of the security
+ESTT;UNIT;Units - quantity expressed as the number of individual securities
+ESTT;AMOR;Amortised Value - quantity expressed as current amortised (book) value
+AVAL;FAMT;Face Amount - quantity expressed as nominal or face value of the security
+AVAL;UNIT;Units - quantity expressed as the number of individual securities
+AVAL;AMOR;Amortised Value - quantity expressed as current amortised (book) value
+BLOK;FAMT;Face Amount - quantity expressed as nominal or face value of the security
+BLOK;UNIT;Units - quantity expressed as the number of individual securities
+BLOK;AMOR;Amortised Value - quantity expressed as current amortised (book) value
+LOAN;FAMT;Face Amount - quantity expressed as nominal or face value of the security
+LOAN;UNIT;Units - quantity expressed as the number of individual securities
+LOAN;AMOR;Amortised Value - quantity expressed as current amortised (book) value
+PEND;FAMT;Face Amount - quantity expressed as nominal or face value of the security
+PEND;UNIT;Units - quantity expressed as the number of individual securities
+PEND;AMOR;Amortised Value - quantity expressed as current amortised (book) value
+PENR;FAMT;Face Amount - quantity expressed as nominal or face value of the security
+PENR;UNIT;Units - quantity expressed as the number of individual securities
+PENR;AMOR;Amortised Value - quantity expressed as current amortised (book) value
+RSTR;FAMT;Face Amount - quantity expressed as nominal or face value of the security
+RSTR;UNIT;Units - quantity expressed as the number of individual securities
+RSTR;AMOR;Amortised Value - quantity expressed as current amortised (book) value
+TAVI;FAMT;Face Amount - quantity expressed as nominal or face value of the security
+TAVI;UNIT;Units - quantity expressed as the number of individual securities
+TAVI;AMOR;Amortised Value - quantity expressed as current amortised (book) value
+TOTA;FAMT;Face Amount - quantity expressed as nominal or face value of the security
+TOTA;UNIT;Units - quantity expressed as the number of individual securities
+TOTA;AMOR;Amortised Value - quantity expressed as current amortised (book) value
+XPST;FAMT;Face Amount - quantity expressed as nominal or face value of the security
+XPST;UNIT;Units - quantity expressed as the number of individual securities
+XPST;AMOR;Amortised Value - quantity expressed as current amortised (book) value
+
+# Function of the Message (tag 23G, no qualifier)
+23G;NEWM;New – original instruction or statement (new message)
+23G;CANC;Cancellation Request – requests cancellation of a previously sent message
+23G;CODU;Copy Duplicate – copy for information/audit purposes (duplicate of sent message)
+23G;COPY;Copy – copy to a party other than the account owner or servicer
+23G;DUPL;Duplicate – duplicate of a message previously sent
+
+# Page Number/Indicator (tag 28E, no qualifier)
+28E;LAST;Last Page – this is the last page of a multi-page statement
+28E;MORE;Intermediate Page – more pages follow in this multi-page statement
+28E;ONLY;Only Page – single-page statement (no further pages)
+

@@ -1,0 +1,66 @@
+component_label;description
+Account;Account number to which the statement relates (format: up to 35 characters, optionally prefixed with bank code)
+D/C Mark;Debit/Credit indicator: C = Credit (increases balance) / D = Debit (decreases balance) / RC = Reversal of Credit / RD = Reversal of Debit
+Entry Date;Optional calendar date on which the entry was posted (MMDD format); absent = same as value date
+Funds Code;Optional third character of the ISO currency code used to further identify the currency (1 character)
+Identification Code;Structured reference code used by the bank to identify the transaction type (format: 4!a3!a)
+Reference For The Account Owner;Customer's own reference for the booking entry (up to 16 characters); forward slash pairs indicate absence
+Reference Of The Account Servicing Institution;Bank's internal reference for the booking entry (up to 16 characters); preceded by double forward slash
+Sequence Number;Sub-sequence number within the statement (1–5 digits); combined with Statement Number in field :28C:
+Statement Number;Sequential statement number assigned by the account-servicing institution (1–5 digits)
+Supplementary Details;Optional free-text additional information about the booking entry (up to 34 characters)
+Transaction Type;SWIFT transaction type indicator: S = SWIFT transfer / N = Non-SWIFT / F = First Advice
+Value Date;Date on which funds become available or the debit/credit is effective (YYMMDD or YYYYMMDD format)
+Account Number;Alphanumeric account identifier at the custodian or clearing system (up to 35 characters)
+Address;Name and postal address of a party or place (up to 4 x 35 characters)
+Alternate ID;Alternative identification code for a party in a proprietary scheme
+Amount;Monetary amount value in the specified currency (up to 15 digits, decimal comma)
+Amount Type Code;Code specifying the type of price or amount (e.g. MRKT=Market / INDC=Indicative / BOOK=Book Value)
+Balance;Signed numeric quantity representing a balance (positive or negative)
+Code;Segment or sequence label identifying a block within the SWIFT message (16R/16S value)
+Continuation Indicator;Indicates whether a narrative field continues on subsequent lines (Z = last / last absent = continues)
+Country Code;ISO 3166-1 alpha-2 country code (e.g. DE / US / GB / CH)
+Currency Code;3-letter ISO 4217 currency code (e.g. EUR / USD / GBP / CHF)
+Data Source Scheme;Proprietary scheme name used when the identification code is not from a standard scheme (up to 8 characters)
+Date;Date in YYYYMMDD format (e.g. 20231015 = 15 October 2023)
+Description of Security;Free-text name or description of the financial instrument (up to 4 x 35 characters)
+First Currency Code;ISO 4217 code of the first (base) currency in a currency pair or exchange rate
+Flag;Boolean indicator: Y = Yes / true / N = No / false
+Function;Function code of the message: NEW=New instruction / CANC=Cancel / REPL=Replace / PREA=Pre-Advice / COPY=Copy
+Identification of Blockchain or Wallet;Address or identifier of a blockchain wallet or DLT account (up to 140 characters)
+Identification of Security;ISIN code – 12-character alphanumeric global security identifier (e.g. XS1234567890)
+Identifier Code;BIC – Bank Identifier Code, 8 or 11 characters identifying a financial institution (SWIFT address)
+Indicator;4-character coded indicator value identifying a characteristic or type of transaction
+Instrument Code or Description;Code or free-text name identifying the type of financial instrument
+Instrument Type Code;Code identifying the type of financial instrument in a proprietary or standard scheme
+Legal Entity Identifier;20-character LEI code uniquely identifying a legal entity (ISO 17442 standard)
+Name;Party name as free text (up to 35 characters)
+Name and Address;Party name and postal address details (up to 4 lines of 35 characters each)
+Narrative;Free-text information or commentary (up to 10 lines of 35 characters = 350 characters total)
+Number;Numeric count, sequence number, or other numeric identifier
+Number Id;Alphanumeric short identifier for a document type or numbering scheme (up to 3 characters)
+Number Identification;Alphanumeric identifier for a message, document, or instruction number
+Page Number;Current page number within a multi-page statement (format: 5 digits)
+Place;Free-text name of a market place, city, or trading venue (up to 30 characters)
+Place Code;Code identifying a securities depository or clearing system (e.g. CEDE=DTC / EUCL=Euroclear / DTCA=DTC Canada)
+Price;Numeric price value per unit of the security (face value, market price, or book value)
+Proprietary Code;Party identification code in a proprietary (non-BIC) scheme defined by the Data Source Scheme
+Qualifier;4-character code identifying the specific sub-type or meaning of this field within its sequence
+Quantity;Numeric amount of securities (face value in currency or number of individual units)
+Quantity Type Code;How the quantity is expressed: FAMT=Face Amount / UNIT=Units / AMOR=Amortised Value
+Quantity of Digital Tokens;Number of digital tokens or crypto assets in a distributed ledger transaction
+Quantity1;First quantity in a ratio or conversion factor (numerator)
+Quantity2;Second quantity in a ratio or conversion factor (denominator)
+Rate;Numeric rate value expressed as a decimal (e.g. 0.02500 = 2.5%); sign indicates debit/credit direction
+Rate Name;Proprietary name for a rate defined within a given data source scheme (up to 35 characters)
+Rate Type Code;Code identifying the type of rate (e.g. EXCH=Exchange Rate / TAXR=Tax Rate)
+Reason Code;4-character code explaining why a status was assigned or an event occurred
+Reference;Free-format alphanumeric reference string (up to 16 characters)
+Second Currency Code;ISO 4217 code of the second (counter) currency in a currency pair or exchange rate
+Sign;Arithmetic sign modifier: N = negative value; absent = positive value
+Status Code;4-character code indicating the current processing or settlement status of a transaction
+Sub-balance Type;Code or proprietary identifier further classifying a sub-balance category
+Subfunction;Sub-function code further qualifying the main function of the message
+Time;Time of day in HHmmss format (e.g. 143000 = 14:30:00 local time)
+Type;Code or description identifying the type of instrument, transaction, or reference
+Type of ID;Type of security identifier used: ISIN / COMMON=Common Code / SEDOL / CUSIP / BLOM=Bloomberg

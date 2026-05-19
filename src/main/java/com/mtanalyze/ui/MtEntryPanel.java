@@ -42,7 +42,9 @@ import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
+import java.awt.Desktop;
 import java.io.File;
+import java.net.URI;
 import java.util.*;
 import java.util.List;
 import java.util.prefs.Preferences;
@@ -499,6 +501,25 @@ public class MtEntryPanel extends JPanel {
             popup.add(showInDetail);
         }
         addShowInEditorMenuItem(popup, modelRow);
+        Entry rowEntry = model.getEntryForRow(modelRow);
+        if (rowEntry != null) {
+            String mtVal = rowEntry.data().get(EntryPanelModel.MT_COL_KEY);
+            if (mtVal != null && mtVal.length() > 2) {
+                String mtNum = mtVal.substring(2);
+                JMenuItem isoDocItem = new JMenuItem("Lookup ISO 15022 Doku (" + mtVal + ")", ToolbarIcons.menuIsoDoc());
+                isoDocItem.addActionListener(ae -> {
+                    try {
+                        Desktop.getDesktop().browse(new URI(
+                            "https://www.iso20022.org/15022/uhb/finmt" + mtNum.toLowerCase() + ".htm"));
+                    } catch (Exception ex) {
+                        JOptionPane.showMessageDialog(MtEntryPanel.this,
+                            "Browser konnte nicht geöffnet werden:\n" + ex.getMessage(),
+                            "Fehler", JOptionPane.ERROR_MESSAGE);
+                    }
+                });
+                popup.add(isoDocItem);
+            }
+        }
 
         // ── Display ───────────────────────────────────────────────────────
         popup.addSeparator();

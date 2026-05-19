@@ -606,8 +606,18 @@ public final class ToolbarIcons {
     private static final Color HELP_COLOR  = new Color(53, 116, 240);
     private static final Color ABOUT_COLOR = new Color(0, 150, 136);
 
-    public static Icon menuHelp()  { return menuFilledCircleLetter("?", HELP_COLOR); }
-    public static Icon menuAbout() { return menuFilledCircleLetter("i", ABOUT_COLOR); }
+    public static Icon menuHelp()   { return menuFilledCircleLetter("?", HELP_COLOR); }
+    public static Icon menuAbout()  { return menuFilledCircleLetter("i", ABOUT_COLOR); }
+
+    public static Icon menuIsoDoc() {
+        return makeMenuIcon((g, c) -> {
+            g.setColor(new Color(0, 130, 180));
+            g.setStroke(new BasicStroke(1.3f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            g.drawOval(1, 2, 13, 13);
+            g.drawLine(1, 8, 14, 8);
+            g.drawOval(4, 2, 6, 13);
+        });
+    }
 
     private static Icon menuFilledCircleLetter(String letter, Color fill) {
         return makeMenuIcon((g, c) -> {

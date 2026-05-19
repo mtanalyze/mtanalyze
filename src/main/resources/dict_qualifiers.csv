@@ -1,0 +1,89 @@
+qualifier;description
+ACOW;Account Owner Reference – reference assigned to the reported transaction by the account owner
+ACRU;Accrued Interest Amount – amount of interest accrued in between coupon payment periods
+ACTI;Activity Flag – indicates whether transactions are reported in this statement (Y/N)
+ACCW;Account With Institution – financial institution where the relevant account is held
+ADDINFO;Additional Information Block – end-of-block marker (16S) for supplementary narrative section
+ALTE;Alternate Identification – alternate identification for a party (e.g. LEI code via 95L)
+ASRF;Account Servicer Reference – reference assigned to the transaction by the account servicer
+BCAW;Blockchain Address or Wallet – blockchain address or DLT wallet where digital assets are maintained
+BENE;Beneficial Ownership Indicator – specifies whether there is a change of beneficial ownership
+BLOC;Block Trade Indicator – specifies whether the settlement instruction is a block parent or child instruction
+BUYR;Buyer – purchasing counterparty or their custodian in the transaction
+CAEV;Corporate Action Event Indicator – specifies the type of corporate action event
+CANC;Cancellation Request – function code: message requests cancellation of a previously sent message
+CANI;Cancellation Instruction Reference – reference number of a linked cancellation instruction
+CASY;Cash Settlement System Indicator – specifies which cash settlement system is to be used
+CCPT;CCP Eligibility Indicator – specifies whether the transaction is eligible for central counterparty clearing
+CLCI;Client Collateral Instruction Reference – reference assigned to the collateral instruction by the client
+CLTR;Client Triparty Collateral Transaction Reference – client's reference for the triparty collateral transaction
+CMIT;Counterparty Market Infrastructure Transaction Identification – counterparty's transaction ID at a market infrastructure
+CODE;Complete/Updates Indicator – specifies whether the statement is complete or contains changes only
+CODU;Copy Duplicate – function code: message is a copy for information purposes (audit trail)
+COMM;Common Reference – unique reference agreed upon by the two trade counterparties to identify the trade
+CONS;Sub-safekeeping Statement – indicates whether holdings are reported at sub-safekeeping account level
+COPY;Copy – function code: message is a copy to a party other than the account owner/servicer
+CORP;Corporate Action Reference – account servicer's reference for a related corporate action event
+DAAC;Number of Days Accrued – number of days used for accrued interest calculation
+DEAG;Delivering Agent – custodian or institution responsible for delivering the securities
+DEAL;Deal Price – agreed trade price between buyer and seller (principal amount)
+DUPL;Duplicate – function code: message is a duplicate of a message previously sent
+ESET;Expected Settlement Date – currently expected date on which settlement will be executed
+FIAD;Actual Settlement Date – date on which settlement was or will actually be executed
+FICL;Final Closing Balance – sum of the opening balance and all entries at close of the statement period
+FIN;Financial Instrument Block – end-of-block marker (16S) for the financial instrument section
+FIOP;First Opening Balance – opening balance for the statement period (equals prior period closing balance)
+FORM;Form of Securities – specifies the physical or electronic form of the financial instrument
+GENL;General Information Block – end-of-block marker (16S) for the general header section
+LAST;Last Page – indicates the last page of a multi-page statement
+LEOG;Letter of Guarantee Indicator – specifies whether physical settlement may use a letter of guarantee
+LINK;Linkages Block – end-of-block marker (16S) for the linkages section
+MACL;Market Side Indicator – specifies whether an instruction is for a market side or client side transaction
+MICO;Method of Interest Computation Indicator – specifies the computation method for accrued interest
+MITI;Market Infrastructure Transaction Identification – transaction ID assigned by a market infrastructure
+MORE;Intermediate Page – indicates an intermediate page of a multi-page statement (more pages to follow)
+MOVE;Movement Status – provides the current processing or settlement status of the movement
+NETT;Netting Eligibility Indicator – specifies whether the settlement transaction is eligible for netting
+NEWM;New – function code: new message (original instruction or statement)
+ONLY;Only Page – indicates a single-page statement (no further pages)
+PAYM;Payment Indicator – specifies whether the instruction is free of payment or against payment
+PCTI;Processor Transaction Identification – transaction reference assigned by the processor of the instruction
+PLAC;Place – generic place or location identifier (e.g. place of listing or trading venue)
+POOL;Pool Reference – collective reference identifying a set of related messages
+PREV;Previous Message Reference – message reference of the previously sent linked message
+PREP;Prepared Settlement Date – date on which settlement is initially prepared or proposed to occur
+PROC;Processing Reference – reference meaningful to the identified party for processing purposes
+PRTL;Partial Settlement Indicator – specifies whether partial settlement is allowed for this instruction
+PSET;Place of Settlement – securities depository or CSD used to settle the transaction (e.g. EUCL / CEDE)
+PSTA;Posting Amount – amount of money that is to be or was posted to the account
+REAG;Receiving Agent – custodian or institution responsible for receiving the securities
+REDE;Receive/Deliver Indicator – specifies whether the transaction is a receipt or delivery of financial instruments
+REFE;General Reference – general-purpose reference number for this transaction
+REGT;Registration Indicator – specifies whether registration should occur upon receipt of securities
+RELA;Related Message Reference – message reference of the previously received linked message
+REPT;Repurchase Type Indicator – specifies the type of repurchase transaction (e.g. REPO / RVPO)
+REST;Restrictions Indicator – restrictions governing the transfer of ownership of the financial instrument
+RTGS;RTGS Indicator – specifies whether settlement is to be executed via Real-Time Gross Settlement system
+SAFE;Safekeeping Account – account at a custodian or CSD where the securities are held
+SELL;Seller – selling counterparty or their custodian in the transaction
+SEME;Sender's Message Reference – reference assigned by the sender to unambiguously identify this message
+SETPRTY;Settlement Parties Block – end-of-block marker (16S) for the settlement parties section
+SETR;Settlement Transaction Type Indicator – specifies the underlying type of settlement transaction
+SETS;Settlement System/Method Indicator – specifies whether to use the default settlement system or method
+SETT;Settlement Amount – currency and total amount to be settled for the transaction
+SFRE;Statement Frequency Indicator – specifies the frequency at which the statement is produced
+SFWD;Settlement Forward – indicates a forward or future settlement date beyond the standard cycle
+SSAL;Short Sale Indicator – indicates whether the sale instruction is a short sale
+STAM;Stamp Duty Indicator – specifies the stamp duty type or applicable exemption reason
+STBA;Statement Basis – specifies the type of balances on which the statement is prepared
+STCO;Settlement Transaction Condition Indicator – specifies the conditions under which the trade was to be settled
+SUBSAFE;Sub-safekeeping Account Block – end-of-block marker (16S) for sub-custodian account section
+TCPI;Tax Capacity Party Indicator – specifies the tax role capacity of the instructing party
+TCTR;Triparty Agent Collateral Transaction Reference – triparty agent's reference for the collateral transaction
+TRAD;Trade Date – date on which the trade was agreed between buyer and seller
+TRAN;Transaction Indicator – specifies the type of settlement activity to which this instruction relates
+TRANSDET;Transaction Details Block – end-of-block marker (16S) for the transaction details section
+TRCA;Party Capacity Indicator – specifies the capacity or role of the party in the transaction
+TRCI;Triparty Agent Collateral Instruction Reference – triparty agent's reference for the collateral instruction
+TRDE;Transaction Details Narrative – free-text additional details on the transaction (70E)
+TRRF;Transaction Reference – unique reference assigned by the sender to identify this instruction

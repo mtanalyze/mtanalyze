@@ -1,0 +1,55 @@
+tag;description
+20;Transaction Reference Number – unique reference assigned by the sender to identify the message (MT 940/950)
+21;Related Reference – reference of the related message (used in MT 950)
+25;Account Identification – account number to which the statement relates, optionally with bank code (MT 940/950)
+25P;Account Identification with BIC – account number together with the BIC of the account-servicing institution
+28C;Statement Number / Sequence Number – sequential statement number and optional sub-sequence within that statement
+60F;Opening Balance (Final) – final opening balance: D/C mark, date, currency, and amount
+60M;Opening Balance (Intermediate) – intermediate opening balance for multi-page statements
+61;Statement Line – individual booking entry: value date, optional entry date, D/C, amount, transaction type, and references
+62F;Closing Balance (Final) – final closing balance after all statement lines: D/C mark, date, currency, and amount
+62M;Closing Balance (Intermediate) – intermediate closing balance for multi-page statements
+64;Available Balance – funds available to the account owner after considering value-dated items
+65;Forward Available Balance – projected available balance on a future value date (may repeat)
+86;Information to Account Owner – free-text or structured details about the preceding :61: booking entry
+13A;Number Identification – number identifying a message, statement or transaction element (e.g. statement number, format :4!c//3!c)
+13B;Number Identification – reference number in a proprietary or standard scheme (format :4!c/[8c]/30x)
+16R;Start of Block – marks the opening of a named SWIFT sequence block (block name up to 16 characters)
+16S;End of Block – marks the closing of a named SWIFT sequence block (block name must match 16R)
+17B;Flag – single Y/N boolean indicator for a binary attribute of the account or transaction
+19A;Amount – signed monetary amount with currency code and decimal value (format :4!c//[N]3!a15d)
+19B;Amount – unsigned monetary amount with currency code and decimal value (format :4!c//3!a15d)
+20C;Reference – sender's, transaction or other reference number (format :4!c//16x)
+22F;Indicator (4 chars) – coded indicator in a qualifier/data-source/code-word structure (format :4!c/[8c]/4!c)
+22H;Indicator (2 chars) – two-character coded indicator (format :4!c//4!c)
+23G;Function of the Message – function code of the message (MT 536): NEWM / CANC / CODU / COPY / DUPL
+24B;Reason Code – coded reason for a status or event, with optional proprietary data source scheme
+25D;Status Code – coded status value, e.g. settlement status or movement status (format :4!c/[8c]/4!c)
+28E;Page Number/Indicator – page number and last-page flag for multi-page statements (format 5n/4!c)
+35B;Financial Instrument Identification – ISIN and/or free-text description of the security
+36B;Quantity of Financial Instrument – quantity type code (FAMT/UNIT/AMOR) and decimal amount
+37B;Amount – monetary amount without currency (e.g. accrued interest expressed in face value currency)
+69A;Date Range – specifies a start date and end date range for a statement period or validity window
+70C;Narrative – structured free-text field with qualifier and up to 4 lines of 35 characters
+70D;Narrative – structured free-text description with qualifier and up to 6 lines of 35 characters
+70E;Narrative – extended free-text field with qualifier and up to 10 lines of 35 characters (350 chars total)
+90A;Price (Yield/Percentage) – price expressed as a percentage or yield value
+90B;Price (Amount) – price expressed as a monetary amount per unit with currency code
+92B;Exchange Rate – exchange rate between two currencies (format :4!c//3!a/3!a/15d)
+93B;Balance – quantity of a financial instrument (face amount or units) without sign
+93D;Balance – signed quantity balance (face amount or units) for an opening or closing position
+94B;Place – identifies a depository, clearing system or market by qualifier code and optional place code
+94C;Country – two-character ISO 3166-1 alpha-2 country code
+95C;Party – party identified by country code
+95L;Party (LEI) – party identified by Legal Entity Identifier, 20-character alphanumeric code (ISO 17442)
+95P;Party (BIC) – financial institution identified by BIC, 8 or 11 characters (SWIFT address)
+95Q;Party (Name/Address) – party identified by name and postal address (up to 4 lines of 35 characters)
+95R;Party (Proprietary) – party identified by a proprietary code in a defined data source scheme
+95S;Party (Alternate) – party identified by alternate ID with type code and optional data source scheme
+97A;Account Identification – safekeeping or cash account number at a custodian (format :4!c//35x)
+97B;Account Identification – account number with optional data source scheme and type code qualifier
+97D;Account Identification (DLT) – blockchain address or wallet identifier for digital asset holdings
+98A;Date/Time – date in YYYYMMDD format (format :4!c//8!n)
+98B;Date/Time – coded date or date-time indicator value (e.g. NACT = not applicable / not acting)
+98C;Date/Time – full date and time in YYYYMMDDHHmmss format (format :4!c//8!n6!n)
+99A;Number Count – count of transactions, items or days expressed as a signed integer
