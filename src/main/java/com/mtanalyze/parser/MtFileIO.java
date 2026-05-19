@@ -50,10 +50,10 @@ public final class MtFileIO {
     private static final int MULTI_LINE_NV_MIN_FIELD_LINES = 3;
     /** Detects a SWIFT field line in multi-line name-value format: PREFIX[_ ]TAG:...=... */
     private static final Pattern MULTI_LINE_NV_FIELD_PAT =
-        Pattern.compile("^(?:[A-Z][A-Z0-9]*|\\d+)[_ ]\\d{2}[A-Z]+\\s*:[^=]*=.*$");
+        Pattern.compile("^(?:[A-Z][A-Z0-9]*|\\d+)[_ ]\\d{2}[A-Z]+\\s*:[^=]*=[^\\n]*");
     /** Parses a field line; groups: (1) tag, (2) qualifier, (3) value. */
     private static final Pattern MULTI_LINE_NV_PARSE_PAT =
-        Pattern.compile("^(?:[A-Z][A-Z0-9]*|\\d+)[_ ](\\d{2}[A-Z]+)\\s*:\\s*([A-Z0-9]*)\\s*=\\s*(.*)$");
+        Pattern.compile("^(?:[A-Z][A-Z0-9]*|\\d+)[_ ](\\d{2}[A-Z]+)\\s*:\\s*([A-Z0-9]*)\\s*=\\s*([^\\n]*)");
 
 
 
