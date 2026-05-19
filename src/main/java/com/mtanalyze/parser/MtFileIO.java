@@ -44,7 +44,16 @@ public final class MtFileIO {
 
     private static final Pattern SWIFT_TAG_PAT = Pattern.compile("^:([A-Z0-9]{2,5}):");
     private static final Pattern APPEND_MT_HDR_PAT = Pattern.compile("^(\\d{3}):");
-    private static final Pattern XML_CHAR_REF_PAT = Pattern.compile("&#x([\\dA-Fa-f]+);|&#(\\d+);");
+    private static final Pattern XML_CHAR_REF_PAT = Pattern.compile("&#x([\\dA-Fa-f]+);?|&#(\\d+);?");
+
+    /** Minimum number of field lines required to classify content as multi-line Name-Value. */
+    private static final int MULTI_LINE_NV_MIN_FIELD_LINES = 3;
+    /** Detects a SWIFT field line in multi-line name-value format: PREFIX[_ ]TAG:...=... */
+    private static final Pattern MULTI_LINE_NV_FIELD_PAT =
+        Pattern.compile("^(?:[A-Z][A-Z0-9]*|\\d+)[_ ]\\d{2}[A-Z]+\\s*:.*=.*$");
+    /** Parses a field line; groups: (1) tag, (2) qualifier, (3) value. */
+    private static final Pattern MULTI_LINE_NV_PARSE_PAT =
+        Pattern.compile("^(?:[A-Z][A-Z0-9]*|\\d+)[_ ](\\d{2}[A-Z]+)\\s*:\\s*([A-Z0-9]*)\\s*=\\s*(.*)$");
 
 
 
@@ -63,6 +72,10 @@ public final class MtFileIO {
         String nvCandidate = crlfNormalized.trim();
         if (isAppendTextContent(trimmed)) {
             block4Body = convertAppendTextToBlock4(trimmed);
+        } else if (isMultiLineNameValueContent(nvCandidate)) {
+            block4Body = convertMultiLineNameValueToBlock4(nvCandidate);
+            String chunkMt = extractMtTypeFromMultiLineNameValue(nvCandidate);
+            if (chunkMt != null) effectiveMtOverride = chunkMt;
         } else if (isNameValueContent(nvCandidate)) {
             block4Body = convertNameValueToBlock4(nvCandidate);
             String chunkMt = extractMtTypeFromNameValue(nvCandidate);
@@ -247,6 +260,9 @@ public final class MtFileIO {
      */
     public static List<String> splitIntoMessages(String content) {
         String trimmed = content.trim();
+        if (isMultiLineNameValueContent(trimmed)) {
+            return splitMultiLineNameValueMessages(trimmed);
+        }
         if (isNameValueContent(trimmed)) {
             List<String> msgs = new ArrayList<>();
             for (String line : trimmed.split(NEWLINE_PATTERN)) {
@@ -258,11 +274,46 @@ public final class MtFileIO {
         return Collections.singletonList(trimmed);
     }
 
+    private static List<String> splitMultiLineNameValueMessages(String content) {
+        List<String> messages = new ArrayList<>();
+        StringBuilder current = null;
+        for (String line : content.split(NEWLINE_PATTERN)) {
+            String t = line.trim();
+            if (t.matches("MT\\s*=\\s*\\d{3}")) {
+                if (current != null) {
+                    String msg = current.toString().trim();
+                    if (!msg.isEmpty()) messages.add(msg);
+                }
+                current = new StringBuilder();
+            }
+            if (current != null) current.append(t).append('\n');
+        }
+        if (current != null) {
+            String msg = current.toString().trim();
+            if (!msg.isEmpty()) messages.add(msg);
+        }
+        return messages.isEmpty() ? Collections.singletonList(content.trim()) : messages;
+    }
+
     /** Returns true if the first non-empty line of content has more than NAME_VALUE_MIN_SEPARATORS semicolons. */
     public static boolean isNameValueContent(String content) {
         for (String line : content.split(NEWLINE_PATTERN)) {
             String trimmedLine = line.trim();
             if (!trimmedLine.isEmpty()) return isNameValueLine(trimmedLine);
+        }
+        return false;
+    }
+
+    /**
+     * Returns true when the content uses one name=value pair per line
+     * with SWIFT field identifiers (multi-line Name-Value format).
+     * At least {@value #MULTI_LINE_NV_MIN_FIELD_LINES} field lines must be present.
+     */
+    public static boolean isMultiLineNameValueContent(String content) {
+        int fieldLines = 0;
+        for (String line : content.split(NEWLINE_PATTERN)) {
+            if (MULTI_LINE_NV_FIELD_PAT.matcher(line.trim()).matches()
+                    && ++fieldLines >= MULTI_LINE_NV_MIN_FIELD_LINES) return true;
         }
         return false;
     }
@@ -282,7 +333,8 @@ public final class MtFileIO {
      */
     public static boolean needsMtTypeOverride(String content) {
         String trimmed = content.trim();
-        return !trimmed.startsWith("{1:") && !isNameValueContent(trimmed) && !isAppendTextContent(trimmed);
+        return !trimmed.startsWith("{1:") && !isNameValueContent(trimmed)
+            && !isAppendTextContent(trimmed) && !isMultiLineNameValueContent(trimmed);
     }
 
     /**
@@ -295,6 +347,7 @@ public final class MtFileIO {
         String trimmed = content.trim();
         if (trimmed.startsWith("{1:")) return null;
         if (isNameValueContent(trimmed)) return extractMtTypeFromNameValue(trimmed);
+        if (isMultiLineNameValueContent(trimmed)) return extractMtTypeFromMultiLineNameValue(trimmed);
         if (isAppendTextContent(trimmed)) return detectMtTypeFromAppendText(trimmed);
         return matchMtTypeByTags(stripBlock4Wrapper(trimmed));
     }
@@ -324,9 +377,9 @@ public final class MtFileIO {
     }
 
     /**
-     * Decodes XML/HTML numeric character references (&#xHH; and &#DDD;) so that
-     * the trailing semicolon of an entity like &#x0d; is not mistaken for a
-     * Name-Value field separator during conversion.
+     * Decodes XML/HTML numeric character references (&#xHH;, &#xHH, &#DDD;, &#DDD).
+     * The trailing semicolon is optional so that &#x0d (without semicolon) as used
+     * in the multi-line Name-Value format is also decoded to a carriage-return.
      */
     static String decodeXmlCharRefs(String s) {
         Matcher m = XML_CHAR_REF_PAT.matcher(s);
@@ -421,13 +474,13 @@ public final class MtFileIO {
     /**
      * Converts the Name-Value format (...;N_TAG:QUAL=VALUE;...)
      * into SWIFT block 4 content.
-     * Section prefix format: {Letter}{optional-digit}_{tag} or {digits}_{tag},
-     * e.g. A_28E, A1_95P, B_98B, 1_16R, 10_22F.
+     * Section prefix format: {Letters+digits starting with letter}_{tag} or {digits}_{tag},
+     * e.g. A_28E, A1_95P, AB_28E, AB1_95P, B_98B, 1_16R, 10_22F.
      * Optional whitespace before the colon separator is tolerated.
      */
     public static String convertNameValueToBlock4(String content) {
         StringBuilder sb  = new StringBuilder();
-        Pattern       pat = Pattern.compile("^(?:[A-Z]\\d*|\\d+)_(\\d{2}[A-Z]+\\s*:.*)$");
+        Pattern       pat = Pattern.compile("^(?:[A-Z][A-Z0-9]*|\\d+)_(\\d{2}[A-Z]+\\s*:.*)$");
         String decoded = decodeXmlCharRefs(content.trim());
         for (String part : decoded.split(";")) {
             processNameValuePart(part.trim(), sb, pat);
@@ -487,5 +540,47 @@ public final class MtFileIO {
             if (!val.isEmpty()) sb.append(' ');
         }
         sb.append(val).append('\n');
+    }
+
+    // -----------------------------------------------------------------------
+    // Multi-Line Name-Value Conversion
+    // -----------------------------------------------------------------------
+
+    /**
+     * Converts the multi-line Name-Value format (one field per line) into SWIFT block 4 content.
+     * Line format: PREFIX[_ or space]TAG[:QUALIFIER]=VALUE
+     * where PREFIX is one or more letters+digits starting with a letter, or digits only.
+     * Header lines without a SWIFT field identifier (e.g. MT=, MSGESTDT=) are silently skipped.
+     */
+    public static String convertMultiLineNameValueToBlock4(String content) {
+        StringBuilder sb = new StringBuilder();
+        String decoded = decodeXmlCharRefs(content.trim());
+        for (String line : decoded.split(NEWLINE_PATTERN)) {
+            processMultiLineNameValueLine(line.trim(), sb);
+        }
+        return sb.toString();
+    }
+
+    private static void processMultiLineNameValueLine(String line, StringBuilder sb) {
+        if (line.isEmpty()) return;
+        Matcher m = MULTI_LINE_NV_PARSE_PAT.matcher(line);
+        if (!m.matches()) return;
+        String tag = m.group(1).trim();
+        String sub = m.group(2).trim();
+        String val = normalizeEmbeddedCr(m.group(3).trim())
+                         .replaceAll("(\\d{4})-(\\d{2})-(\\d{2})", "$1$2$3")
+                         .replaceFirst("^/+", "");
+        appendTag(tag, sub, val, sb);
+    }
+
+    /** Extracts the MT type from a multi-line NV block containing a line like {@code MT=541}. */
+    private static String extractMtTypeFromMultiLineNameValue(String content) {
+        for (String line : content.split(NEWLINE_PATTERN)) {
+            String t = line.trim();
+            if (t.matches("MT\\s*=\\s*\\d{3}")) {
+                return t.replaceFirst("MT\\s*=\\s*", "").trim();
+            }
+        }
+        return null;
     }
 }
