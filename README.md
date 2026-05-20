@@ -55,7 +55,7 @@ java -jar MT-Analyze-1.0.0.jar
 - **Tag View** (`Ctrl+4`) — full tag breakdown of a selected message: sequence, tag name, qualifier, and decoded value, with optional Component View expanding multi-component fields.
 - **Diff View** (`Ctrl+5`) — select two or more rows to compare FIN objects side by side; deviating cells are highlighted. Toggle "Differences only" to restrict to changed fields.
 - **Source View** (`Ctrl+6`) — raw SWIFT MT message with colour-coded block delimiters, tags, qualifiers, and indented sequence blocks.
-- **Filtering** — Filter Row (Excel-style checkbox list per column) and Quick Filter (expression language: `=EUR`, `!=`, `^DE`, `$00`, `10-20`, `+` for OR). Filters combine as AND or OR.
+- **Filtering** — Filter Row (Excel-style checkbox list per column) and Quick Filter (expression language: `=EUR`, `!=`, `^DE`, `$00`, `10-20`, `+` for OR). Filters combine as AND or OR. Right-click any filter button to convert to Quick Filter or clear all column filters in one step.
 - **File Explorer** — collapsible folder tree panel; drag a folder to add it as a root, multi-select files to open them at once (`Ctrl+E`).
 - **Sessions** — save and restore a set of loaded messages as a `.mtd` file (plain SWIFT MT text).
 - **Reference Search** — resolves linked settlement messages (MT 540–548) by SEME, RELA, PREV, and TRCI reference fields.
