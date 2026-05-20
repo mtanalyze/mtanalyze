@@ -290,6 +290,10 @@ public class ColumnFilterRow extends AbstractFilterRow {
         convertItem.setEnabled(!getActiveFilters().isEmpty());
         convertItem.addActionListener(ae -> onConvertToQuickFilter.run());
         menu.add(convertItem);
+        JMenuItem clearItem = new JMenuItem("Clear Auto Filter");
+        clearItem.setEnabled(!getActiveFilters().isEmpty());
+        clearItem.addActionListener(ae -> clearAll());
+        menu.add(clearItem);
         menu.show(anchor, e.getX(), e.getY());
     }
 
