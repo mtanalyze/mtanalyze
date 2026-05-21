@@ -69,8 +69,12 @@ final class FileImporter {
                 }
                 chunks = MtFileIO.splitIntoMessages(content);
             }
-            ImportBatch batch = ctx.importService().parseChunks(
-                chunks, mtOverride, file.getAbsolutePath(), origin, ctx.config().getMaxEntries());
+            ImportBatch batch;
+            try (ProwideLogCapture cap = ProwideLogCapture.start()) {
+                batch = ctx.importService().parseChunks(
+                    chunks, mtOverride, file.getAbsolutePath(), origin, ctx.config().getMaxEntries());
+                batch.prowideLog.addAll(cap.stop());
+            }
             ctx.onFileLoaded(batch, file);
         } catch (IOException ex) {
             ctx.fileError("loading", ex);
@@ -128,11 +132,21 @@ final class FileImporter {
 
     int appendFromContent(List<String> chunks, String mtTypeOverride, String sourceFile,
                           MessageOrigin origin) {
-        ImportBatch batch = ctx.importService().parseChunks(
-            chunks, mtTypeOverride, sourceFile, origin, ctx.config().getMaxEntries());
-        if (batch.totalParsed == 0) return 0;
-        ctx.onContentAppended(batch);
-        return batch.totalParsed;
+        ImportBatch batch;
+        try (ProwideLogCapture cap = ProwideLogCapture.start()) {
+            batch = ctx.importService().parseChunks(
+                chunks, mtTypeOverride, sourceFile, origin, ctx.config().getMaxEntries());
+            batch.prowideLog.addAll(cap.stop());
+        }
+        if (batch.totalParsed > 0) {
+            ctx.onContentAppended(batch);
+            return batch.totalParsed;
+        }
+        if (batch.errors > 0 || !batch.prowideLog.isEmpty()) {
+            ctx.onContentAppended(batch);
+            return -1;  // signals AppendTextDialog to close and show notifications
+        }
+        return 0;  // truly empty input – keep dialog open for retry
     }
 
     int appendFromContent(String content, String mtTypeOverride) {
@@ -177,11 +191,14 @@ final class FileImporter {
             @Override
             protected ImportBatch doInBackground() {
                 ImportBatch batch = new ImportBatch();
-                for (int i = 0; i < files.length; i++) {
-                    if (isCancelled()) break;
-                    ctx.importService().parseFileIntoBatch(
-                        files[i], dirMtOverride, batch, logSwiftStart, logNewlineToken, maxEntries);
-                    publish(i + 1);
+                try (ProwideLogCapture cap = ProwideLogCapture.start()) {
+                    for (int i = 0; i < files.length; i++) {
+                        if (isCancelled()) break;
+                        ctx.importService().parseFileIntoBatch(
+                            files[i], dirMtOverride, batch, logSwiftStart, logNewlineToken, maxEntries);
+                        publish(i + 1);
+                    }
+                    batch.prowideLog.addAll(cap.stop());
                 }
                 return batch;
             }
@@ -227,11 +244,14 @@ final class FileImporter {
                 List<String> chunks = MtFileIO.splitLogIntoSwiftMessages(content, swiftStart, newlineToken);
                 publish(-chunks.size()); // negative = scanning done, total known
                 ImportBatch batch = new ImportBatch();
-                for (int i = 0; i < chunks.size(); i++) {
-                    if (isCancelled() || batch.entryCount >= maxEntries) break;
-                    ctx.importService().parseChunkIntoBatch(
-                        chunks.get(i), null, batch, file.getAbsolutePath(), MessageOrigin.LOG_FILE, maxEntries);
-                    publish(i + 1);
+                try (ProwideLogCapture cap = ProwideLogCapture.start()) {
+                    for (int i = 0; i < chunks.size(); i++) {
+                        if (isCancelled() || batch.entryCount >= maxEntries) break;
+                        ctx.importService().parseChunkIntoBatch(
+                            chunks.get(i), null, batch, file.getAbsolutePath(), MessageOrigin.LOG_FILE, maxEntries);
+                        publish(i + 1);
+                    }
+                    batch.prowideLog.addAll(cap.stop());
                 }
                 return batch;
             }

@@ -190,6 +190,27 @@ public class MtAnalyzeFrame extends JFrame {
             @Override public JTable getDetailTable() { return tagPanel.getTable(); }
             @Override public void focusDetailTag(ColumnDef cd) { tagPanel.focusTag(cd); }
             @Override public void switchDetailCard(String card) { MtAnalyzeFrame.this.switchDetailCard(card); }
+            @Override public void onAddNote(int modelRow) {
+                Entry entry = entryPanel.getEntryForRow(modelRow);
+                if (entry == null) return;
+                entry.data().putIfAbsent(Entry.NOTE_COL_KEY, "");
+                detailCtrl.expandIfNeeded();
+                switchDetailCard(DetailPanelController.INSPECTOR);
+                dispatchSingleEntry(modelRow);
+                tagPanel.activateNoteEditing();
+            }
+            @Override public void onSetNote(int modelRow, String note) {
+                Entry entry = entryPanel.getEntryForRow(modelRow);
+                if (entry == null) return;
+                entry.data().put(Entry.NOTE_COL_KEY, note);
+                int colIdx = findPositionColumnIndex(Entry.NOTE_COL_KEY);
+                if (colIdx >= 0)
+                    entryPanel.getTable().getModel().setValueAt(note, modelRow, colIdx);
+                detailCtrl.expandIfNeeded();
+                switchDetailCard(DetailPanelController.INSPECTOR);
+                dispatchSingleEntry(modelRow);
+                tagPanel.activateNoteEditing();
+            }
             @Override public void addBookmarkForRow(int modelRow) { addBookmarkFromRow(modelRow); }
             @Override public void exportMessageForRow(int modelRow) {
                 mtExport.exportSingle(MtAnalyzeFrame.this,
@@ -299,6 +320,8 @@ public class MtAnalyzeFrame extends JFrame {
             this::onAppendFile,
             this::onImportDirectory,
             this::onReloadFile,
+            this::onValidateFile,
+            this::onAttachBlock5,
             () -> csvExport.export(this, entryPanel.getColumnDefs(), entryPanel.getRowData(), statusLabel::setText, csvPrefs),
             () -> csvExport.exportComponents(this, entryPanel.getFullDisplaySequences(), entryPanel.getRowData(), SEQ_KEY, statusLabel::setText, csvPrefs),
             () -> mtExport.export(this, entryPanel.getLoadedMessages().stream().map(SwiftMessage::raw).toList(),
@@ -961,6 +984,7 @@ public class MtAnalyzeFrame extends JFrame {
     private ImportService importService() { return importService; }
 
     private void onFileLoaded(ImportBatch batch, File file) {
+        notifyProwideLog(batch);
         if (batch.totalParsed == 0) { error("No valid SWIFT messages found."); return; }
         tagPanel.clear();
         entryPanel.loadBatch(batch.messages, batch.columnDefs);
@@ -992,6 +1016,7 @@ public class MtAnalyzeFrame extends JFrame {
         detailCtrl.notificationPanel().addNotification(NotificationPanel.Type.INFO, "Import complete",
             msg + " (" + entryPanel.getLoadedMessages().size() + " messages total)");
         notifyBatchErrors(batch.errors);
+        notifyProwideLog(batch);
         reloadItem.setEnabled(false);
         saveItem.setEnabled(true);
         if (batch.limitReached) warnLimitReached();
@@ -1003,6 +1028,7 @@ public class MtAnalyzeFrame extends JFrame {
         entryPanel.rebuildPositionTable();
         statusLabel.setText("Appended: " + batch.totalParsed + (batch.totalParsed == 1 ? MSG_SINGULAR : MSG_PLURAL));
         notifyBatchErrors(batch.errors);
+        notifyProwideLog(batch);
         if (batch.limitReached) warnLimitReached();
     }
 
@@ -1057,6 +1083,33 @@ public class MtAnalyzeFrame extends JFrame {
             return;
         }
         importer.loadFile(file);
+    }
+
+    private void onValidateFile() {
+        JFileChooser fc = new JFileChooser();
+        fc.setDialogTitle("Validate SWIFT FIN File");
+        fc.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter(
+            "SWIFT Files (*.txt, *.swift, *.fin, *.ste, *.log)",
+            "txt", "swift", "fin", "ste", "log"));
+        fc.setAcceptAllFileFilterUsed(true);
+        String lastFile = PREFS.get(PREF_LAST_FILE, "");
+        if (!lastFile.isEmpty()) {
+            File lastDir = new File(lastFile).getParentFile();
+            if (lastDir != null && lastDir.exists()) fc.setCurrentDirectory(lastDir);
+        }
+        if (fc.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) return;
+        ValidateFileDialog.show(this, fc.getSelectedFile());
+    }
+
+    private void onAttachBlock5() {
+        File initialDir = null;
+        String lastFile = PREFS.get(PREF_LAST_FILE, "");
+        if (!lastFile.isEmpty()) {
+            File d = new File(lastFile).getParentFile();
+            if (d != null && d.exists()) initialDir = d;
+        }
+        AttachBlock5Dialog.show(this, initialDir,
+            path -> statusLabel.setText("Block 5 attached: " + path));
     }
 
     private void markExplorerFileMtType(File file) {
@@ -1124,6 +1177,17 @@ public class MtAnalyzeFrame extends JFrame {
         if (errors <= 0) return;
         detailCtrl.notificationPanel().addNotification(NotificationPanel.Type.WARNING, "Parse errors",
             errors + (errors == 1 ? " item" : " items") + " could not be parsed.");
+    }
+
+    private void notifyProwideLog(ImportBatch batch) {
+        if (batch.prowideLog.isEmpty()) return;
+        String body = "<html>" + String.join("<br>", batch.prowideLog) + "</html>";
+        NotificationPanel.Type type = batch.prowideLog.stream()
+            .anyMatch(s -> s.startsWith("[SEVERE"))
+            ? NotificationPanel.Type.ERROR : NotificationPanel.Type.WARNING;
+        detailCtrl.notificationPanel().addNotification(type, "Parser log", body);
+        switchDetailCard(DetailPanelController.NOTIFICATIONS);
+        detailCtrl.expandIfNeeded();
     }
 
     private void warnLimitReached() {

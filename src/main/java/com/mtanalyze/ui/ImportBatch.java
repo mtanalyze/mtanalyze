@@ -26,6 +26,7 @@ final class ImportBatch {
     final List<SwiftMessage> messages   = new ArrayList<>();
     final List<ColumnDef>    columnDefs = new ArrayList<>();
     final Set<String>        knownKeys  = new HashSet<>();
+    final List<String>       prowideLog = new ArrayList<>();
     int     entryCount;
     int     totalParsed;
     int     errors;

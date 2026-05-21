@@ -37,6 +37,7 @@ final class EntryPanelModel {
     static final String MT_COL_KEY         = "\t_MT_\t\t1";
     static final String MT_COL_LABEL       = "MT";
     static final String TYPE_COL_KEY       = "\t_TYPE_\t\t1";
+    static final String NOTE_COL_KEY       = Entry.NOTE_COL_KEY;
     static final String GENL_23G_KEY       = "GENL\t23G\t\t1";
     static final String GENL_25D_IPRC_KEY  = "GENL\t25D\tIPRC\t1";
     static final String TRAN_REDE_KEY      = "TRANSDET\t22H\tREDE\t1";
@@ -109,7 +110,12 @@ final class EntryPanelModel {
     static List<Entry> parseAndDecorate(SwiftMessage msg, Set<String> knownKeys, List<ColumnDef> outCols) {
         SwiftTagListBlock b4 = msg.raw().getSwiftMessage().getBlock4();
         if (b4 == null || b4.getTags().isEmpty()) return List.of();
-        MtParser parser = new MtParser(detectRowSequence(msg.raw()));
+
+        // Extract persisted notes BEFORE MtParser runs so the parser never sees NOTE pseudo-tags.
+        String rowSeq = detectRowSequence(msg.raw());
+        Map<Integer, String> persistedNotes = extractAndRemoveNotes(b4, rowSeq);
+
+        MtParser parser = new MtParser(rowSeq);
         parser.parse(msg.raw());
         List<Entry> newEntries = parser.getEntries();
 
@@ -128,8 +134,59 @@ final class EntryPanelModel {
             if (knownKeys.add(FILE_COL_KEY)) outCols.add(new ColumnDef("", "_FILE_", "", 1, "File"));
             newEntries.forEach(e -> e.data().put(FILE_COL_KEY, fileLabel));
         }
+        if (knownKeys.add(NOTE_COL_KEY)) outCols.add(new ColumnDef("", "Note", "", 1, "Note"));
+        for (int i = 0; i < newEntries.size(); i++) {
+            String note = persistedNotes.get(i);
+            if (note != null) newEntries.get(i).data().put(NOTE_COL_KEY, note);
+        }
         newEntries.forEach(msg::addEntry);
         return newEntries;
+    }
+
+    /**
+     * Scans {@code b4} for {@code :70E::NOTE//} note fields, maps each one to the
+     * zero-based entry index it belongs to, removes all matching tags from
+     * the list, and returns the index→note map.
+     *
+     * <p>Entry boundaries are detected via {@code 16R}/{@code 16S} pairs whose
+     * value matches {@code rowSequence}. For flat messages ({@code rowSequence}
+     * is {@code null} or {@code "61"}) index 0 is always used.
+     */
+    private static Map<Integer, String> extractAndRemoveNotes(SwiftTagListBlock b4, String rowSeq) {
+        Map<Integer, String> notes = new HashMap<>();
+        List<com.prowidesoftware.swift.model.Tag> tags = b4.getTags();
+
+        if (rowSeq == null || "61".equals(rowSeq)) {
+            // Flat / MT940-style: single (or few) entries, no 16R/16S to track
+            for (com.prowidesoftware.swift.model.Tag t : tags) {
+                if (com.mtanalyze.export.ProjectIO.isNoteTag(t)) {
+                    notes.put(0, noteValue(t));
+                    break;
+                }
+            }
+        } else {
+            // Sequenced: track 16R:<rowSeq>…16S:<rowSeq> boundaries
+            int entryIdx = -1;
+            String pending = null;
+            for (com.prowidesoftware.swift.model.Tag t : tags) {
+                if ("16R".equals(t.getName()) && rowSeq.equals(t.getValue())) {
+                    entryIdx++;
+                    pending = null;
+                } else if (com.mtanalyze.export.ProjectIO.isNoteTag(t)) {
+                    pending = noteValue(t);
+                } else if ("16S".equals(t.getName()) && rowSeq.equals(t.getValue())) {
+                    if (pending != null && entryIdx >= 0) notes.put(entryIdx, pending);
+                    pending = null;
+                }
+            }
+        }
+        tags.removeIf(com.mtanalyze.export.ProjectIO::isNoteTag);
+        return notes;
+    }
+
+    private static String noteValue(com.prowidesoftware.swift.model.Tag t) {
+        String val = t.getValue();
+        return val != null ? val.substring(com.mtanalyze.export.ProjectIO.NOTE_TAG_VALUE_PREFIX.length()) : "";
     }
 
     private static String fileLabel(SwiftMessage msg) {

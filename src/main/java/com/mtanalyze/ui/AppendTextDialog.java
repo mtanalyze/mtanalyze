@@ -103,7 +103,7 @@ public final class AppendTextDialog {
             String raw = textArea.getText();
             if (raw.trim().isEmpty()) return;
             int parsed = parseContent(raw, promptMtType, onParseText, onParseCsv);
-            if (parsed > 0) dialog.dispose();
+            if (parsed != 0) dialog.dispose();  // >0 success, <0 error (notifications shown)
         };
 
         parseBtn.addActionListener(e -> doParse.run());

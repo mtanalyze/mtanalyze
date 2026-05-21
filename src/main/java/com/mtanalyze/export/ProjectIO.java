@@ -15,15 +15,20 @@
  */
 package com.mtanalyze.export;
 
+import com.mtanalyze.model.Entry;
 import com.mtanalyze.model.Project;
 import com.mtanalyze.model.SwiftMessage;
 import com.prowidesoftware.swift.model.SwiftBlock2;
 import com.prowidesoftware.swift.model.SwiftTagListBlock;
+import com.prowidesoftware.swift.model.Tag;
 import com.prowidesoftware.swift.model.mt.AbstractMT;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.IdentityHashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Serializes a {@link Project} to the {@code .mtd} session file format and back.
@@ -32,10 +37,20 @@ import java.nio.file.Files;
  * headers so the file can be re-loaded by the standard parser pipeline.
  * Reading a .mtd file needs no special handling — the existing multi-message
  * splitter in {@code MtFileIO} covers it.
+ *
+ * <p>User notes ({@link Entry#NOTE_COL_KEY}) are persisted as a real SWIFT field
+ * {@code :70E::NOTE//text} inside each entry's sequence block. On load, these tags
+ * are stripped before the standard parser runs and the note text is restored into
+ * {@code Entry.data()}.
  */
 public final class ProjectIO {
 
     public static final String SESSION_EXTENSION = "mtd";
+
+    /** SWIFT tag used to persist the user note: field 70E with qualifier NOTE. */
+    public static final String NOTE_TAG_NAME         = "70E";
+    /** Value prefix that identifies a persisted note: qualifier + subfield delimiter. */
+    public static final String NOTE_TAG_VALUE_PREFIX = ":NOTE//";
 
     private ProjectIO() {}
 
@@ -51,28 +66,77 @@ public final class ProjectIO {
         boolean first = true;
         for (SwiftMessage msg : project.messages()) {
             if (!first) sb.append("\r\n");
-            sb.append(toSessionText(msg.raw()));
+            sb.append(toSessionText(msg));
             first = false;
         }
         Files.writeString(file.toPath(), sb.toString());
     }
 
-    private static String toSessionText(AbstractMT mt) {
-        String mtType = resolveMtType(mt);
+    private static String toSessionText(SwiftMessage msg) {
+        String mtType = resolveMtType(msg.raw());
         StringBuilder sb = new StringBuilder();
         sb.append("{1:F01AAAAAAAA0000000000}\r\n");
         sb.append("{2:I").append(mtType).append("AAAAAAAA0000U3003}\r\n");
         sb.append("{4:\r\n");
-        SwiftTagListBlock b4 = mt.getSwiftMessage().getBlock4();
-        if (b4 != null) {
-            for (var tag : b4.getTags()) {
-                sb.append(":").append(tag.getName()).append(":");
-                if (tag.getValue() != null) sb.append(tag.getValue());
-                sb.append("\r\n");
-            }
-        }
+        writeBlock4WithNotes(sb, msg);
         sb.append("-}");
         return sb.toString();
+    }
+
+    /**
+     * Writes Block 4 tags, injecting a {@code :70E::NOTE//text} field for each entry
+     * that has a non-empty note.
+     *
+     * <p>For entries bounded by a {@code 16S} tag the note is written immediately
+     * before the {@code 16S} (inside the block). For single-entry messages without
+     * {@code 16R}/{@code 16S} the note is appended after the last tag.
+     */
+    private static void writeBlock4WithNotes(StringBuilder sb, SwiftMessage msg) {
+        // noteBefore: write NOTE pseudo-tag immediately BEFORE this tag (entries ending with 16S)
+        Map<Tag, String> noteBefore = new IdentityHashMap<>();
+        // noteAfter:  write NOTE pseudo-tag immediately AFTER this tag (flat single-entry messages)
+        Map<Tag, String> noteAfter  = new IdentityHashMap<>();
+
+        for (Entry entry : msg.entries()) {
+            String note = entry.getValue(Entry.NOTE_COL_KEY);
+            if (note.isEmpty()) continue;
+            List<Tag> seqTags = entry.sequence().getTags();
+            if (seqTags.isEmpty()) continue;
+            Tag lastTag = seqTags.get(seqTags.size() - 1);
+            if ("16S".equals(lastTag.getName()))
+                noteBefore.put(lastTag, note);
+            else
+                noteAfter.put(lastTag, note);
+        }
+
+        SwiftTagListBlock b4 = msg.raw().getSwiftMessage().getBlock4();
+        if (b4 == null) return;
+        for (Tag tag : b4.getTags()) {
+            if (isNoteTag(tag)) continue; // skip stale note tags from prior load
+            String before = noteBefore.get(tag);
+            if (before != null) writeTag(sb, NOTE_TAG_NAME, NOTE_TAG_VALUE_PREFIX + escapeNote(before));
+            writeTag(sb, tag.getName(), tag.getValue());
+            String after = noteAfter.get(tag);
+            if (after != null) writeTag(sb, NOTE_TAG_NAME, NOTE_TAG_VALUE_PREFIX + escapeNote(after));
+        }
+    }
+
+    /** True when {@code tag} is one of our persisted note markers (not a real narrative field). */
+    public static boolean isNoteTag(Tag tag) {
+        return NOTE_TAG_NAME.equals(tag.getName())
+                && tag.getValue() != null
+                && tag.getValue().startsWith(NOTE_TAG_VALUE_PREFIX);
+    }
+
+    private static void writeTag(StringBuilder sb, String name, String value) {
+        sb.append(":").append(name).append(":");
+        if (value != null) sb.append(value);
+        sb.append("\r\n");
+    }
+
+    /** Collapses embedded newlines so the note stays on one SWIFT field line. */
+    private static String escapeNote(String note) {
+        return note.replace("\r\n", " ").replace('\n', ' ').replace('\r', ' ');
     }
 
     private static String resolveMtType(AbstractMT mt) {

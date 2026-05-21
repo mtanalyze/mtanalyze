@@ -78,8 +78,11 @@ final class ImportService {
             batch.messages.add(msg);
             batch.entryCount += EntryPanelModel.parseAndDecorate(msg, batch.knownKeys, batch.columnDefs).size();
             batch.totalParsed++;
-        } catch (IOException ignored) {
+        } catch (Exception ex) {
             batch.errors++;
+            String msg = ex.getMessage();
+            if (msg != null && !msg.isBlank())
+                batch.prowideLog.add("[SEVERE ] " + msg);
         }
     }
 }

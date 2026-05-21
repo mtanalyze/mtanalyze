@@ -33,6 +33,9 @@ public record Entry(
         SwiftTagListBlock sequence,
         SwiftTagListBlock parentContext
 ) {
+    /** Key used in {@code data} to store the user-editable note for this entry. */
+    public static final String NOTE_COL_KEY = "\tNote\t\t1";
+
     public String getValue(String key) {
         return data.getOrDefault(key, "");
     }

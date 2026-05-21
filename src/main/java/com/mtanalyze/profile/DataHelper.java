@@ -87,7 +87,7 @@ public final class DataHelper {
                                     List<String[]> headerEntries) {
         model.setRowCount(0);
         for (String[] entry : headerEntries)
-            addInfoRow(model, entry[0], entry[1], showComponents);
+            addInfoRow(model, entry[0], entry[1], showComponents, entry.length > 2 && "1".equals(entry[2]));
         SwiftTagListBlock seq = validateAndGetSequence(seqs, modelRow);
         if (seq == null) return;
 
@@ -96,12 +96,13 @@ public final class DataHelper {
     }
 
     private static void addInfoRow(DefaultTableModel model, String label, String value,
-                                    boolean showComponents) {
-        if (value == null || value.isEmpty()) return;
+                                    boolean showComponents, boolean alwaysAdd) {
+        if (!alwaysAdd && (value == null || value.isEmpty())) return;
+        String v = value != null ? value : "";
         if (showComponents)
-            model.addRow(new Object[]{"", label, "", "", value});
+            model.addRow(new Object[]{"", label, "", "", v});
         else
-            model.addRow(new Object[]{"", label, "", value});
+            model.addRow(new Object[]{"", label, "", v});
     }
 
     private static SwiftTagListBlock validateAndGetSequence(List<SwiftTagListBlock> seqs, int modelRow) {

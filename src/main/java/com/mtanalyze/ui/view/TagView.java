@@ -62,7 +62,9 @@ public class TagView extends RoundedPanel implements EntrySelectionListener {
     private static final int    DETAIL_MIN_WIDTH            = 380;
     private static final String MT_COL_KEY   = "\t_MT_\t\t1";
     private static final String FILE_COL_KEY = "\t_FILE_\t\t1";
+    private static final String NOTE_COL_KEY = Entry.NOTE_COL_KEY;
     private static final String MT_COL_LABEL = "MT";
+    private static final String NOTE_LABEL   = "Note";
     private static final String COL_SEQUENCE  = "Sequence";
     private static final String COL_TAG       = "Tag";
     private static final String COL_QUALIFIER = "Qualifier";
@@ -211,7 +213,9 @@ public class TagView extends RoundedPanel implements EntrySelectionListener {
         String mt = entry.getValue(MT_COL_KEY);
         String fn = entry.getValue(FILE_COL_KEY);
         if (!mt.isEmpty()) h.add(new String[]{MT_COL_LABEL, mt});
-        if (!fn.isEmpty()) h.add(new String[]{"File",       fn});
+        if (!fn.isEmpty()) h.add(new String[]{"File", fn});
+        if (entry.data().containsKey(NOTE_COL_KEY))
+            h.add(new String[]{NOTE_LABEL, entry.getValue(NOTE_COL_KEY), "1"});
         return h;
     }
 
@@ -223,6 +227,21 @@ public class TagView extends RoundedPanel implements EntrySelectionListener {
     public JPopupMenu buildContextMenu(int viewRow, int viewCol) {
         int modelRow = viewRow >= 0 ? tranDetailTable.convertRowIndexToModel(viewRow) : -1;
         return buildDetailContextMenu(tranDetailTable, modelRow, viewRow, viewCol);
+    }
+
+    public void activateNoteEditing() {
+        int valueCol = findDetailValueColumn();
+        if (valueCol < 0) return;
+        for (int r = 0; r < tranDetailModel.getRowCount(); r++) {
+            Object tag = tranDetailModel.getValueAt(r, 1);
+            if (!NOTE_LABEL.equals(tag != null ? tag.toString() : "")) continue;
+            int viewRow = detailRowSorter != null ? detailRowSorter.convertRowIndexToView(r) : r;
+            if (viewRow < 0) return;
+            tranDetailTable.scrollRectToVisible(tranDetailTable.getCellRect(viewRow, valueCol, true));
+            tranDetailTable.editCellAt(viewRow, valueCol);
+            tranDetailTable.requestFocusInWindow();
+            return;
+        }
     }
 
     public void focusTag(ColumnDef cd) {
@@ -319,7 +338,9 @@ public class TagView extends RoundedPanel implements EntrySelectionListener {
             @Override public boolean isCellEditable(int r, int c) {
                 if (withComponents || c != getColumnCount() - 1) return false;
                 Object seq = getValueAt(r, 0);
-                return seq != null && !seq.toString().isEmpty();
+                if (seq != null && !seq.toString().isEmpty()) return false;
+                Object tag = getValueAt(r, 1);
+                return NOTE_LABEL.equals(tag != null ? tag.toString() : "");
             }
             @Override public void setValueAt(Object aValue, int row, int column) {
                 super.setValueAt(aValue, row, column);

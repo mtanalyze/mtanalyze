@@ -65,6 +65,8 @@ public final class FrameMenuBar {
         Runnable          onAppendFile,
         Runnable          onImportDirectory,
         Runnable          onReloadFile,
+        Runnable          onValidateFile,
+        Runnable          onAttachBlock5,
         Runnable          onExportCsv,
         Runnable          onExportCsvComponents,
         Runnable          onExportMt,
@@ -148,6 +150,9 @@ public final class FrameMenuBar {
         fileMenu.add(importMenu);
         fileMenu.addSeparator();
         fileMenu.add(exportMenu);
+        fileMenu.addSeparator();
+        fileMenu.add(item("Validate SWIFT File...", ToolbarIcons.menuSearch(),     null, cb.onValidateFile()));
+        fileMenu.add(item("Attach Block 5...",      ToolbarIcons.menuAppendFile(), null, cb.onAttachBlock5()));
         fileMenu.addSeparator();
         fileMenu.add(item("Settings...", ToolbarIcons.menuSettings(), null, cb.onShowSettings()));
         fileMenu.addSeparator();

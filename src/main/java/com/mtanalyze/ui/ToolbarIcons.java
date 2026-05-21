@@ -432,6 +432,25 @@ public final class ToolbarIcons {
 
     // ── Bookmark / Export / Delete ────────────────────────────────────
 
+    public static Icon menuNote() {
+        return makeMenuIcon((g, c) -> {
+            g.setColor(c);
+            g.setStroke(new BasicStroke(1.3f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            // Page outline with folded top-right corner
+            g.drawLine(3, 1, 11, 1);
+            g.drawLine(11, 1, 14, 4);
+            g.drawLine(14, 4, 14, 15);
+            g.drawLine(3, 15, 14, 15);
+            g.drawLine(3, 1, 3, 15);
+            g.drawLine(11, 1, 11, 4);
+            g.drawLine(11, 4, 14, 4);
+            // Text lines
+            g.drawLine(5, 6, 12, 6);
+            g.drawLine(5, 9, 12, 9);
+            g.drawLine(5, 12, 9, 12);
+        });
+    }
+
     public static Icon menuBookmark() {
         return makeMenuIcon((g, c) -> {
             g.setColor(COLOR_BOOKMARK);

@@ -68,6 +68,8 @@ public class MtEntryPanel extends JPanel {
         JTable getDetailTable();
         void focusDetailTag(ColumnDef cd);
         void switchDetailCard(String card);
+        void onAddNote(int modelRow);
+        void onSetNote(int modelRow, String note);
         void addBookmarkForRow(int modelRow);
         void exportMessageForRow(int modelRow);
         void showAppendTextDialog();
@@ -534,8 +536,10 @@ public class MtEntryPanel extends JPanel {
         popup.add(clearFiltersItem);
         addFilterModeMenuItem(popup);
 
-        // ── Bookmarks & Export ────────────────────────────────────────────
+        // ── Bookmarks, Notes & Export ─────────────────────────────────────
         popup.addSeparator();
+        popup.add(makeAddNoteMenuItem(modelRow));
+        popup.add(buildAvailableNotesMenu(modelRow));
         popup.add(makeBookmarkMenuItem(modelRow));
         if (host.isPowerUser()) popup.add(makeExportMessageMenuItem(modelRow));
 
@@ -580,6 +584,36 @@ public class MtEntryPanel extends JPanel {
         JMenuItem item = new JMenuItem("View Source", ToolbarIcons.menuViewSource());
         item.addActionListener(ae -> host.switchDetailCard(DETAIL_CARD_EDITOR));
         popup.add(item);
+    }
+
+    private JMenuItem makeAddNoteMenuItem(int modelRow) {
+        Entry entry = model.getEntryForRow(modelRow);
+        boolean hasNote = entry != null && entry.data().containsKey(Entry.NOTE_COL_KEY);
+        JMenuItem item = new JMenuItem(hasNote ? "Edit Note" : "Add Note", ToolbarIcons.menuNote());
+        item.addActionListener(ae -> host.onAddNote(modelRow));
+        return item;
+    }
+
+    private JMenu buildAvailableNotesMenu(int modelRow) {
+        JMenu menu = new JMenu("Available Notes");
+        menu.setIcon(ToolbarIcons.menuNote());
+        LinkedHashSet<String> seen = new LinkedHashSet<>();
+        for (Entry e : model.allEntries()) {
+            String note = e.data().get(Entry.NOTE_COL_KEY);
+            if (note != null && !note.isBlank()) seen.add(note);
+        }
+        if (seen.isEmpty()) {
+            menu.setEnabled(false);
+            return menu;
+        }
+        for (String note : seen) {
+            String label = note.length() > 50 ? note.substring(0, 47) + "…" : note;
+            JMenuItem item = new JMenuItem(label);
+            item.setToolTipText(note.length() > 50 ? note : null);
+            item.addActionListener(ae -> host.onSetNote(modelRow, note));
+            menu.add(item);
+        }
+        return menu;
     }
 
     private JMenuItem makeBookmarkMenuItem(int modelRow) {

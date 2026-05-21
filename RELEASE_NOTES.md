@@ -1,22 +1,89 @@
-# MT Analyze v0.9.2
+# MT Analyze v1.0.2
 
 ## Download & Run
 
 **Requirements:** Java 17 or higher
 
 ```bash
-java -jar MT-Analyze-v0.9.2.jar
+java -jar MT-Analyze-v1.0.2.jar
 ```
 
 ---
 
 ## Changes
 
-- **Java 17** — minimum Java version reduced from 21 to 17
-- **Configuration file** — optional `mtanalyze.properties` next to the JAR controls max entries, log import settings, and experimental mode; documented template included in `doc/`
-- **Name-Value import** — MT type is now resolved per line from its own `MT=XXX` field; files with mixed MT types are parsed correctly
-- **Fix Encoding** — the encoding correction in the Paste MT Snippet dialog now also handles the `"00ä` → `"{` Mainframe prefix pattern
-- **Diff View** — entry columns are now labelled "Entry 1", "Entry 2", … instead of the internal sequence name (e.g. TRAN)
-- **Detail panel** — toolbar button order changed to: Tags, Components, Diff, Source, Notifications
-- **About dialog** — now shows a clickable link to the GitHub repository
-- **Release builds** — JAR is now built automatically via GitHub Actions and attached to each release; no pre-built binaries committed to the repository
+### Validate SWIFT File
+
+New **File → Validate SWIFT File…** menu item. Loads any SWIFT FIN file and shows a scrollable diagnostic report:
+
+- **Prowide log** — WARNING and SEVERE messages emitted by the parser (JUL capture)
+- **Parser errors** — `SwiftParser.getErrors()` output; exceptions are shown inline
+- **Block structure** — presence/absence of blocks 1–5 with content preview
+- **Message info** — type, sender, receiver, LT address, session and sequence numbers
+- **JSON** — `AbstractMT.toJson()` and `SwiftMessage.toJson()` output
+
+The report can be copied to the clipboard in one click. Use this to inspect malformed or non-standard files without loading them into the entries table.
+
+### Attach Block 5
+
+New **File → Attach Block 5…** menu item. Reads a complete SWIFT FIN file, lets you configure the MAC value (default `00000000`), and writes the modified file with a `{5:{MAC:…}}` trailer block:
+
+- If Block 5 is absent, it is appended after the closing `-}` of Block 4.
+- If Block 5 is present but has no MAC tag, MAC is inserted.
+- If Block 5 already contains a MAC tag, the value is replaced; other trailer tags (e.g. `CHK`, `PDE`) are preserved.
+
+The output is written to a new file (default: original name with `_mac` suffix). Useful for adding a dummy trailer to files that were stripped of Block 5 before use in testing environments.
+
+### Parser Log Notifications
+
+Prowide Core WARNING and SEVERE log messages are now captured during all normal import paths — file load, directory import, log file import, and paste — and surfaced as notifications in the **Notifications** panel. The panel opens and expands automatically when parser warnings arrive so they are never missed.
+
+Parse exceptions that previously propagated silently are now caught, and the exception message is shown as a notification rather than being swallowed or crashing the EDT.
+
+---
+
+# MT Analyze v1.0.1
+
+## Download & Run
+
+**Requirements:** Java 17 or higher
+
+```bash
+java -jar MT-Analyze-v1.0.1.jar
+```
+
+---
+
+## Changes
+
+### Entry Notes
+
+- **Add Note** — right-click any row in the Entries table to attach a free-text note to that entry.
+- **Edit Note** — opens the Tag View and activates the Note field for direct editing.
+- **Available Notes** — submenu listing all unique notes already used across entries; click one to apply it to the selected row. Useful for stamping a standard CSD remark or status across multiple entries.
+- Notes are persisted in `.mtd` session files as `:70E::NOTE//text` (valid ISO 15022 tag format) and restored on load.
+
+### User Dictionary — Excel-editable CSV
+
+- Custom qualifier-value descriptions (e.g. CSD identifiers, proprietary codes) can be maintained in `~/.mtanalyze/user_qualifier_values.csv`.
+- The file is written with a UTF-8 BOM so Excel opens it without an import wizard.
+- Entries added via **Settings → User Dictionary** are saved to this file automatically.
+- Any of the four built-in dictionary files (`dict_qualifier_values.csv`, `dict_qualifiers.csv`, `dict_tags.csv`, `dict_components.csv`) can be replaced entirely by placing a file with the same name in `~/.mtanalyze/`.
+
+---
+
+# MT Analyze v1.0.0
+
+## Download & Run
+
+**Requirements:** Java 17 or higher
+
+```bash
+java -jar MT-Analyze-v1.0.0.jar
+```
+
+---
+
+## Changes
+
+Initial public release.
