@@ -28,7 +28,6 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.io.File;
-import java.io.IOException;
 import java.util.List;
 
 /**
@@ -92,12 +91,26 @@ public final class ValidateFileDialog {
 
     // -----------------------------------------------------------------------
 
-    private static String buildReport(File file) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("File: ").append(file.getAbsolutePath()).append("\n");
-        sb.append("=".repeat(80)).append("\n\n");
+    private record TypedParseResult(AbstractMT mt, Exception ex) {}
 
-        // ── Capture JUL output from Prowide during all parsing ─────────────
+    private record ParseResult(
+        SwiftMessage swiftMsg,
+        List<String> parseErrors,
+        AbstractMT   typedMt,
+        Exception    parseEx,
+        Exception    typedEx,
+        List<String> prowideLog
+    ) {}
+
+    private static TypedParseResult parseTyped(File file) {
+        try {
+            return new TypedParseResult(AbstractMT.parse(file), null);
+        } catch (Exception ex) {
+            return new TypedParseResult(null, ex);
+        }
+    }
+
+    private static ParseResult parseFile(File file) {
         SwiftMessage swiftMsg  = null;
         List<String> parseErrors = List.of();
         AbstractMT   typedMt   = null;
@@ -106,68 +119,21 @@ public final class ValidateFileDialog {
         List<String> prowideLog;
         try (ProwideLogCapture cap = ProwideLogCapture.start()) {
             try {
-                // ── 1a. Low-level parse ──────────────────────────────────
                 SwiftParser parser = new SwiftParser(file);
                 swiftMsg    = parser.message();
                 parseErrors = parser.getErrors() != null ? parser.getErrors() : List.of();
-
-                // ── 1b. Typed parse (AbstractMT) ─────────────────────────
-                try {
-                    typedMt = AbstractMT.parse(file);
-                } catch (Exception ex) {
-                    typedEx = ex;
-                }
-            } catch (IOException ex) {
-                parseEx = ex;
+                TypedParseResult tpr = parseTyped(file);
+                typedMt = tpr.mt();
+                typedEx = tpr.ex();
             } catch (Exception ex) {
                 parseEx = ex;
             }
             prowideLog = cap.stop();
         }
+        return new ParseResult(swiftMsg, parseErrors, typedMt, parseEx, typedEx, prowideLog);
+    }
 
-        // ── 2. JUL log messages (WARNUNG / SCHWERWIEGEND from Prowide) ─────
-        sb.append("PROWIDE LOG\n");
-        sb.append("-".repeat(40)).append("\n");
-        if (prowideLog.isEmpty()) {
-            sb.append("  none\n");
-        } else {
-            for (String line : prowideLog) sb.append("  ").append(line).append("\n");
-        }
-        sb.append("\n");
-
-        // ── 3. Parser errors (SwiftParser.getErrors) ─────────────────────
-        sb.append("PARSER ERRORS\n");
-        sb.append("-".repeat(40)).append("\n");
-        if (parseEx != null) {
-            sb.append("  [EXCEPTION] ").append(parseEx.getClass().getSimpleName())
-              .append(": ").append(parseEx.getMessage()).append("\n");
-        } else if (parseErrors.isEmpty()) {
-            sb.append("  none\n");
-        } else {
-            for (String e : parseErrors) sb.append("  [ERROR] ").append(e).append("\n");
-        }
-        sb.append("\n");
-
-        if (swiftMsg == null) {
-            sb.append("No message object returned by parser.\n");
-            return sb.toString();
-        }
-
-        // ── 4. Block structure ────────────────────────────────────────────
-        sb.append("BLOCK STRUCTURE\n");
-        sb.append("-".repeat(40)).append("\n");
-        try {
-            appendValueBlock(sb, "Block 1 (Basic Header)   ", swiftMsg.getBlock1());
-            appendValueBlock(sb, "Block 2 (App Header)     ", swiftMsg.getBlock2());
-            appendTagBlock(sb,   "Block 3 (User Header)    ", swiftMsg.getBlock3());
-            appendBlock4(sb, swiftMsg.getBlock4());
-            appendTagBlock(sb,   "Block 5 (Trailer)        ", swiftMsg.getBlock5());
-        } catch (Exception ex) {
-            sb.append("  (error reading blocks: ").append(ex.getMessage()).append(")\n");
-        }
-        sb.append("\n");
-
-        // ── 5. Message info ───────────────────────────────────────────────
+    private static void appendMessageInfo(StringBuilder sb, SwiftMessage swiftMsg) {
         sb.append("MESSAGE INFO\n");
         sb.append("-".repeat(40)).append("\n");
         try {
@@ -187,8 +153,9 @@ public final class ValidateFileDialog {
             sb.append("  (error reading message info: ").append(ex.getMessage()).append(")\n");
         }
         sb.append("\n");
+    }
 
-        // ── 6. AbstractMT.toJson ──────────────────────────────────────────
+    private static void appendTypedJson(StringBuilder sb, Exception typedEx, AbstractMT typedMt) {
         sb.append("JSON (AbstractMT.toJson)\n");
         sb.append("-".repeat(40)).append("\n");
         if (typedEx != null) {
@@ -204,12 +171,68 @@ public final class ValidateFileDialog {
             sb.append("  (could not create typed MT object – block 2 may be missing)\n");
         }
         sb.append("\n");
+    }
+
+    private static String buildReport(File file) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("File: ").append(file.getAbsolutePath()).append("\n");
+        sb.append("=".repeat(80)).append("\n\n");
+
+        ParseResult pr = parseFile(file);
+
+        // ── 2. JUL log messages (WARNUNG / SCHWERWIEGEND from Prowide) ─────
+        sb.append("PROWIDE LOG\n");
+        sb.append("-".repeat(40)).append("\n");
+        if (pr.prowideLog().isEmpty()) {
+            sb.append("  none\n");
+        } else {
+            for (String line : pr.prowideLog()) sb.append("  ").append(line).append("\n");
+        }
+        sb.append("\n");
+
+        // ── 3. Parser errors (SwiftParser.getErrors) ─────────────────────
+        sb.append("PARSER ERRORS\n");
+        sb.append("-".repeat(40)).append("\n");
+        if (pr.parseEx() != null) {
+            sb.append("  [EXCEPTION] ").append(pr.parseEx().getClass().getSimpleName())
+              .append(": ").append(pr.parseEx().getMessage()).append("\n");
+        } else if (pr.parseErrors().isEmpty()) {
+            sb.append("  none\n");
+        } else {
+            for (String e : pr.parseErrors()) sb.append("  [ERROR] ").append(e).append("\n");
+        }
+        sb.append("\n");
+
+        if (pr.swiftMsg() == null) {
+            sb.append("No message object returned by parser.\n");
+            return sb.toString();
+        }
+
+        // ── 4. Block structure ────────────────────────────────────────────
+        sb.append("BLOCK STRUCTURE\n");
+        sb.append("-".repeat(40)).append("\n");
+        try {
+            appendValueBlock(sb, "Block 1 (Basic Header)   ", pr.swiftMsg().getBlock1());
+            appendValueBlock(sb, "Block 2 (App Header)     ", pr.swiftMsg().getBlock2());
+            appendTagBlock(sb,   "Block 3 (User Header)    ", pr.swiftMsg().getBlock3());
+            appendBlock4(sb, pr.swiftMsg().getBlock4());
+            appendTagBlock(sb,   "Block 5 (Trailer)        ", pr.swiftMsg().getBlock5());
+        } catch (Exception ex) {
+            sb.append("  (error reading blocks: ").append(ex.getMessage()).append(")\n");
+        }
+        sb.append("\n");
+
+        // ── 5. Message info ───────────────────────────────────────────────
+        appendMessageInfo(sb, pr.swiftMsg());
+
+        // ── 6. AbstractMT.toJson ──────────────────────────────────────────
+        appendTypedJson(sb, pr.typedEx(), pr.typedMt());
 
         // ── 7. SwiftMessage.toJson ────────────────────────────────────────
         sb.append("JSON (SwiftMessage.toJson)\n");
         sb.append("-".repeat(40)).append("\n");
         try {
-            sb.append(swiftMsg.toJson()).append("\n");
+            sb.append(pr.swiftMsg().toJson()).append("\n");
         } catch (Exception ex) {
             sb.append("  (").append(ex.getClass().getSimpleName()).append(": ")
               .append(ex.getMessage()).append(")\n");

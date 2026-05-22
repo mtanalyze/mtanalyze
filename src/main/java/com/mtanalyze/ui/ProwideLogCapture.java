@@ -89,8 +89,8 @@ final class ProwideLogCapture implements AutoCloseable {
             seen.add(sb.toString());
         }
 
-        @Override public void flush() {}
-        @Override public void close() {}
+        @Override public void flush() { /* records are kept in memory; nothing to flush */ }
+        @Override public void close() { /* no I/O resources to release */ }
 
         List<String> formatted() { return new ArrayList<>(seen); }
     }

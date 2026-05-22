@@ -135,10 +135,7 @@ final class EntryPanelModel {
             newEntries.forEach(e -> e.data().put(FILE_COL_KEY, fileLabel));
         }
         if (knownKeys.add(NOTE_COL_KEY)) outCols.add(new ColumnDef("", "Note", "", 1, "Note"));
-        for (int i = 0; i < newEntries.size(); i++) {
-            String note = persistedNotes.get(i);
-            if (note != null) newEntries.get(i).data().put(NOTE_COL_KEY, note);
-        }
+        applyPersistedNotes(newEntries, persistedNotes);
         newEntries.forEach(msg::addEntry);
         return newEntries;
     }
@@ -165,23 +162,34 @@ final class EntryPanelModel {
                 }
             }
         } else {
-            // Sequenced: track 16R:<rowSeq>…16S:<rowSeq> boundaries
-            int entryIdx = -1;
-            String pending = null;
-            for (com.prowidesoftware.swift.model.Tag t : tags) {
-                if ("16R".equals(t.getName()) && rowSeq.equals(t.getValue())) {
-                    entryIdx++;
-                    pending = null;
-                } else if (com.mtanalyze.export.ProjectIO.isNoteTag(t)) {
-                    pending = noteValue(t);
-                } else if ("16S".equals(t.getName()) && rowSeq.equals(t.getValue())) {
-                    if (pending != null && entryIdx >= 0) notes.put(entryIdx, pending);
-                    pending = null;
-                }
-            }
+            collectSequencedNotes(tags, rowSeq, notes);
         }
         tags.removeIf(com.mtanalyze.export.ProjectIO::isNoteTag);
         return notes;
+    }
+
+    private static void collectSequencedNotes(List<com.prowidesoftware.swift.model.Tag> tags,
+                                               String rowSeq, Map<Integer, String> notes) {
+        int entryIdx = -1;
+        String pending = null;
+        for (com.prowidesoftware.swift.model.Tag t : tags) {
+            if ("16R".equals(t.getName()) && rowSeq.equals(t.getValue())) {
+                entryIdx++;
+                pending = null;
+            } else if (com.mtanalyze.export.ProjectIO.isNoteTag(t)) {
+                pending = noteValue(t);
+            } else if ("16S".equals(t.getName()) && rowSeq.equals(t.getValue())) {
+                if (pending != null && entryIdx >= 0) notes.put(entryIdx, pending);
+                pending = null;
+            }
+        }
+    }
+
+    private static void applyPersistedNotes(List<Entry> entries, Map<Integer, String> notes) {
+        for (int i = 0; i < entries.size(); i++) {
+            String note = notes.get(i);
+            if (note != null) entries.get(i).data().put(NOTE_COL_KEY, note);
+        }
     }
 
     private static String noteValue(com.prowidesoftware.swift.model.Tag t) {

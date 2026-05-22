@@ -21,7 +21,6 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Locale;
 import java.util.function.Consumer;
@@ -31,6 +30,8 @@ import java.util.function.Consumer;
  * Flow: source file chooser → MAC value configuration → output file chooser → write.
  */
 public final class AttachBlock5Dialog {
+
+    private static final String ERROR_TITLE = "Error";
 
     private AttachBlock5Dialog() {}
 
@@ -59,7 +60,7 @@ public final class AttachBlock5Dialog {
             content = new String(Files.readAllBytes(sourceFile.toPath()));
         } catch (IOException ex) {
             JOptionPane.showMessageDialog(parent, "Cannot read file:\n" + ex.getMessage(),
-                "Error", JOptionPane.ERROR_MESSAGE);
+                ERROR_TITLE, JOptionPane.ERROR_MESSAGE);
             return;
         }
 
@@ -110,7 +111,7 @@ public final class AttachBlock5Dialog {
             modified = Block5Service.attachMac(content, macValue);
         } catch (IllegalArgumentException ex) {
             JOptionPane.showMessageDialog(parent, "Processing error:\n" + ex.getMessage(),
-                "Error", JOptionPane.ERROR_MESSAGE);
+                ERROR_TITLE, JOptionPane.ERROR_MESSAGE);
             return;
         }
 
@@ -119,16 +120,16 @@ public final class AttachBlock5Dialog {
         saveFc.setDialogTitle("Save Modified SWIFT File");
         saveFc.setCurrentDirectory(sourceFile.getParentFile());
         saveFc.setSelectedFile(new File(sourceFile.getParentFile(),
-            addSuffix(sourceFile.getName(), "_mac")));
+            addSuffix(sourceFile.getName())));
         if (saveFc.showSaveDialog(parent) != JFileChooser.APPROVE_OPTION) return;
         File outFile = saveFc.getSelectedFile();
 
         // ── 7. Write ───────────────────────────────────────────────────────
         try {
-            Files.write(outFile.toPath(), modified.getBytes(StandardCharsets.UTF_8));
+            Files.writeString(outFile.toPath(), modified);
         } catch (IOException ex) {
             JOptionPane.showMessageDialog(parent, "Cannot write file:\n" + ex.getMessage(),
-                "Error", JOptionPane.ERROR_MESSAGE);
+                ERROR_TITLE, JOptionPane.ERROR_MESSAGE);
             return;
         }
 
@@ -137,10 +138,10 @@ public final class AttachBlock5Dialog {
 
     // -----------------------------------------------------------------------
 
-    private static String addSuffix(String filename, String suffix) {
+    private static String addSuffix(String filename) {
         int dot = filename.lastIndexOf('.');
         return dot >= 0
-            ? filename.substring(0, dot) + suffix + filename.substring(dot)
-            : filename + suffix;
+            ? filename.substring(0, dot) + "_mac" + filename.substring(dot)
+            : filename + "_mac";
     }
 }

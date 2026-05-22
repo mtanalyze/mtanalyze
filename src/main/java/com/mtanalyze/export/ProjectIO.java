@@ -92,22 +92,11 @@ public final class ProjectIO {
      * {@code 16R}/{@code 16S} the note is appended after the last tag.
      */
     private static void writeBlock4WithNotes(StringBuilder sb, SwiftMessage msg) {
-        // noteBefore: write NOTE pseudo-tag immediately BEFORE this tag (entries ending with 16S)
         Map<Tag, String> noteBefore = new IdentityHashMap<>();
-        // noteAfter:  write NOTE pseudo-tag immediately AFTER this tag (flat single-entry messages)
         Map<Tag, String> noteAfter  = new IdentityHashMap<>();
 
-        for (Entry entry : msg.entries()) {
-            String note = entry.getValue(Entry.NOTE_COL_KEY);
-            if (note.isEmpty()) continue;
-            List<Tag> seqTags = entry.sequence().getTags();
-            if (seqTags.isEmpty()) continue;
-            Tag lastTag = seqTags.get(seqTags.size() - 1);
-            if ("16S".equals(lastTag.getName()))
-                noteBefore.put(lastTag, note);
-            else
-                noteAfter.put(lastTag, note);
-        }
+        for (Entry entry : msg.entries())
+            collectNoteMarkers(entry, noteBefore, noteAfter);
 
         SwiftTagListBlock b4 = msg.raw().getSwiftMessage().getBlock4();
         if (b4 == null) return;
@@ -119,6 +108,18 @@ public final class ProjectIO {
             String after = noteAfter.get(tag);
             if (after != null) writeTag(sb, NOTE_TAG_NAME, NOTE_TAG_VALUE_PREFIX + escapeNote(after));
         }
+    }
+
+    private static void collectNoteMarkers(Entry entry, Map<Tag, String> noteBefore, Map<Tag, String> noteAfter) {
+        String note = entry.getValue(Entry.NOTE_COL_KEY);
+        if (note.isEmpty()) return;
+        List<Tag> seqTags = entry.sequence().getTags();
+        if (seqTags.isEmpty()) return;
+        Tag lastTag = seqTags.get(seqTags.size() - 1);
+        if ("16S".equals(lastTag.getName()))
+            noteBefore.put(lastTag, note);
+        else
+            noteAfter.put(lastTag, note);
     }
 
     /** True when {@code tag} is one of our persisted note markers (not a real narrative field). */

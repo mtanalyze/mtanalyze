@@ -6,7 +6,7 @@
 
     <groupId>com.mtanalyze</groupId>
     <artifactId>mtanalyze</artifactId>
-    <version>1.0.2</version>
+    <version>1.0.3</version>
     <packaging>jar</packaging>
 
     <name>MT Analyze</name>
@@ -15,12 +15,12 @@
 
     <organization>
         <name>Centerscout GmbH</name>
-        <url>https://www.centerscout.de</url>
+        <url>https://www.centerscout.com</url>
     </organization>
 
     <developers>
         <developer>
-            <id>rschwarz</id>
+            <id>rmchwarz</id>
             <name>Ralf Michael Schwarz</name>
             <email>r.schwarz@centerscout.com</email>
             <organization>Centerscout GmbH</organization>
@@ -152,14 +152,42 @@
             <id>central</id>
             <build>
                 <plugins>
-                    <!-- Shade deaktivieren: Maven Central bekommt das reguläre JAR ohne gebundelte Dependencies -->
+                    <!-- Fat-JAR als Classifier -all anhängen: reguläres JAR bleibt das Hauptartefakt -->
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-shade-plugin</artifactId>
                         <executions>
                             <execution>
                                 <id>shade-fat-jar</id>
-                                <phase>none</phase>
+                                <phase>package</phase>
+                                <goals><goal>shade</goal></goals>
+                                <configuration>
+                                    <shadedArtifactAttached>true</shadedArtifactAttached>
+                                    <shadedClassifierName>all</shadedClassifierName>
+                                    <transformers>
+                                        <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                            <mainClass>com.mtanalyze.MtAnalyze</mainClass>
+                                        </transformer>
+                                        <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                                        <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheLicenseResourceTransformer"/>
+                                    </transformers>
+                                    <filters>
+                                        <filter>
+                                            <artifact>*:*</artifact>
+                                            <excludes>
+                                                <exclude>META-INF/MANIFEST.MF</exclude>
+                                                <exclude>META-INF/versions/*/module-info.class</exclude>
+                                                <exclude>module-info.class</exclude>
+                                            </excludes>
+                                        </filter>
+                                        <filter>
+                                            <artifact>org.apache.xmlbeans:xmlbeans</artifact>
+                                            <excludes>
+                                                <exclude>META-INF/maven/**</exclude>
+                                            </excludes>
+                                        </filter>
+                                    </filters>
+                                </configuration>
                             </execution>
                         </executions>
                     </plugin>
