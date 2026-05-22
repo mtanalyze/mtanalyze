@@ -2,6 +2,7 @@
 **The fast way through a stack of SWIFT MT messages.**
 
 [![Release Build](https://github.com/mtanalyze/mtanalyze/actions/workflows/release.yml/badge.svg)](https://github.com/mtanalyze/mtanalyze/actions/workflows/release.yml)
+[![Maven Central](https://img.shields.io/maven-central/v/com.mtanalyze/mtanalyze)](https://central.sonatype.com/artifact/com.mtanalyze/mtanalyze)
 [![SonarQube](https://sonarcloud.io/api/project_badges/measure?project=mtanalyze_mtanalyze&metric=alert_status)](https://sonarcloud.io/summary/overall?id=mtanalyze_mtanalyze)
 [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=mtanalyze_mtanalyze&metric=security_rating)](https://sonarcloud.io/summary/overall?id=mtanalyze_mtanalyze)
 [![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=mtanalyze_mtanalyze&metric=vulnerabilities)](https://sonarcloud.io/summary/overall?id=mtanalyze_mtanalyze)
@@ -39,7 +40,17 @@ MT Analyze is a single self-contained JAR — all libraries are bundled inside. 
 3. Double-click the JAR, or run:
 
 ```bash
-java -jar MT-Analyze-1.0.1.jar
+java -jar MT-Analyze-1.0.2.jar
+```
+
+The artifact is also available on [Maven Central](https://central.sonatype.com/artifact/com.mtanalyze/mtanalyze) — IT departments can source or mirror it via Nexus / Artifactory:
+
+```xml
+<dependency>
+    <groupId>com.mtanalyze</groupId>
+    <artifactId>mtanalyze</artifactId>
+    <version>1.0.2</version>
+</dependency>
 ```
 
 ---
