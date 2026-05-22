@@ -1,16 +1,12 @@
 # MT Analyze
-**SWIFT MT analysis for migration and change projects — and day-to-day business use.**
+**The fast way through a stack of SWIFT MT messages.**
 
 [![Release Build](https://github.com/mtanalyze/mtanalyze/actions/workflows/release.yml/badge.svg)](https://github.com/mtanalyze/mtanalyze/actions/workflows/release.yml)
 [![SonarQube](https://sonarcloud.io/api/project_badges/measure?project=mtanalyze_mtanalyze&metric=alert_status)](https://sonarcloud.io/summary/overall?id=mtanalyze_mtanalyze)
 [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=mtanalyze_mtanalyze&metric=security_rating)](https://sonarcloud.io/summary/overall?id=mtanalyze_mtanalyze)
 [![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=mtanalyze_mtanalyze&metric=vulnerabilities)](https://sonarcloud.io/summary/overall?id=mtanalyze_mtanalyze)
 
-MT Analyze is a lightweight open-source desktop tool for analysing SWIFT MT messages (ISO 15022) and posting data. It looks like a spreadsheet — sort, filter, copy & paste. Inside it natively understands SWIFT MT: tags, qualifiers, components and sequences are decoded and annotated with descriptions from the ISO 15022 Data Field Dictionary SR2025, built in. No access to myStandards required. No prior SWIFT MT knowledge needed.
-
-Statement messages such as MT 536 or MT 940 — which carry many entries per message — and single-entry messages such as settlement instructions or confirmations are handled uniformly: any mix loads into one table, one row per entry, ready to sort, filter, and compare across the full dataset.
-
-Built on [Prowide Core](https://github.com/prowide/prowide-core). Minimal dependencies. Self-contained JAR — no installation, no admin rights.
+An open-source desktop tool for the interactive analysis of SWIFT MT messages — mix instructions, statements and confirmations of any MT type in one table, decode ISO 15022 in place, trace the full settlement choreography across agents. Built by a practitioner — for analysis, migration and UAT work in banks.
 
 ---
 
