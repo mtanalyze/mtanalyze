@@ -15,7 +15,10 @@
  */
 package com.mtanalyze.parser;
 
+import java.io.BufferedReader;
+import java.io.IOException;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.regex.*;
 
 public final class MtFileIO {
@@ -219,6 +222,40 @@ public final class MtFileIO {
         }
         if (pending != null) finalizeMessage(pending.toString(), newlineToken, messages);
         return messages;
+    }
+
+    /**
+     * Streaming variant of {@link #splitLogIntoSwiftMessages}: reads the log line by line
+     * via a {@link BufferedReader} and calls {@code onMessage} for each complete SWIFT message.
+     * The file is never fully materialised in memory.
+     */
+    public static void streamLogMessages(BufferedReader reader, String swiftStart,
+                                         String newlineToken, Consumer<String> onMessage)
+            throws IOException {
+        StringBuilder pending = null;
+        String line;
+        while ((line = reader.readLine()) != null) {
+            int idx = swiftStart.isEmpty() ? -1 : line.indexOf(swiftStart);
+            if (idx >= 0) {
+                if (pending != null) finalizeMessage(pending.toString(), newlineToken, onMessage);
+                pending = new StringBuilder(line.substring(idx));
+            } else if (pending != null) {
+                pending.append('\n').append(line);
+            }
+            if (pending != null) {
+                String candidate = processRaw(pending.toString(), newlineToken);
+                if (isCompleteSwiftMessage(candidate)) {
+                    onMessage.accept(deduplicateBlockClose(candidate));
+                    pending = null;
+                }
+            }
+        }
+        if (pending != null) finalizeMessage(pending.toString(), newlineToken, onMessage);
+    }
+
+    private static void finalizeMessage(String raw, String newlineToken, Consumer<String> onMessage) {
+        String processed = processRaw(raw, newlineToken);
+        if (isCompleteSwiftMessage(processed)) onMessage.accept(deduplicateBlockClose(processed));
     }
 
     private static String processRaw(String raw, String newlineToken) {

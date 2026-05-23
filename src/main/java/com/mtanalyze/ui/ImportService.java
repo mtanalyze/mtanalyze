@@ -61,7 +61,13 @@ final class ImportService {
 
     ImportBatch parseChunks(List<String> chunks, String mtTypeOverride, String sourceFile,
                             MessageOrigin origin, int maxEntries) {
+        return parseChunks(chunks, mtTypeOverride, sourceFile, origin, maxEntries, java.util.Collections.emptySet());
+    }
+
+    ImportBatch parseChunks(List<String> chunks, String mtTypeOverride, String sourceFile,
+                            MessageOrigin origin, int maxEntries, java.util.Set<String> mtTypeFilter) {
         ImportBatch batch = new ImportBatch();
+        batch.mtTypeFilter.addAll(mtTypeFilter);
         for (String chunk : chunks) {
             parseChunkIntoBatch(chunk, mtTypeOverride, batch, sourceFile, origin, maxEntries);
         }
@@ -74,6 +80,11 @@ final class ImportService {
         try {
             AbstractMT mt = AbstractMT.parse(MtFileIO.wrapBlock4IfNeeded(chunk, mtOverride));
             if (mt == null) return;
+            if (!batch.mtTypeFilter.isEmpty()) {
+                com.prowidesoftware.swift.model.SwiftBlock2 b2 = mt.getSwiftMessage().getBlock2();
+                String type = b2 != null ? b2.getMessageType() : null;
+                if (type == null || !batch.mtTypeFilter.contains(type)) return;
+            }
             SwiftMessage msg = new SwiftMessage(mt, sourceFile != null ? new File(sourceFile) : null, origin);
             batch.messages.add(msg);
             batch.entryCount += EntryPanelModel.parseAndDecorate(msg, batch.knownKeys, batch.columnDefs).size();

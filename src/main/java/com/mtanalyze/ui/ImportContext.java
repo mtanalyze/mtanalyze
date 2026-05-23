@@ -19,6 +19,7 @@ import com.mtanalyze.config.SystemConfig;
 
 import java.awt.*;
 import java.io.File;
+import java.util.Set;
 
 /**
  * Implemented by the host frame so {@link FileImporter} can trigger UI reactions
@@ -30,7 +31,10 @@ interface ImportContext {
     SystemConfig  config();
     ImportService importService();
 
-    String promptMtType(String msg);
+    String     promptMtType(String msg);
+    /** Prompt for an MT type filter before importing a log file.
+     *  Returns an empty set if no filter (all types), or {@code null} if the user cancelled. */
+    Set<String> promptMtTypeFilter(String logFileName);
     void   onNew();
 
     void onFileLoaded(ImportBatch batch, File file);

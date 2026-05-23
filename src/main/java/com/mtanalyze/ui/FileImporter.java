@@ -25,6 +25,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
+import java.util.Collections;
+import java.util.Set;
 
 /**
  * Handles all file-based import operations, delegating UI feedback to {@link ImportContext}.
@@ -132,10 +134,15 @@ final class FileImporter {
 
     int appendFromContent(List<String> chunks, String mtTypeOverride, String sourceFile,
                           MessageOrigin origin) {
+        return appendFromContent(chunks, mtTypeOverride, sourceFile, origin, Collections.emptySet());
+    }
+
+    int appendFromContent(List<String> chunks, String mtTypeOverride, String sourceFile,
+                          MessageOrigin origin, Set<String> mtTypeFilter) {
         ImportBatch batch;
         try (ProwideLogCapture cap = ProwideLogCapture.start()) {
             batch = ctx.importService().parseChunks(
-                chunks, mtTypeOverride, sourceFile, origin, ctx.config().getMaxEntries());
+                chunks, mtTypeOverride, sourceFile, origin, ctx.config().getMaxEntries(), mtTypeFilter);
             batch.prowideLog.addAll(cap.stop());
         }
         if (batch.totalParsed > 0) {
@@ -229,6 +236,9 @@ final class FileImporter {
     }
 
     private void loadLogFileWithProgress(File file, String swiftStart, String newlineToken, int maxEntries) {
+        Set<String> mtTypeFilter = ctx.promptMtTypeFilter(file.getName());
+        if (mtTypeFilter == null) return;
+
         JProgressBar bar = new JProgressBar();
         bar.setIndeterminate(true);
         bar.setStringPainted(true);
@@ -240,17 +250,17 @@ final class FileImporter {
         SwingWorker<ImportBatch, Integer> worker = new SwingWorker<>() {
             @Override
             protected ImportBatch doInBackground() throws Exception {
-                String content = new String(Files.readAllBytes(file.toPath()));
-                List<String> chunks = MtFileIO.splitLogIntoSwiftMessages(content, swiftStart, newlineToken);
-                publish(-chunks.size()); // negative = scanning done, total known
                 ImportBatch batch = new ImportBatch();
-                try (ProwideLogCapture cap = ProwideLogCapture.start()) {
-                    for (int i = 0; i < chunks.size(); i++) {
-                        if (isCancelled() || batch.entryCount >= maxEntries) break;
+                batch.mtTypeFilter.addAll(mtTypeFilter);
+                try (ProwideLogCapture cap = ProwideLogCapture.start();
+                     java.io.BufferedReader reader = Files.newBufferedReader(
+                             file.toPath(), java.nio.charset.StandardCharsets.UTF_8)) {
+                    MtFileIO.streamLogMessages(reader, swiftStart, newlineToken, chunk -> {
+                        if (isCancelled() || batch.entryCount >= maxEntries) return;
                         ctx.importService().parseChunkIntoBatch(
-                            chunks.get(i), null, batch, file.getAbsolutePath(), MessageOrigin.LOG_FILE, maxEntries);
-                        publish(i + 1);
-                    }
+                            chunk, null, batch, file.getAbsolutePath(), MessageOrigin.LOG_FILE, maxEntries);
+                        publish(batch.totalParsed);
+                    });
                     batch.prowideLog.addAll(cap.stop());
                 }
                 return batch;
@@ -258,15 +268,8 @@ final class FileImporter {
 
             @Override
             protected void process(List<Integer> vals) {
-                int v = vals.get(vals.size() - 1);
-                if (v <= 0) {
-                    bar.setIndeterminate(false);
-                    bar.setMaximum(Math.max(1, -v));
-                    bar.setString("Parsing…");
-                } else {
-                    bar.setValue(v);
-                    bar.setString("Parsing " + v + " of " + bar.getMaximum() + "…");
-                }
+                int n = vals.get(vals.size() - 1);
+                bar.setString("Parsed " + n + " messages…");
             }
 
             @Override

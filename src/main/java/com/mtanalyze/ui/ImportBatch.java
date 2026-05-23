@@ -23,10 +23,12 @@ import java.util.List;
 import java.util.Set;
 
 final class ImportBatch {
-    final List<SwiftMessage> messages   = new ArrayList<>();
-    final List<ColumnDef>    columnDefs = new ArrayList<>();
-    final Set<String>        knownKeys  = new HashSet<>();
-    final List<String>       prowideLog = new ArrayList<>();
+    final List<SwiftMessage> messages      = new ArrayList<>();
+    final List<ColumnDef>    columnDefs    = new ArrayList<>();
+    final Set<String>        knownKeys     = new HashSet<>();
+    final List<String>       prowideLog    = new ArrayList<>();
+    /** MT type numbers to include (e.g. "536", "548"). Empty = no filter = all types. */
+    final Set<String>        mtTypeFilter  = new HashSet<>();
     int     entryCount;
     int     totalParsed;
     int     errors;

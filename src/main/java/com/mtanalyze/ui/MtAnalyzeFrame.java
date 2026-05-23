@@ -970,6 +970,7 @@ public class MtAnalyzeFrame extends JFrame {
             @Override public SystemConfig  config()                         { return MtAnalyzeFrame.this.config(); }
             @Override public ImportService importService()                  { return MtAnalyzeFrame.this.importService(); }
             @Override public String        promptMtType(String m)           { return MtAnalyzeFrame.this.promptMtType(m); }
+            @Override public java.util.Set<String> promptMtTypeFilter(String f) { return MtAnalyzeFrame.this.promptMtTypeFilter(f); }
             @Override public void          onNew()                          { MtAnalyzeFrame.this.onNew(); }
             @Override public void          onFileLoaded(ImportBatch b, File f)              { MtAnalyzeFrame.this.onFileLoaded(b, f); }
             @Override public void          onDirectoryLoaded(ImportBatch b, File d, int n)  { MtAnalyzeFrame.this.onDirectoryLoaded(b, d, n); }
@@ -1133,6 +1134,19 @@ public class MtAnalyzeFrame extends JFrame {
         String selected = (String) combo.getSelectedItem();
         if (selected == null || selected.startsWith("Auto")) return null;
         return selected.replaceAll("\\D", "");
+    }
+
+    private java.util.Set<String> promptMtTypeFilter(String logFileName) {
+        String input = JOptionPane.showInputDialog(this,
+                "Filter MT types in " + logFileName + "\n(comma-separated, e.g. 536,548 – empty = all types):",
+                "Import Log Filter", JOptionPane.QUESTION_MESSAGE);
+        if (input == null) return null; // cancelled
+        java.util.Set<String> types = new java.util.LinkedHashSet<>();
+        for (String token : input.split("[,;\\s]+")) {
+            String t = token.trim().toUpperCase().replaceFirst("^MT", "");
+            if (!t.isEmpty()) types.add(t);
+        }
+        return types;
     }
 
     private void showFileInEditor(File file) {
