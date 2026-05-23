@@ -18,22 +18,31 @@ package com.mtanalyze.ui;
 import com.mtanalyze.model.Entry;
 
 import javax.swing.table.AbstractTableModel;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
  * Live-view {@link AbstractTableModel} backed by the panel's entry list.
  * Reads directly from the list — no data copy.
- * In no-seq mode the key transformation is computed on demand with a single-row cache.
+ * In no-seq mode the key transformation is computed on demand with an LRU cache.
  */
 final class EntryTableModel extends AbstractTableModel {
+
+    private static final int NO_SEQ_CACHE_SIZE = 64;
 
     private final transient List<Entry> allEntries;
     private transient List<ColumnDef>   visibleCols = List.of();
     private boolean           seqMode     = true;
 
-    private int                 cachedNoSeqRow  = -1;
-    private Map<String, String> cachedNoSeqData = null;
+    @SuppressWarnings("java:S2160")
+    private final transient Map<Integer, Map<String, String>> noSeqCache =
+            new LinkedHashMap<>(NO_SEQ_CACHE_SIZE + 1, 0.75f, true) {
+                @Override
+                protected boolean removeEldestEntry(Map.Entry<Integer, Map<String, String>> e) {
+                    return size() > NO_SEQ_CACHE_SIZE;
+                }
+            };
 
     EntryTableModel(List<Entry> allEntries) {
         this.allEntries = allEntries;
@@ -41,17 +50,15 @@ final class EntryTableModel extends AbstractTableModel {
 
     /** Replaces the visible column set and seq-mode flag, then fires fireTableStructureChanged(). */
     void update(List<ColumnDef> visible, boolean seqMode) {
-        this.visibleCols    = List.copyOf(visible);
-        this.seqMode        = seqMode;
-        this.cachedNoSeqRow  = -1;
-        this.cachedNoSeqData = null;
+        this.visibleCols = List.copyOf(visible);
+        this.seqMode     = seqMode;
+        noSeqCache.clear();
         fireTableStructureChanged();
     }
 
     /** Must be called after the row has already been removed from the backing list. */
     void rowDeleted(int modelRow) {
-        cachedNoSeqRow  = -1;
-        cachedNoSeqData = null;
+        noSeqCache.clear();
         fireTableRowsDeleted(modelRow, modelRow);
     }
 
@@ -63,10 +70,7 @@ final class EntryTableModel extends AbstractTableModel {
         if (r < 0 || c < 0 || c >= visibleCols.size() || r >= allEntries.size()) return "";
         String key = visibleCols.get(c).key;
         if (seqMode) return allEntries.get(r).getValue(key);
-        if (r != cachedNoSeqRow || cachedNoSeqData == null) {
-            cachedNoSeqRow  = r;
-            cachedNoSeqData = EntryPanelModel.toNoSeqRow(allEntries.get(r).data());
-        }
-        return cachedNoSeqData.getOrDefault(key, "");
+        return noSeqCache.computeIfAbsent(r, k -> EntryPanelModel.toNoSeqRow(allEntries.get(k).data()))
+                         .getOrDefault(key, "");
     }
 }

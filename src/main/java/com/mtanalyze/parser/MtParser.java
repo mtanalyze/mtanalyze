@@ -24,9 +24,11 @@ import com.mtanalyze.ui.ColumnDef;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class MtParser {
 
@@ -41,6 +43,7 @@ public class MtParser {
     private final Lookups          lookups    = new Lookups();
     private final List<Entry>      entries    = new ArrayList<>();
     private final List<ColumnDef>  columnDefs = new ArrayList<>();
+    private final Set<String>      knownColKeys = new HashSet<>();
 
     public MtParser(String rowSeqName)   { this.rowSeqName = rowSeqName; }
 
@@ -57,6 +60,7 @@ public class MtParser {
     public void parse(AbstractMT mt) {
         entries.clear();
         columnDefs.clear();
+        knownColKeys.clear();
 
         SwiftTagListBlock b4 = mt.getSwiftMessage().getBlock4();
         if (b4 == null || b4.getTags().isEmpty()) return;
@@ -389,16 +393,11 @@ public class MtParser {
         int n = occCounts.merge(baseKey, 1, Integer::sum);
         String key = baseKey + "\t" + n;
 
-        boolean known = false;
-        for (ColumnDef cd : columnDefs)
-            if (cd.key.equals(key)) { known = true; break; }
-
-        if (!known) {
+        if (knownColKeys.add(key)) {
             String label = seqLabel.trim() + " / " + tagName.trim()
                     + (qualifier.isEmpty() ? "" : " / " + qualifier.trim())
                     + (n > 1 ? " (" + n + ")" : "");
-            columnDefs.add(new ColumnDef(seqLabel, tagName, qualifier, n, label
-            ));
+            columnDefs.add(new ColumnDef(seqLabel, tagName, qualifier, n, label));
         }
 
         rowDataMap.put(key, lookups.valueWithoutQualifier(t));

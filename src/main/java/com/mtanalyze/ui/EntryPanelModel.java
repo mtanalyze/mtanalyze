@@ -24,7 +24,6 @@ import com.prowidesoftware.swift.model.Tag;
 import com.prowidesoftware.swift.model.mt.AbstractMT;
 
 import java.util.*;
-import java.util.regex.Pattern;
 
 /**
  * All data state for the entry panel in one place.
@@ -398,17 +397,17 @@ final class EntryPanelModel {
 
     static String cleanTagValue(String val, String qualifier) {
         if (val == null || val.isEmpty()) return "";
-        String s = val.trim();
-        String q = Pattern.quote(qualifier);
-        String t = s.replaceFirst("^:" + q + "//", "");
-        if (t.length() < s.length()) { s = t.trim(); }
-        else {
-            t = s.replaceFirst("^:" + q + "/[^/]*/", "");
-            if (t.length() < s.length()) { s = t.trim(); }
-            else {
-                t = s.replaceFirst("^" + q + "[ \t]+", "");
-                if (t.length() < s.length()) s = t.trim();
-            }
+        String s   = val.trim();
+        String colonQ = ":" + qualifier;
+        if (s.startsWith(colonQ + "//")) {
+            s = s.substring(colonQ.length() + 2).trim();
+        } else if (s.startsWith(colonQ + "/")) {
+            // :QUALIFIER/subqualifier/ — strip up to and including closing slash
+            int slash = s.indexOf('/', colonQ.length() + 1);
+            if (slash >= 0) s = s.substring(slash + 1).trim();
+        } else if (s.length() > qualifier.length() && s.startsWith(qualifier)) {
+            char next = s.charAt(qualifier.length());
+            if (next == ' ' || next == '\t') s = s.substring(qualifier.length()).trim();
         }
         int nl = s.indexOf('\n');
         return nl >= 0 ? s.substring(0, nl).trim() : s;

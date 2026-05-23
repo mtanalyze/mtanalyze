@@ -1253,18 +1253,28 @@ public class MtAnalyzeFrame extends JFrame {
         swift.setForeground(new Color(100, 100, 140));
         swift.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        panel.add(title); panel.add(Box.createVerticalStrut(6));
-        panel.add(version); panel.add(Box.createVerticalStrut(4));
-        panel.add(github); panel.add(Box.createVerticalStrut(12));
-        panel.add(new JSeparator()); panel.add(Box.createVerticalStrut(4));
-        panel.add(copy); panel.add(Box.createVerticalStrut(4));
-        panel.add(license); panel.add(Box.createVerticalStrut(12));
-        panel.add(new JSeparator()); panel.add(Box.createVerticalStrut(6));
-        panel.add(depsHeader); panel.add(Box.createVerticalStrut(4));
-        panel.add(dep1); panel.add(Box.createVerticalStrut(12));
-        panel.add(new JSeparator()); panel.add(Box.createVerticalStrut(4));
+        addRow(panel, title,   6);
+        addRow(panel, version, 4);
+        addRow(panel, github, 12);
+        addSeparatorRow(panel, 4);
+        addRow(panel, copy,    4);
+        addRow(panel, license, 12);
+        addSeparatorRow(panel, 6);
+        addRow(panel, depsHeader, 4);
+        addRow(panel, dep1,      12);
+        addSeparatorRow(panel, 4);
         panel.add(swift);
         JOptionPane.showMessageDialog(this, panel, "About MT Analyze App", JOptionPane.PLAIN_MESSAGE);
+    }
+
+    private static void addRow(JPanel p, Component c, int vgap) {
+        p.add(c);
+        p.add(Box.createVerticalStrut(vgap));
+    }
+
+    private static void addSeparatorRow(JPanel p, int vgap) {
+        p.add(new JSeparator());
+        p.add(Box.createVerticalStrut(vgap));
     }
 
     private void applyReferenceSearch(String value) {

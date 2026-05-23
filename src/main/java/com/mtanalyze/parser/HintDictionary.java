@@ -25,7 +25,9 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -54,6 +56,17 @@ public final class HintDictionary {
     private final List<String[]>              userEntries           = new ArrayList<>();
     private final Map<String, String>         userQualifierValues  = new HashMap<>();
     private final Map<String, List<String[]>> userQualifierEntries = new HashMap<>();
+
+    private static final int QUAL_VAL_CACHE_SIZE = 512;
+    /** LRU result cache for qualifierValueDescription — same qualifier/value pairs repeat on every render. */
+    @SuppressWarnings("java:S2160")
+    private final Map<String, Optional<String>> qualValCache =
+            Collections.synchronizedMap(new LinkedHashMap<>(QUAL_VAL_CACHE_SIZE + 1, 0.75f, true) {
+                @Override
+                protected boolean removeEldestEntry(Map.Entry<String, Optional<String>> e) {
+                    return size() > QUAL_VAL_CACHE_SIZE;
+                }
+            });
 
     public HintDictionary() {
         loadCsvFromFileOrResource("/dict_tags.csv",             2, c -> tags.put(c[0].toUpperCase(), c[1]));
@@ -93,12 +106,15 @@ public final class HintDictionary {
      */
     public String qualifierValueDescription(String qualifier, String value) {
         if (qualifier == null || value == null) return null;
-        String qKey   = qualifier.toUpperCase();
-        String vUpper = value.toUpperCase();
-        String result = userQualifierValues.get(qKey + '\t' + vUpper);
+        String qKey     = qualifier.toUpperCase();
+        String vUpper   = value.toUpperCase();
+        String cacheKey = qKey + '\t' + vUpper;
+        if (qualValCache.containsKey(cacheKey)) return qualValCache.get(cacheKey).orElse(null);
+        String result = userQualifierValues.get(cacheKey);
         if (result == null) result = findByContains(userQualifierEntries, qKey, vUpper);
-        if (result == null) result = qualifierValues.get(qKey + '\t' + vUpper);
+        if (result == null) result = qualifierValues.get(cacheKey);
         if (result == null) result = findByContains(qualifierEntries, qKey, vUpper);
+        qualValCache.put(cacheKey, Optional.ofNullable(result));
         return result;
     }
 
@@ -189,6 +205,7 @@ public final class HintDictionary {
         userEntries.clear();
         userQualifierValues.clear();
         userQualifierEntries.clear();
+        qualValCache.clear();
         for (String[] e : entries) {
             userEntries.add(e.clone());
             String qKey = e[0].toUpperCase();

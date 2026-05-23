@@ -36,46 +36,18 @@ final class SettingsDialog {
     private SettingsDialog() {}
 
     record Config(CsvKeys csv, ThemeConfig theme, MtKeys mt, PowerUserConfig powerUser) {
-            static final class CsvKeys {
-                final String fieldSep;
-                final String decimalSep;
+        record CsvKeys(String fieldSep, String decimalSep) {
+        }
 
-                CsvKeys(String fieldSep, String decimalSep) {
-                    this.fieldSep = fieldSep;
-                    this.decimalSep = decimalSep;
-                }
-            }
-
-            static final class MtKeys {
-                final String sender;
-                final String receiver;
-
-                MtKeys(String sender, String receiver) {
-                    this.sender = sender;
-                    this.receiver = receiver;
-                }
-            }
+        record MtKeys(String sender, String receiver) {
+        }
 
 
-        static final class ThemeConfig {
-                final String prefKey;
-                final Consumer<String> onChange;
+        record ThemeConfig(String prefKey, Consumer<String> onChange) {
+        }
 
-                ThemeConfig(String prefKey, Consumer<String> onChange) {
-                    this.prefKey = prefKey;
-                    this.onChange = onChange;
-                }
-            }
-
-            static final class PowerUserConfig {
-                final String prefKey;
-                final Runnable onChange;
-
-                PowerUserConfig(String prefKey, Runnable onChange) {
-                    this.prefKey = prefKey;
-                    this.onChange = onChange;
-                }
-            }
+        record PowerUserConfig(String prefKey, Runnable onChange) {
+        }
 
     }
 

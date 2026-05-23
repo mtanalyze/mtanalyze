@@ -29,6 +29,7 @@ import com.mtanalyze.ui.filter.ColumnFilterRow;
 import com.mtanalyze.ui.filter.FinFilterRow;
 
 import javax.swing.*;
+import javax.swing.Timer;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.DocumentEvent;
@@ -112,6 +113,8 @@ public class MtEntryPanel extends JPanel {
     private JScrollPane                      mtEntryScrollPane;
     private ColumnFilterRow                  columnFilterRow;
     private FinFilterRow                     finFilterRow;
+    @SuppressWarnings("java:S1450") // must be a field so the lambda keeps a live reference and the timer survives GC
+    private transient Timer                  repackDebounceTimer;
 
     // Search bar
     JTextField finSearchField;
@@ -295,6 +298,9 @@ public class MtEntryPanel extends JPanel {
         rowSorter = new TableRowSorter<>(entryTableModel);
         mtEntryTable.setRowSorter(rowSorter);
         rowSorter.addRowSorterListener(e -> { repackPositionRows(); updateRowCountLabel(); });
+        repackDebounceTimer = new Timer(120, e -> repackPositionRows());
+        repackDebounceTimer.setRepeats(false);
+        mtEntryTable.getColumnModel().addColumnModelListener(columnMarginListener(() -> repackDebounceTimer.restart()));
 
         TransferHandler dropHandler = buildEntriesDropHandler();
         mtEntryTable.setTransferHandler(dropHandler);
@@ -505,21 +511,7 @@ public class MtEntryPanel extends JPanel {
         Entry rowEntry = model.getEntryForRow(modelRow);
         if (rowEntry != null) {
             String mtVal = rowEntry.data().get(EntryPanelModel.MT_COL_KEY);
-            if (mtVal != null && mtVal.length() > 2) {
-                String mtNum = mtVal.substring(2);
-                JMenuItem isoDocItem = new JMenuItem("Lookup ISO 15022 Doku (" + mtVal + ")", ToolbarIcons.menuIsoDoc());
-                isoDocItem.addActionListener(ae -> {
-                    try {
-                        Desktop.getDesktop().browse(new URI(
-                            "https://www.iso20022.org/15022/uhb/finmt" + mtNum.toLowerCase() + ".htm"));
-                    } catch (Exception ex) {
-                        JOptionPane.showMessageDialog(MtEntryPanel.this,
-                            "Browser could not be opened:\n" + ex.getMessage(),
-                            "Error", JOptionPane.ERROR_MESSAGE);
-                    }
-                });
-                popup.add(isoDocItem);
-            }
+            if (mtVal != null && mtVal.length() > 2) popup.add(makeIsoDocItem(mtVal));
         }
 
         // ── Display ───────────────────────────────────────────────────────
@@ -586,6 +578,22 @@ public class MtEntryPanel extends JPanel {
         popup.add(item);
     }
 
+    private JMenuItem makeIsoDocItem(String mtVal) {
+        String mtNum = mtVal.substring(2);
+        JMenuItem item = new JMenuItem("Lookup ISO 15022 Doku (" + mtVal + ")", ToolbarIcons.menuIsoDoc());
+        item.addActionListener(ae -> {
+            try {
+                Desktop.getDesktop().browse(new URI(
+                    "https://www.iso20022.org/15022/uhb/finmt" + mtNum.toLowerCase() + ".htm"));
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(MtEntryPanel.this,
+                    "Browser could not be opened:\n" + ex.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+        return item;
+    }
+
     private JMenuItem makeAddNoteMenuItem(int modelRow) {
         Entry entry = model.getEntryForRow(modelRow);
         boolean hasNote = entry != null && entry.data().containsKey(Entry.NOTE_COL_KEY);
@@ -597,23 +605,39 @@ public class MtEntryPanel extends JPanel {
     private JMenu buildAvailableNotesMenu(int modelRow) {
         JMenu menu = new JMenu("Available Notes");
         menu.setIcon(ToolbarIcons.menuNote());
+        menu.addMenuListener(new javax.swing.event.MenuListener() {
+            @Override
+            public void menuSelected(javax.swing.event.MenuEvent e) { populateNotesMenu(menu, modelRow); }
+            @Override public void menuDeselected(javax.swing.event.MenuEvent e) { /* NOP */ }
+            @Override public void menuCanceled(javax.swing.event.MenuEvent e)   { /* NOP */ }
+        });
+        return menu;
+    }
+
+    private void populateNotesMenu(JMenu menu, int modelRow) {
+        menu.removeAll();
         LinkedHashSet<String> seen = new LinkedHashSet<>();
-        for (Entry e : model.allEntries()) {
-            String note = e.data().get(Entry.NOTE_COL_KEY);
+        for (Entry entry : model.allEntries()) {
+            String note = entry.data().get(Entry.NOTE_COL_KEY);
             if (note != null && !note.isBlank()) seen.add(note);
         }
         if (seen.isEmpty()) {
-            menu.setEnabled(false);
-            return menu;
+            JMenuItem empty = new JMenuItem("(no notes)");
+            empty.setEnabled(false);
+            menu.add(empty);
+            return;
         }
         for (String note : seen) {
-            String label = note.length() > 50 ? note.substring(0, 47) + "…" : note;
-            JMenuItem item = new JMenuItem(label);
-            item.setToolTipText(note.length() > 50 ? note : null);
-            item.addActionListener(ae -> host.onSetNote(modelRow, note));
-            menu.add(item);
+            menu.add(makeNoteItem(note, modelRow));
         }
-        return menu;
+    }
+
+    private JMenuItem makeNoteItem(String note, int modelRow) {
+        boolean truncated = note.length() > 50;
+        JMenuItem item = new JMenuItem(truncated ? note.substring(0, 47) + "…" : note);
+        item.setToolTipText(truncated ? note : null);
+        item.addActionListener(ae -> host.onSetNote(modelRow, note));
+        return item;
     }
 
     private JMenuItem makeBookmarkMenuItem(int modelRow) {
@@ -1118,7 +1142,6 @@ public class MtEntryPanel extends JPanel {
         for (ColumnDef cd : activeDefs) if (cd.isVisible()) visible.add(cd);
         entryTableModel.update(visible, model.isSeqMode());
         updateRowCountLabel();
-        mtEntryTable.getColumnModel().addColumnModelListener(columnMarginListener(this::repackPositionRows));
         configureTableColumns(visible);
         TableColumnModel tcm = mtEntryTable.getColumnModel();
         Map<String, Set<String>> savedDropFilters = columnFilterRow != null
