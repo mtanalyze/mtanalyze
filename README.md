@@ -26,6 +26,9 @@ java -jar MT-Analyze-1.0.2.jar
 
 Also available on [Maven Central](https://central.sonatype.com/artifact/com.mtanalyze/mtanalyze) for mirroring via Nexus / Artifactory.
 
+> [!IMPORTANT]
+> **CSV & regional settings.** Exported CSV files use `;` as the field separator and `.` as the decimal separator by default — the convention in many European countries where `,` is the decimal mark. If your regional settings (e.g. UK/US English) use `,` as the list separator, columns won't split correctly in Excel. Change the **Field separator** to `,` under **Settings → General → CSV Export** so the file matches your locale.
+
 ---
 
 ## Quick Start
