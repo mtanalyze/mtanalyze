@@ -1,3 +1,37 @@
+# MT Analyze v1.0.3
+
+## Download & Run
+
+**Requirements:** Java 17 or higher
+
+```bash
+java -jar MT-Analyze-v1.0.3.jar
+```
+
+---
+
+## Changes
+
+### Log File Import — Streaming & MT Type Filter
+
+Log files are now read line by line instead of being loaded entirely into memory. Large log files no longer cause high memory usage during import.
+
+When importing a log file a dialog asks which MT types to include:
+
+- Enter a comma-separated list (e.g. `536,548`) to restrict the import to those types.
+- Leave the field empty to import all message types.
+- Cancel the dialog to abort the import without any changes.
+
+The filter is applied while streaming, so unmatched messages are never parsed.
+
+### Performance Improvements
+
+- **Dictionary lookup cache** — qualifier/value descriptions are cached (LRU, 512 entries) so repeated lookups during table rendering are served from memory instead of re-scanning the dictionary.
+- **Debounced column resize** — resizing a table column no longer triggers a layout repack on every pixel change; it is debounced with a 120 ms timer.
+- **Lazy Notes submenu** — the *Available Notes* submenu is only populated when it is opened, not when the context menu is built.
+
+---
+
 # MT Analyze v1.0.2
 
 ## Download & Run
