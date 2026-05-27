@@ -152,9 +152,21 @@ final class SettingsDialog {
         FormPanel.addRow(form, lc, fc, 4,  "Field separator:",    fields.fieldSep);
         FormPanel.addRow(form, lc, fc, 5,  "Decimal separator:",  fields.decimalSep);
 
-        addSectionSeparator(form, 6,  "MT Export");
-        FormPanel.addRow(form, lc, fc, 7,  "Sender BIC:",         fields.sender);
-        FormPanel.addRow(form, lc, fc, 8,  "Receiver BIC:",       fields.receiver);
+        JButton resetSeparators = new JButton("Use system defaults");
+        resetSeparators.setToolTipText("Reset separators to the values for "
+                + Locale.getDefault(Locale.Category.FORMAT).getDisplayName()
+                + " (\"" + CsvExport.DEFAULT_FIELD_SEP + "\" / \"" + CsvExport.DEFAULT_DECIMAL_SEP + "\")");
+        resetSeparators.addActionListener(e -> {
+            fields.fieldSep.setText(CsvExport.DEFAULT_FIELD_SEP);
+            fields.decimalSep.setText(CsvExport.DEFAULT_DECIMAL_SEP);
+        });
+        JPanel resetWrap = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        resetWrap.add(resetSeparators);
+        FormPanel.addRow(form, lc, fc, 6,  "",                    resetWrap);
+
+        addSectionSeparator(form, 7,  "MT Export");
+        FormPanel.addRow(form, lc, fc, 8,  "Sender BIC:",         fields.sender);
+        FormPanel.addRow(form, lc, fc, 9,  "Receiver BIC:",       fields.receiver);
 
         return form;
     }

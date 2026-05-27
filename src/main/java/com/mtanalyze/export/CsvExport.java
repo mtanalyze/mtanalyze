@@ -25,14 +25,16 @@ import java.awt.Desktop;
 import java.awt.Frame;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.text.DecimalFormatSymbols;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.prefs.Preferences;
 
 public final class CsvExport {
 
-    public static final String DEFAULT_FIELD_SEP   = ";";
-    public static final String DEFAULT_DECIMAL_SEP = ".";
+    public static final String DEFAULT_DECIMAL_SEP = String.valueOf(
+            DecimalFormatSymbols.getInstance(Locale.getDefault(Locale.Category.FORMAT)).getDecimalSeparator());
+    public static final String DEFAULT_FIELD_SEP   = ",".equals(DEFAULT_DECIMAL_SEP) ? ";" : ",";
 
     private final DataHelper dataHelper = new DataHelper();
 

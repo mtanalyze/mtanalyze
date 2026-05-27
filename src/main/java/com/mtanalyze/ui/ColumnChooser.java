@@ -195,7 +195,7 @@ public final class ColumnChooser {
         String desc = inlineDescription(cd, dict);
         if (desc == null) return cd.label;
         return "<html>" + escHtml(cd.label)
-                + "<br><small><i><font color='gray'>" + escHtml(desc) + "</font></i></small></html>";
+                + "<br><i><font color='gray'>" + escHtml(desc) + "</font></i></html>";
     }
 
     private static String inlineDescription(ColumnDef cd, HintDictionary dict) {

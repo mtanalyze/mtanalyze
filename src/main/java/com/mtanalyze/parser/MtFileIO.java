@@ -51,12 +51,12 @@ public final class MtFileIO {
 
     /** Minimum number of field lines required to classify content as multi-line Name-Value. */
     private static final int MULTI_LINE_NV_MIN_FIELD_LINES = 3;
-    /** Detects a SWIFT field line in multi-line name-value format: PREFIX[_ ]TAG:...=... */
+    /** Detects a SWIFT field line in multi-line name-value format: [PREFIX]_TAG:...=... */
     private static final Pattern MULTI_LINE_NV_FIELD_PAT =
-        Pattern.compile("^(?:[A-Z][A-Z0-9]*|\\d+)[_ ]\\d{2}[A-Z]+\\s*:[^=]*=[^\\n]*");
+        Pattern.compile("^(?:[A-Z][A-Z0-9]*|\\d+)?[_ ]\\d{2}[A-Z]+\\s*:[^=]*=[^\\n]*");
     /** Parses a field line; groups: (1) tag, (2) qualifier, (3) value. */
     private static final Pattern MULTI_LINE_NV_PARSE_PAT =
-        Pattern.compile("^(?:[A-Z][A-Z0-9]*|\\d+)[_ ](\\d{2}[A-Z]+)\\s*:\\s*([A-Z0-9]*)\\s*=\\s*([^\\n]*)");
+        Pattern.compile("^(?:[A-Z][A-Z0-9]*|\\d+)?[_ ](\\d{2}[A-Z]+)\\s*:\\s*([A-Z0-9]*)\\s*=\\s*([^\\n]*)");
 
 
 
@@ -203,11 +203,13 @@ public final class MtFileIO {
      */
     public static List<String> splitLogIntoSwiftMessages(String content, String swiftStart, String newlineToken) {
         List<String> messages = new ArrayList<>();
+        Set<String> seen = new HashSet<>();
+        Consumer<String> sink = chunk -> { if (seen.add(normalizeForDedup(chunk))) messages.add(chunk); };
         StringBuilder pending = null;
         for (String line : content.split(NEWLINE_PATTERN)) {
             int idx = swiftStart.isEmpty() ? -1 : line.indexOf(swiftStart);
             if (idx >= 0) {
-                if (pending != null) finalizeMessage(pending.toString(), newlineToken, messages);
+                if (pending != null) finalizeMessage(pending.toString(), newlineToken, sink);
                 pending = new StringBuilder(line.substring(idx));
             } else if (pending != null) {
                 pending.append('\n').append(line);
@@ -215,12 +217,12 @@ public final class MtFileIO {
             if (pending != null) {
                 String candidate = processRaw(pending.toString(), newlineToken);
                 if (isCompleteSwiftMessage(candidate)) {
-                    messages.add(deduplicateBlockClose(candidate));
+                    sink.accept(deduplicateBlockClose(candidate));
                     pending = null;
                 }
             }
         }
-        if (pending != null) finalizeMessage(pending.toString(), newlineToken, messages);
+        if (pending != null) finalizeMessage(pending.toString(), newlineToken, sink);
         return messages;
     }
 
@@ -232,12 +234,14 @@ public final class MtFileIO {
     public static void streamLogMessages(BufferedReader reader, String swiftStart,
                                          String newlineToken, Consumer<String> onMessage)
             throws IOException {
+        Set<String> seen = new HashSet<>();
+        Consumer<String> sink = chunk -> { if (seen.add(normalizeForDedup(chunk))) onMessage.accept(chunk); };
         StringBuilder pending = null;
         String line;
         while ((line = reader.readLine()) != null) {
             int idx = swiftStart.isEmpty() ? -1 : line.indexOf(swiftStart);
             if (idx >= 0) {
-                if (pending != null) finalizeMessage(pending.toString(), newlineToken, onMessage);
+                if (pending != null) finalizeMessage(pending.toString(), newlineToken, sink);
                 pending = new StringBuilder(line.substring(idx));
             } else if (pending != null) {
                 pending.append('\n').append(line);
@@ -245,12 +249,12 @@ public final class MtFileIO {
             if (pending != null) {
                 String candidate = processRaw(pending.toString(), newlineToken);
                 if (isCompleteSwiftMessage(candidate)) {
-                    onMessage.accept(deduplicateBlockClose(candidate));
+                    sink.accept(deduplicateBlockClose(candidate));
                     pending = null;
                 }
             }
         }
-        if (pending != null) finalizeMessage(pending.toString(), newlineToken, onMessage);
+        if (pending != null) finalizeMessage(pending.toString(), newlineToken, sink);
     }
 
     private static void finalizeMessage(String raw, String newlineToken, Consumer<String> onMessage) {
@@ -268,9 +272,8 @@ public final class MtFileIO {
         return s.contains("{1:") && s.contains("{4:") && s.endsWith("}");
     }
 
-    private static void finalizeMessage(String raw, String newlineToken, List<String> messages) {
-        String processed = processRaw(raw, newlineToken);
-        if (isCompleteSwiftMessage(processed)) messages.add(deduplicateBlockClose(processed));
+    private static String normalizeForDedup(String msg) {
+        return msg.replaceAll("\\s+", "");
     }
 
     /**
@@ -534,7 +537,7 @@ public final class MtFileIO {
      */
     public static String convertNameValueToBlock4(String content) {
         StringBuilder sb  = new StringBuilder();
-        Pattern       pat = Pattern.compile("^(?:[A-Z][A-Z0-9]*|\\d+)_(\\d{2}[A-Z]+\\s*:.*)$");
+        Pattern       pat = Pattern.compile("^(?:[A-Z][A-Z0-9]*|\\d+)?_(\\d{2}[A-Z]+\\s*:.*)$");
         String decoded = decodeXmlCharRefs(content.trim());
         for (String part : decoded.split(";")) {
             processNameValuePart(part.trim(), sb, pat);
