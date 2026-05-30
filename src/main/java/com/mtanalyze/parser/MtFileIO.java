@@ -1,5 +1,5 @@
 /*
- * Copyright 2026 Centerscout GmbH
+ * Copyright 2026 Ralf Schwarz
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -207,20 +207,7 @@ public final class MtFileIO {
         Consumer<String> sink = chunk -> { if (seen.add(normalizeForDedup(chunk))) messages.add(chunk); };
         StringBuilder pending = null;
         for (String line : content.split(NEWLINE_PATTERN)) {
-            int idx = swiftStart.isEmpty() ? -1 : line.indexOf(swiftStart);
-            if (idx >= 0) {
-                if (pending != null) finalizeMessage(pending.toString(), newlineToken, sink);
-                pending = new StringBuilder(line.substring(idx));
-            } else if (pending != null) {
-                pending.append('\n').append(line);
-            }
-            if (pending != null) {
-                String candidate = processRaw(pending.toString(), newlineToken);
-                if (isCompleteSwiftMessage(candidate)) {
-                    sink.accept(deduplicateBlockClose(candidate));
-                    pending = null;
-                }
-            }
+            pending = processLogLine(pending, line, swiftStart, newlineToken, sink);
         }
         if (pending != null) finalizeMessage(pending.toString(), newlineToken, sink);
         return messages;
@@ -239,22 +226,32 @@ public final class MtFileIO {
         StringBuilder pending = null;
         String line;
         while ((line = reader.readLine()) != null) {
-            int idx = swiftStart.isEmpty() ? -1 : line.indexOf(swiftStart);
-            if (idx >= 0) {
-                if (pending != null) finalizeMessage(pending.toString(), newlineToken, sink);
-                pending = new StringBuilder(line.substring(idx));
-            } else if (pending != null) {
-                pending.append('\n').append(line);
-            }
-            if (pending != null) {
-                String candidate = processRaw(pending.toString(), newlineToken);
-                if (isCompleteSwiftMessage(candidate)) {
-                    sink.accept(deduplicateBlockClose(candidate));
-                    pending = null;
-                }
-            }
+            pending = processLogLine(pending, line, swiftStart, newlineToken, sink);
         }
         if (pending != null) finalizeMessage(pending.toString(), newlineToken, sink);
+    }
+
+    /**
+     * Feeds one log line into the pending-message accumulator and emits any complete message
+     * to {@code sink}. Returns the updated accumulator ({@code null} once a message was flushed).
+     */
+    private static StringBuilder processLogLine(StringBuilder pending, String line, String swiftStart,
+                                                String newlineToken, Consumer<String> sink) {
+        int idx = swiftStart.isEmpty() ? -1 : line.indexOf(swiftStart);
+        if (idx >= 0) {
+            if (pending != null) finalizeMessage(pending.toString(), newlineToken, sink);
+            pending = new StringBuilder(line.substring(idx));
+        } else if (pending != null) {
+            pending.append('\n').append(line);
+        }
+        if (pending != null) {
+            String candidate = processRaw(pending.toString(), newlineToken);
+            if (isCompleteSwiftMessage(candidate)) {
+                sink.accept(deduplicateBlockClose(candidate));
+                pending = null;
+            }
+        }
+        return pending;
     }
 
     private static void finalizeMessage(String raw, String newlineToken, Consumer<String> onMessage) {

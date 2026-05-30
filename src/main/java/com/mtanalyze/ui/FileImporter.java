@@ -1,5 +1,5 @@
 /*
- * Copyright 2026 Centerscout GmbH
+ * Copyright 2026 Ralf Schwarz
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,8 +25,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
-import java.util.Collections;
-import java.util.Set;
 
 /**
  * Handles all file-based import operations, delegating UI feedback to {@link ImportContext}.

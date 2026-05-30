@@ -1,5 +1,5 @@
 /*
- * Copyright 2026 Centerscout GmbH
+ * Copyright 2026 Ralf Schwarz
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.prefs.Preferences;
 
 final class SettingsDialog {
@@ -39,7 +40,12 @@ final class SettingsDialog {
         record CsvKeys(String fieldSep, String decimalSep) {
         }
 
-        record MtKeys(String sender, String receiver) {
+        record MtKeys(Supplier<String> getSender, Supplier<String> getReceiver, BicSaver save) {
+        }
+
+        @FunctionalInterface
+        interface BicSaver {
+            void save(String sender, String receiver) throws IOException;
         }
 
 
@@ -69,9 +75,9 @@ final class SettingsDialog {
         JTextField decimalSepField = new JTextField(
                 prefs.get(cfg.csv.decimalSep, CsvExport.DEFAULT_DECIMAL_SEP), 4);
         JTextField senderField = new JTextField(
-                prefs.get(cfg.mt.sender, ""), 14);
+                cfg.mt.getSender.get(), 14);
         JTextField receiverField = new JTextField(
-                prefs.get(cfg.mt.receiver, ""), 14);
+                cfg.mt.getReceiver.get(), 14);
         FormFields fields = new FormFields(
                 fieldSepField, decimalSepField,
                 senderField, receiverField);
@@ -195,8 +201,14 @@ final class SettingsDialog {
 
         prefs.put(cfg.csv.fieldSep,     fieldSep);
         prefs.put(cfg.csv.decimalSep,   decimalSep);
-        prefs.put(cfg.mt.sender,        sender);
-        prefs.put(cfg.mt.receiver,      receiver);
+        try {
+            cfg.mt.save.save(sender, receiver);
+        } catch (IOException ex) {
+            JOptionPane.showMessageDialog(dlg,
+                    "Could not save MT export BICs to properties file:\n" + ex.getMessage(),
+                    "Save Error", JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
         return true;
     }
 

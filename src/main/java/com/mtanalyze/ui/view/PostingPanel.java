@@ -1,5 +1,5 @@
 /*
- * Copyright 2026 Centerscout GmbH
+ * Copyright 2026 Ralf Schwarz
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -98,6 +98,7 @@ public abstract class PostingPanel extends RoundedPanel implements EditMenuContr
 
         int menuMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
         JMenuItem copyItem  = new JMenuItem("Copy Table",  ToolbarIcons.menuCopyTable());
+        copyItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_T, menuMask));
         JMenuItem pasteItem = new JMenuItem("Paste Table", ToolbarIcons.menuPaste());
         pasteItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_V, menuMask));
         copyItem .addActionListener(e -> onCopyTable());

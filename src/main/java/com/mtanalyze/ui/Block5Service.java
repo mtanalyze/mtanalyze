@@ -1,5 +1,5 @@
 /*
- * Copyright 2026 Centerscout GmbH
+ * Copyright 2026 Ralf Schwarz
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,7 +81,7 @@ final class Block5Service {
     /** Removes any existing {MAC:...} from inner Block 5 content and prepends a fresh one. */
     private static String prependMac(String inner, String macValue) {
         // MAC values are 8 hex chars – no '}' inside, so [^}]* is safe
-        String withoutMac = inner.replaceAll("\\{MAC:[^}]*\\}", "");
+        String withoutMac = inner.replaceAll("\\{MAC:[^}]*}", "");
         return "{MAC:" + macValue + "}" + withoutMac;
     }
 

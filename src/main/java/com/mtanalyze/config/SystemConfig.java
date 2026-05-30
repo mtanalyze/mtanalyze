@@ -1,5 +1,5 @@
 /*
- * Copyright 2026 Centerscout GmbH
+ * Copyright 2026 Ralf Schwarz
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,9 @@ package com.mtanalyze.config;
 
 import com.mtanalyze.parser.MtFileIO;
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
@@ -26,20 +28,33 @@ public final class SystemConfig {
 
     public static final String FILE_NAME = "mtanalyze.properties";
 
+    private static final String KEY_MT_EXPORT_SENDER   = "mt.export.sender";
+    private static final String KEY_MT_EXPORT_RECEIVER = "mt.export.receiver";
+
     private static final int DEFAULT_MAX_ENTRIES = 1000;
 
     private final Properties props;
+    private final Path       configFile;
 
     public SystemConfig() {
-        this.props = load();
+        this.configFile = resolveConfigFile();
+        this.props      = load(configFile);
     }
 
-    private static Properties load() {
-        Properties p = new Properties();
+    private static Path resolveConfigFile() {
         try {
             Path jar = Path.of(SystemConfig.class.getProtectionDomain()
                     .getCodeSource().getLocation().toURI());
-            Path cfg = jar.getParent().resolve(FILE_NAME);
+            return jar.getParent().resolve(FILE_NAME);
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private static Properties load(Path cfg) {
+        Properties p = new Properties();
+        if (cfg == null) return p;
+        try {
             if (Files.exists(cfg)) {
                 try (InputStream in = Files.newInputStream(cfg)) {
                     p.load(in);
@@ -71,5 +86,29 @@ public final class SystemConfig {
         } catch (NumberFormatException e) {
             return DEFAULT_MAX_ENTRIES;
         }
+    }
+
+    public String getMtExportSender() {
+        return props.getProperty(KEY_MT_EXPORT_SENDER, "");
+    }
+
+    public String getMtExportReceiver() {
+        return props.getProperty(KEY_MT_EXPORT_RECEIVER, "");
+    }
+
+    public void saveMtExportBic(String sender, String receiver) throws IOException {
+        if (configFile == null)
+            throw new IOException("Cannot resolve location for " + FILE_NAME + ".");
+        setOrRemove(KEY_MT_EXPORT_SENDER,   sender);
+        setOrRemove(KEY_MT_EXPORT_RECEIVER, receiver);
+        Files.createDirectories(configFile.getParent());
+        try (OutputStream out = Files.newOutputStream(configFile)) {
+            props.store(out, "MT Analyze configuration file");
+        }
+    }
+
+    private void setOrRemove(String key, String value) {
+        if (value == null || value.isEmpty()) props.remove(key);
+        else                                  props.setProperty(key, value);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2026 Centerscout GmbH
+ * Copyright 2026 Ralf Schwarz
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -532,7 +532,7 @@ public class MtEntryPanel extends JPanel {
         popup.addSeparator();
         popup.add(makeAddNoteMenuItem(modelRow));
         popup.add(buildAvailableNotesMenu(modelRow));
-        popup.add(makeBookmarkMenuItem(modelRow));
+        if (host.isPowerUser()) popup.add(makeBookmarkMenuItem(modelRow));
         if (host.isPowerUser()) popup.add(makeExportMessageMenuItem(modelRow));
 
         // ── Destructive ───────────────────────────────────────────────────
@@ -771,6 +771,8 @@ public class MtEntryPanel extends JPanel {
 
     private JMenuItem makeCopyTableItem() {
         JMenuItem item = new JMenuItem("Copy Table", ToolbarIcons.menuCopyTable());
+        item.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_T,
+            Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()));
         item.addActionListener(ae -> {
             Toolkit.getDefaultToolkit().getSystemClipboard()
                    .setContents(new StringSelection(tableToTsv()), null);
@@ -1279,6 +1281,7 @@ public class MtEntryPanel extends JPanel {
         quickFilterGap1.setVisible(on);
         quickFilterCombo.setVisible(on);
         quickFilterGapAfter.setVisible(on);
+        if (seqModeBtn != null) seqModeBtn.setVisible(on);
     }
 
     // -----------------------------------------------------------------------

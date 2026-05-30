@@ -13,18 +13,12 @@
     <description>Desktop application for analyzing and validating SWIFT MT financial messages.</description>
     <url>https://www.mtanalyze.com</url>
 
-    <organization>
-        <name>Centerscout GmbH</name>
-        <url>https://www.centerscout.com</url>
-    </organization>
-
     <developers>
         <developer>
             <id>rmchwarz</id>
-            <name>Ralf Michael Schwarz</name>
-            <email>r.schwarz@centerscout.com</email>
-            <organization>Centerscout GmbH</organization>
-            <organizationUrl>https://www.centerscout.com</organizationUrl>
+            <name>Ralf Schwarz</name>
+            <email>info@ralfschwarz.net</email>
+            <url>https://www.linkedin.com/in/ralfschwarz/</url>
         </developer>
     </developers>
 
@@ -56,6 +50,11 @@
             <groupId>com.formdev</groupId>
             <artifactId>flatlaf</artifactId>
             <version>3.7.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>5.4.1</version>
         </dependency>
     </dependencies>
 

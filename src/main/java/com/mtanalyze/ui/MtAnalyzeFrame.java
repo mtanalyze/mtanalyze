@@ -1,5 +1,5 @@
 /*
- * Copyright 2026 Centerscout GmbH
+ * Copyright 2026 Ralf Schwarz
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import com.mtanalyze.parser.MtParser;
 import com.mtanalyze.parser.HintDictionary;
 import com.mtanalyze.bookmark.BookmarkManager;
 import com.mtanalyze.export.CsvExport;
+import com.mtanalyze.export.ExcelExport;
 import com.mtanalyze.export.MtExport;
 import com.mtanalyze.export.ProjectIO;
 import com.mtanalyze.ui.view.BookmarkPanel;
@@ -58,6 +59,7 @@ public class MtAnalyzeFrame extends JFrame {
     public static final String BOOKMARKS = "Bookmarks";
     private static final String APP_NAME                 = "MT Analyze";
     private static final String GITHUB_URL               = "https://github.com/mtanalyze/mtanalyze";
+    private static final String DEVELOPER_URL            = "https://www.linkedin.com/in/ralfschwarz/";
     private static final String LABEL_SECURITIES        = "Securities Posting";
     private static final String LABEL_CASH              = "Cash Posting";
     private static final String LABEL_ACCOUNT_MAPPING   = "Account Mapping";
@@ -69,8 +71,9 @@ public class MtAnalyzeFrame extends JFrame {
 
     // -----------------------------------------------------------------------
     private final transient SystemConfig        config    = new SystemConfig();
-    private final transient CsvExport           csvExport = new CsvExport();
-    private final transient MtExport            mtExport  = new MtExport();
+    private final transient CsvExport           csvExport   = new CsvExport();
+    private final transient MtExport            mtExport    = new MtExport();
+    private final transient ExcelExport         excelExport = new ExcelExport();
     private final transient ImportService       importService = new ImportService();
     private final transient HintDictionary      dict          = new HintDictionary();
     private final transient FileImporter        importer;
@@ -81,8 +84,26 @@ public class MtAnalyzeFrame extends JFrame {
     private TagView            tagPanel;
     private JLabel             statusLabel;
     private JMenuItem          reloadItem;
+    private JMenuItem          openSessionItem;
     private JMenuItem          saveItem;
+    private JMenuItem          saveAsMtItem;
+    private JMenuItem          saveExcelItem;
     private JMenuItem          exportComponentsItem;
+    private JMenuItem          validateFileItem;
+    private JMenuItem          attachBlock5Item;
+    private JMenu              importMenu;
+    private JMenu              exportMenu;
+    private JSeparator         importExportLeadingSeparator;
+    private JSeparator         importExportMiddleSeparator;
+    private JSeparator         viewMenuSeparator;
+    private JMenuItem          importSecuritiesItem;
+    private JMenuItem          importCashItem;
+    private JMenuItem          importMappingItem;
+    private JSeparator         importPostingsSeparator;
+    private JMenuItem          exportSecuritiesItem;
+    private JMenuItem          exportCashItem;
+    private JMenuItem          exportMappingItem;
+    private JSeparator         exportPostingsSeparator;
     private File               currentSessionFile;
 
     private static final Preferences PREFS = Preferences.userNodeForPackage(MtAnalyzeFrame.class);
@@ -106,8 +127,6 @@ public class MtAnalyzeFrame extends JFrame {
     private static final String PREF_EXPLORER_ROOTS        = "explorer_roots";
     private static final String PREF_EXPLORER_SPLIT        = "explorer_split";
     private static final String PREF_BOOKMARKS             = "bookmarks";
-    private static final String PREF_MT_EXPORT_SENDER      = "mt_export_sender";
-    private static final String PREF_MT_EXPORT_RECEIVER    = "mt_export_receiver";
     private static final String PREF_POWER_USER            = "power_user";
     private static final String PREF_ACCOUNT_MAPPING       = "account_mapping";
     private static final String NAV_CARD_EXPLORER       = "explorer";
@@ -174,15 +193,18 @@ public class MtAnalyzeFrame extends JFrame {
             @Override public void onRowSelected(int modelRow) {
                 detailCtrl.expandIfNeeded();
                 dispatchSingleEntry(modelRow);
+                if (saveAsMtItem != null) saveAsMtItem.setEnabled(true);
             }
             @Override public void onMultipleRowsSelected(List<Entry> entries) {
                 switchDetailCard(DetailPanelController.COMPARE);
                 detailCtrl.expandIfNeeded();
                 for (EntrySelectionListener l : selectionListeners) l.onMultipleEntries(entries);
+                if (saveAsMtItem != null) saveAsMtItem.setEnabled(true);
             }
             @Override public void onRowDeselected() {
                 collapseDetailPanel();
                 dispatchDeselect();
+                if (saveAsMtItem != null) saveAsMtItem.setEnabled(false);
             }
             @Override public void onFilesDropped(List<File> files) { loadExplorerFiles(files); }
             @Override public boolean isPowerUser() { return PREFS.getBoolean(PREF_POWER_USER, false); }
@@ -215,8 +237,8 @@ public class MtAnalyzeFrame extends JFrame {
             @Override public void exportMessageForRow(int modelRow) {
                 mtExport.exportSingle(MtAnalyzeFrame.this,
                     entryPanel.getMessageForRow(modelRow).raw(),
-                    PREFS.get(PREF_MT_EXPORT_SENDER, ""),
-                    PREFS.get(PREF_MT_EXPORT_RECEIVER, ""),
+                    config.getMtExportSender(),
+                    config.getMtExportReceiver(),
                     entryPanel.getRowValue(modelRow, EntryPanelModel.FILE_COL_KEY),
                     statusLabel::setText);
             }
@@ -294,9 +316,27 @@ public class MtAnalyzeFrame extends JFrame {
     private void setupMenuBar() {
         FrameMenuBar.Items items = FrameMenuBar.build(entryPanel, createMenuCallbacks());
         setJMenuBar(items.menuBar());
+        openSessionItem      = items.openSessionItem();
         saveItem             = items.saveItem();
+        saveAsMtItem         = items.saveAsMtItem();
+        saveExcelItem        = items.saveExcelItem();
         reloadItem           = items.reloadItem();
-        exportComponentsItem = items.exportComponentsItem();
+        exportComponentsItem    = items.exportComponentsItem();
+        validateFileItem        = items.validateFileItem();
+        attachBlock5Item        = items.attachBlock5Item();
+        importMenu              = items.importMenu();
+        exportMenu              = items.exportMenu();
+        importExportLeadingSeparator = items.importExportLeadingSeparator();
+        importExportMiddleSeparator  = items.importExportMiddleSeparator();
+        viewMenuSeparator            = items.viewMenuSeparator();
+        importSecuritiesItem    = items.importSecuritiesItem();
+        importCashItem          = items.importCashItem();
+        importMappingItem       = items.importMappingItem();
+        importPostingsSeparator = items.importPostingsSeparator();
+        exportSecuritiesItem    = items.exportSecuritiesItem();
+        exportCashItem          = items.exportCashItem();
+        exportMappingItem       = items.exportMappingItem();
+        exportPostingsSeparator = items.exportPostingsSeparator();
         menuSearchBtn        = items.searchButton();
         menuExplorer         = items.menuExplorer();
         menuBookmarks        = items.menuBookmarks();
@@ -316,6 +356,8 @@ public class MtAnalyzeFrame extends JFrame {
             this::onNew,
             this::onOpenSession,
             this::onSaveSession,
+            this::onSaveSelectedMtAs,
+            this::onSaveExcel,
             this::onOpenFile,
             this::onAppendFile,
             this::onImportDirectory,
@@ -325,7 +367,7 @@ public class MtAnalyzeFrame extends JFrame {
             () -> csvExport.export(this, entryPanel.getColumnDefs(), entryPanel.getRowData(), statusLabel::setText, csvPrefs),
             () -> csvExport.exportComponents(this, entryPanel.getFullDisplaySequences(), entryPanel.getRowData(), SEQ_KEY, statusLabel::setText, csvPrefs),
             () -> mtExport.export(this, entryPanel.getLoadedMessages().stream().map(SwiftMessage::raw).toList(),
-                                  PREFS.get(PREF_MT_EXPORT_SENDER, ""), PREFS.get(PREF_MT_EXPORT_RECEIVER, ""),
+                                  config.getMtExportSender(), config.getMtExportReceiver(),
                                   statusLabel::setText),
             () -> bottomCtrl.securitiesPanel().showLoadDialog(),
             () -> bottomCtrl.cashPanel().showLoadDialog(),
@@ -355,7 +397,7 @@ public class MtAnalyzeFrame extends JFrame {
         SettingsDialog.show(this, PREFS, new SettingsDialog.Config(
             new SettingsDialog.Config.CsvKeys(PREF_CSV_FIELD_SEP, PREF_CSV_DECIMAL_SEP),
             new SettingsDialog.Config.ThemeConfig(PREF_THEME, this::applyTheme),
-            new SettingsDialog.Config.MtKeys(PREF_MT_EXPORT_SENDER, PREF_MT_EXPORT_RECEIVER),
+            new SettingsDialog.Config.MtKeys(config::getMtExportSender, config::getMtExportReceiver, config::saveMtExportBic),
             new SettingsDialog.Config.PowerUserConfig(PREF_POWER_USER, this::applyPowerUserMode)),
             dict);
     }
@@ -694,6 +736,8 @@ public class MtAnalyzeFrame extends JFrame {
 
     private JMenuItem makeCopyTableItem(JTable table) {
         JMenuItem item = new JMenuItem("Copy Table", ToolbarIcons.menuCopyTable());
+        item.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_T,
+            Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()));
         item.addActionListener(ae -> copyTableToClipboard(table));
         return item;
     }
@@ -920,6 +964,35 @@ public class MtAnalyzeFrame extends JFrame {
         }
     }
 
+    private void onSaveSelectedMtAs() {
+        JTable table = entryPanel.getTable();
+        int viewRow = table.getSelectedRow();
+        if (viewRow < 0) {
+            statusLabel.setText("Select an entry in MT Entries first.");
+            return;
+        }
+        int modelRow = table.convertRowIndexToModel(viewRow);
+        SwiftMessage msg = entryPanel.getMessageForRow(modelRow);
+        if (msg == null) {
+            statusLabel.setText("No SWIFT message for selected entry.");
+            return;
+        }
+        mtExport.exportSingle(this,
+            msg.raw(),
+            config.getMtExportSender(),
+            config.getMtExportReceiver(),
+            entryPanel.getRowValue(modelRow, EntryPanelModel.FILE_COL_KEY),
+            statusLabel::setText);
+    }
+
+    private void onSaveExcel() {
+        excelExport.exportComponents(this,
+            entryPanel.getFullDisplaySequences(),
+            entryPanel.getRowData(),
+            SEQ_KEY,
+            statusLabel::setText);
+    }
+
     private File pickSessionSaveFile() {
         JFileChooser fc = createSessionFileChooser("Save Session");
         if (fc.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) return null;
@@ -999,6 +1072,7 @@ public class MtAnalyzeFrame extends JFrame {
         PREFS.put(PREF_LAST_FILE, file.getAbsolutePath());
         reloadItem.setEnabled(true);
         saveItem.setEnabled(true);
+        saveExcelItem.setEnabled(true);
         markExplorerFileMtType(file);
         notifyBatchErrors(batch.errors);
         if (batch.limitReached) warnLimitReached();
@@ -1020,6 +1094,7 @@ public class MtAnalyzeFrame extends JFrame {
         notifyProwideLog(batch);
         reloadItem.setEnabled(false);
         saveItem.setEnabled(true);
+        saveExcelItem.setEnabled(true);
         if (batch.limitReached) warnLimitReached();
     }
 
@@ -1040,6 +1115,7 @@ public class MtAnalyzeFrame extends JFrame {
             file.getName() + " (" + total + " messages total)");
         reloadItem.setEnabled(true);
         saveItem.setEnabled(true);
+        saveExcelItem.setEnabled(true);
     }
 
     // -----------------------------------------------------------------------
@@ -1071,6 +1147,7 @@ public class MtAnalyzeFrame extends JFrame {
         statusLabel.setText("New model created.");
         reloadItem.setEnabled(false);
         saveItem.setEnabled(false);
+        saveExcelItem.setEnabled(false);
         currentSessionFile = null;
     }
 
@@ -1229,56 +1306,88 @@ public class MtAnalyzeFrame extends JFrame {
     }
 
     private void showAboutDialog() {
-        JPanel panel = new JPanel();
+        JPanel panel = new JPanel() {
+            @Override protected void paintComponent(Graphics g0) {
+                super.paintComponent(g0);
+                Graphics2D g = (Graphics2D) g0.create();
+                try {
+                    g.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
+                                       RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+                    BrandTheme.paintBackdrop(g, getWidth(), getHeight());
+                } finally {
+                    g.dispose();
+                }
+            }
+        };
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBorder(new EmptyBorder(12, 24, 12, 24));
-        JLabel title   = new JLabel(APP_NAME);
-        title.setFont(title.getFont().deriveFont(Font.BOLD, 16f));
-        title.setAlignmentX(Component.CENTER_ALIGNMENT);
-        JLabel version = new JLabel("Version " + loadVersion());
-        version.setAlignmentX(Component.CENTER_ALIGNMENT);
-        JLabel copy    = new JLabel("© 2026 Centerscout GmbH");
-        copy.setAlignmentX(Component.CENTER_ALIGNMENT);
-        JLabel license = new JLabel("Licensed under the Apache License, Version 2.0");
-        license.setFont(license.getFont().deriveFont(Font.PLAIN, 11f));
-        license.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panel.setBackground(BrandTheme.BG);
+        panel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(BrandTheme.BORDER, 1),
+            new EmptyBorder(20, 36, 18, 36)));
 
-        JLabel depsHeader = new JLabel("Uses open source components:");
-        depsHeader.setFont(depsHeader.getFont().deriveFont(Font.PLAIN, 11f));
-        depsHeader.setAlignmentX(Component.CENTER_ALIGNMENT);
-        JLabel dep1 = new JLabel("Prowide Core — SWIFT parsing (Apache License 2.0)");
-        dep1.setFont(dep1.getFont().deriveFont(Font.PLAIN, 11f));
-        dep1.setAlignmentX(Component.CENTER_ALIGNMENT);
+        JLabel title   = aboutLabel(APP_NAME,                            22f, Font.BOLD,   BrandTheme.FG);
+        JLabel version = aboutLabel("Version " + loadVersion(),          12f, Font.PLAIN,  BrandTheme.SUB);
+        JLabel copy    = aboutLabel("© 2026 Ralf Schwarz",               12f, Font.PLAIN,  BrandTheme.FG);
+        JLabel devLink = linkLabel("<html><a href=''>linkedin.com/in/ralfschwarz</a></html>", DEVELOPER_URL);
+        JLabel license = aboutLabel("Licensed under the Apache License, Version 2.0",
+                                                                         11f, Font.PLAIN,  BrandTheme.SUB);
+        JLabel depsHdr = aboutLabel("Uses open source components:",      11f, Font.PLAIN,  BrandTheme.SUB);
+        JLabel dep1    = aboutLabel("Prowide Core — SWIFT parsing (Apache License 2.0)",
+                                                                         11f, Font.PLAIN,  BrandTheme.FG);
+        JLabel dep2    = aboutLabel("FlatLaf — Swing look and feel (Apache License 2.0)",
+                                                                         11f, Font.PLAIN,  BrandTheme.FG);
+        JLabel dep3    = aboutLabel("Apache POI — Excel export (Apache License 2.0)",
+                                                                         11f, Font.PLAIN,  BrandTheme.FG);
+        JLabel swift   = aboutLabel("SWIFT is a trademark of S.W.I.F.T. SCRL. (www.swift.com)",
+                                                                         10f, Font.ITALIC, BrandTheme.SUB);
 
-        JLabel github = new JLabel("<html><a href=''>github.com/mtanalyze/mtanalyze</a></html>", SwingConstants.CENTER);
-        github.setFont(github.getFont().deriveFont(Font.PLAIN, 11f));
-        github.setAlignmentX(Component.CENTER_ALIGNMENT);
-        github.setMaximumSize(new Dimension(Integer.MAX_VALUE, github.getPreferredSize().height));
-        github.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        github.addMouseListener(new java.awt.event.MouseAdapter() {
+        JLabel github = linkLabel("<html><a href=''>github.com/mtanalyze/mtanalyze</a></html>", GITHUB_URL);
+
+        addRow(panel, title,    6);
+        addRow(panel, version,  4);
+        addRow(panel, github,  14);
+        addAboutDivider(panel);
+        addRow(panel, copy,     4);
+        addRow(panel, devLink,  4);
+        addRow(panel, license, 14);
+        addAboutDivider(panel);
+        addRow(panel, depsHdr,  4);
+        addRow(panel, dep1,     2);
+        addRow(panel, dep2,     2);
+        addRow(panel, dep3,    14);
+        addAboutDivider(panel);
+        panel.add(swift);
+
+        JDialog dlg = new JDialog(this, "About MT Analyze App", true);
+        dlg.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+        dlg.setContentPane(panel);
+        dlg.pack();
+        dlg.setLocationRelativeTo(this);
+        dlg.setVisible(true);
+    }
+
+    @SuppressWarnings("MagicConstant") // callers pass Font.PLAIN/BOLD/ITALIC constants
+    private static JLabel aboutLabel(String text, float size, int style, Color fg) {
+        JLabel l = new JLabel(text);
+        l.setFont(l.getFont().deriveFont(style, size));
+        l.setForeground(fg);
+        l.setAlignmentX(Component.CENTER_ALIGNMENT);
+        return l;
+    }
+
+    /** A centred, clickable label that opens {@code url} in the system browser. */
+    private static JLabel linkLabel(String html, String url) {
+        JLabel l = aboutLabel(html, 11f, Font.PLAIN, BrandTheme.SUB);
+        l.setHorizontalAlignment(SwingConstants.CENTER);
+        l.setMaximumSize(new Dimension(Integer.MAX_VALUE, l.getPreferredSize().height));
+        l.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        l.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override public void mouseClicked(java.awt.event.MouseEvent e) {
-                try { Desktop.getDesktop().browse(new java.net.URI(GITHUB_URL)); }
+                try { Desktop.getDesktop().browse(new java.net.URI(url)); }
                 catch (Exception ex) { JOptionPane.showMessageDialog(null, ex.getMessage()); }
             }
         });
-
-        JLabel swift = new JLabel("SWIFT is a trademark of S.W.I.F.T. SCRL. (www.swift.com)");
-        swift.setFont(swift.getFont().deriveFont(Font.PLAIN, 10f));
-        swift.setForeground(new Color(100, 100, 140));
-        swift.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-        addRow(panel, title,   6);
-        addRow(panel, version, 4);
-        addRow(panel, github, 12);
-        addSeparatorRow(panel, 4);
-        addRow(panel, copy,    4);
-        addRow(panel, license, 12);
-        addSeparatorRow(panel, 6);
-        addRow(panel, depsHeader, 4);
-        addRow(panel, dep1,      12);
-        addSeparatorRow(panel, 4);
-        panel.add(swift);
-        JOptionPane.showMessageDialog(this, panel, "About MT Analyze App", JOptionPane.PLAIN_MESSAGE);
+        return l;
     }
 
     private static void addRow(JPanel p, Component c, int vgap) {
@@ -1286,9 +1395,18 @@ public class MtAnalyzeFrame extends JFrame {
         p.add(Box.createVerticalStrut(vgap));
     }
 
-    private static void addSeparatorRow(JPanel p, int vgap) {
-        p.add(new JSeparator());
-        p.add(Box.createVerticalStrut(vgap));
+    private static void addAboutDivider(JPanel p) {
+        JComponent div = new JComponent() {
+            @Override public Dimension getMaximumSize() { return new Dimension(Integer.MAX_VALUE, 1); }
+            @Override public Dimension getPreferredSize() { return new Dimension(1, 1); }
+            @Override protected void paintComponent(Graphics g) {
+                g.setColor(BrandTheme.BORDER);
+                g.fillRect(0, 0, getWidth(), getHeight());
+            }
+        };
+        div.setAlignmentX(Component.CENTER_ALIGNMENT);
+        p.add(div);
+        p.add(Box.createVerticalStrut(8));
     }
 
     private void applyReferenceSearch(String value) {
@@ -1308,22 +1426,29 @@ public class MtAnalyzeFrame extends JFrame {
         return PREFS.getBoolean(PREF_POWER_USER, false);
     }
 
+    /** Sets visibility on every non-null component. */
+    private static void setVisible(boolean visible, Component... components) {
+        for (Component c : components) if (c != null) c.setVisible(visible);
+    }
+
     private void applyPowerUserMode() {
         boolean on = PREFS.getBoolean(PREF_POWER_USER, false);
         entryPanel.applyPowerUserMode(on);
-        if (exportComponentsItem != null) exportComponentsItem.setVisible(on);
+        setVisible(on,
+            exportComponentsItem, validateFileItem, attachBlock5Item, openSessionItem, saveItem,
+            menuExplorer, menuBookmarks, explorerTwBtn, bookmarksTwBtn, viewMenuSeparator,
+            importMenu, exportMenu, importExportLeadingSeparator, importExportMiddleSeparator);
         JMenuBar bar = getJMenuBar();
         if (bar != null) { bar.revalidate(); bar.repaint(); }
     }
 
     private void applyExperimentalMode() {
         boolean on = config.isExperimentalMode();
-        if (cashTwBtn           != null) cashTwBtn          .setVisible(on);
-        if (securitiesTwBtn     != null) securitiesTwBtn    .setVisible(on);
-        if (accountMappingTwBtn != null) accountMappingTwBtn.setVisible(on);
-        if (menuSecurities      != null) menuSecurities     .setVisible(on);
-        if (menuCash            != null) menuCash           .setVisible(on);
-        if (menuAccountMapping  != null) menuAccountMapping .setVisible(on);
+        setVisible(on,
+            cashTwBtn, securitiesTwBtn, accountMappingTwBtn,
+            menuSecurities, menuCash, menuAccountMapping,
+            importSecuritiesItem, importCashItem, importMappingItem, importPostingsSeparator,
+            exportSecuritiesItem, exportCashItem, exportMappingItem, exportPostingsSeparator);
         if (!on && bottomCtrl != null && !bottomCtrl.isCollapsed()) {
             String card = bottomCtrl.getActiveCard();
             if (BottomPanelController.SECURITIES.equals(card)
@@ -1384,7 +1509,8 @@ public class MtAnalyzeFrame extends JFrame {
                 com.formdev.flatlaf.FlatDarkLaf.setup();
             }
             installAlternateRowColor(finalTheme);
-            new MtAnalyzeFrame().setVisible(true);
+            MtAnalyzeFrame frame = new MtAnalyzeFrame();
+            frame.setVisible(true);
         });
     }
 

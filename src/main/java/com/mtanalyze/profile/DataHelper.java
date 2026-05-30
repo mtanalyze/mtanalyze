@@ -1,5 +1,5 @@
 /*
- * Copyright 2026 Centerscout GmbH
+ * Copyright 2026 Ralf Schwarz
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,6 +76,76 @@ public final class DataHelper {
                 lbl.isEmpty() ? ("Comp. " + c) : lbl,
                 nvl(field.getValueDisplay(c, null))
             });
+            firstShown = false;
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Typed component cells (numbers stay as Number — used by Excel export)
+    // -----------------------------------------------------------------------
+
+    public record CompCell(String entry, String seqLabel, String tagName, String qualifier,
+                           String label, Object value) {}
+
+    public List<CompCell> collectAllComponentCells(List<SwiftTagListBlock> seqs,
+                                                    List<Map<String, String>> rowData,
+                                                    String seqKey) {
+        // Prowide logs a WARNING via SwiftFormatUtils whenever getComponentAsNumber()
+        // is called on a non-numeric component (e.g. an indicator like "RECE").
+        // The exception is handled internally; only the log is noisy. Quiet it for
+        // the duration of the typed walk so the export stays silent.
+        java.util.logging.Logger swiftFmt =
+            java.util.logging.Logger.getLogger("com.prowidesoftware.swift.utils.SwiftFormatUtils");
+        java.util.logging.Level previousLevel = swiftFmt.getLevel();
+        swiftFmt.setLevel(java.util.logging.Level.SEVERE);
+        try {
+            List<CompCell> result = new ArrayList<>();
+            for (int i = 0; i < seqs.size(); i++) {
+                String label = (i < rowData.size()) ? rowData.get(i).getOrDefault(seqKey, "") : "";
+                collectEntryComponentCells(result, seqs.get(i), stripTrailingNumericCounter(label),
+                                           String.valueOf(i));
+            }
+            return result;
+        } finally {
+            swiftFmt.setLevel(previousLevel);
+        }
+    }
+
+    private void collectEntryComponentCells(List<CompCell> out, SwiftTagListBlock seq,
+                                            String baseSeq, String entry) {
+        TagStacks s = new TagStacks();
+        for (Tag t : seq.getTags())
+            collectTagCells(out, t, baseSeq, entry, s.qual, s.seqLabel, s.occ);
+    }
+
+    private void collectTagCells(List<CompCell> out, Tag t, String baseSeq, String entry,
+                                  Deque<String> qualStack, Deque<String> seqLabelStack,
+                                  Deque<Map<String, Integer>> occStack) {
+        if (handleBoundaryTag(t, qualStack, seqLabelStack, occStack)) return;
+        String seqLabel  = seqLabelStack.isEmpty() ? baseSeq : seqLabelStack.peek();
+        String qualifier = lookups.extractQualifier(t);
+        com.prowidesoftware.swift.model.field.Field field = t.asField();
+        if (field != null)
+            collectFieldComponentCells(out, field, entry, seqLabel, t.getName(), qualifier);
+        else
+            out.add(new CompCell(entry, seqLabel, t.getName(), qualifier, "",
+                                 lookups.valueWithoutQualifier(t)));
+    }
+
+    private static void collectFieldComponentCells(List<CompCell> out,
+                                                    com.prowidesoftware.swift.model.field.Field field,
+                                                    String entry, String seqLabel,
+                                                    String tagName, String qualifier) {
+        boolean firstShown = true;
+        for (int c = 1; c <= field.componentsSize(); c++) {
+            if (!shouldAddComponentRow(field, c)) continue;
+            String lbl = nvl(field.getComponentLabel(c));
+            Number num = field.getComponentAsNumber(c);
+            Object value = num != null ? num : nvl(field.getComponent(c));
+            out.add(new CompCell(entry, seqLabel, tagName,
+                                 firstShown ? qualifier : "",
+                                 lbl.isEmpty() ? ("Comp. " + c) : lbl,
+                                 value));
             firstShown = false;
         }
     }

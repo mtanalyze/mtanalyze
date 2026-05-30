@@ -1,5 +1,5 @@
 /*
- * Copyright 2026 Centerscout GmbH
+ * Copyright 2026 Ralf Schwarz
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,9 +36,27 @@ public final class FrameMenuBar {
 
     public record Items(
         JMenuBar              menuBar,
+        JMenuItem             openSessionItem,
         JMenuItem             saveItem,
+        JMenuItem             saveAsMtItem,
+        JMenuItem             saveExcelItem,
         JMenuItem             reloadItem,
         JMenuItem             exportComponentsItem,
+        JMenuItem             validateFileItem,
+        JMenuItem             attachBlock5Item,
+        JMenu                 importMenu,
+        JMenu                 exportMenu,
+        JSeparator            importExportLeadingSeparator,
+        JSeparator            importExportMiddleSeparator,
+        JSeparator            viewMenuSeparator,
+        JMenuItem             importSecuritiesItem,
+        JMenuItem             importCashItem,
+        JMenuItem             importMappingItem,
+        JSeparator            importPostingsSeparator,
+        JMenuItem             exportSecuritiesItem,
+        JMenuItem             exportCashItem,
+        JMenuItem             exportMappingItem,
+        JSeparator            exportPostingsSeparator,
         JButton               searchButton,
         JCheckBoxMenuItem     menuExplorer,
         JCheckBoxMenuItem     menuBookmarks,
@@ -61,6 +79,8 @@ public final class FrameMenuBar {
         Runnable          onNew,
         Runnable          onOpenSession,
         Runnable          onSaveSession,
+        Runnable          onSaveAsMt,
+        Runnable          onSaveExcel,
         Runnable          onOpenFile,
         Runnable          onAppendFile,
         Runnable          onImportDirectory,
@@ -107,12 +127,20 @@ public final class FrameMenuBar {
 
         JMenuItem newItem = item("New", ToolbarIcons.menuNew(), "ctrl N", cb.onNew());
 
-        JMenuItem openSessionItem = item("Open Session...", ToolbarIcons.menuOpen(), "ctrl O", cb.onOpenSession());
+        JMenuItem openMtItem = item("Open...", ToolbarIcons.menuImportFile(), "ctrl O", cb.onOpenFile());
+
+        JMenuItem openSessionItem = item("Open Session...", ToolbarIcons.menuOpen(), "ctrl shift O", cb.onOpenSession());
 
         JMenuItem saveItem = new JMenuItem("Save Session", ToolbarIcons.menuSaveSession());
-        saveItem.setAccelerator(KeyStroke.getKeyStroke("ctrl S"));
+        saveItem.setAccelerator(KeyStroke.getKeyStroke("ctrl shift S"));
         saveItem.setEnabled(false);
         saveItem.addActionListener(e -> cb.onSaveSession().run());
+
+        JMenuItem saveAsMtItem = item("Save...", ToolbarIcons.menuExport(), "ctrl S", cb.onSaveAsMt());
+        saveAsMtItem.setEnabled(false);
+
+        JMenuItem saveExcelItem = item("Save Excel...", ToolbarIcons.menuExport(), "ctrl E", cb.onSaveExcel());
+        saveExcelItem.setEnabled(false);
 
         JMenuItem reloadItem = new JMenuItem("Reload", ToolbarIcons.menuReload());
         reloadItem.setAccelerator(KeyStroke.getKeyStroke("ctrl R"));
@@ -121,42 +149,59 @@ public final class FrameMenuBar {
 
         JMenuItem exportComponentsItem = item("Export CSV (Components)...", ToolbarIcons.menuExport(), null, cb.onExportCsvComponents());
 
+        JMenuItem importSecuritiesItem = item("Import Securities Postings CSV…", ToolbarIcons.menuOpen(),       null, cb.onImportSecurities());
+        JMenuItem importCashItem       = item("Import Cash Postings CSV…",       ToolbarIcons.menuOpen(),       null, cb.onImportCash());
+        JMenuItem importMappingItem    = item("Import Account Mapping CSV…",     ToolbarIcons.menuImportFile(), null, cb.onImportMapping());
+        JPopupMenu.Separator importPostingsSeparator = new JPopupMenu.Separator();
+
         JMenu importMenu = new JMenu("Import");
         importMenu.setIcon(ToolbarIcons.menuImportFile());
         importMenu.add(item("Import MT File...",           ToolbarIcons.menuImportFile(), null, cb.onOpenFile()));
         importMenu.add(item("Append MT File...",           ToolbarIcons.menuAppendFile(), null, cb.onAppendFile()));
         importMenu.add(item("Import Directory...",         ToolbarIcons.menuImportDir(),  null, cb.onImportDirectory()));
         importMenu.add(reloadItem);
-        importMenu.addSeparator();
-        importMenu.add(item("Import Securities Postings CSV…", ToolbarIcons.menuOpen(),       null, cb.onImportSecurities()));
-        importMenu.add(item("Import Cash Postings CSV…",       ToolbarIcons.menuOpen(),       null, cb.onImportCash()));
-        importMenu.add(item("Import Account Mapping CSV…",     ToolbarIcons.menuImportFile(), null, cb.onImportMapping()));
+        importMenu.add(importPostingsSeparator);
+        importMenu.add(importSecuritiesItem);
+        importMenu.add(importCashItem);
+        importMenu.add(importMappingItem);
+
+        JMenuItem exportSecuritiesItem = item("Export Securities Postings CSV…", ToolbarIcons.menuExport(), null, cb.onExportSecurities());
+        JMenuItem exportCashItem       = item("Export Cash Postings CSV…",       ToolbarIcons.menuExport(), null, cb.onExportCash());
+        JMenuItem exportMappingItem    = item("Export Account Mapping CSV…",     ToolbarIcons.menuExport(), null, cb.onExportMapping());
+        JPopupMenu.Separator exportPostingsSeparator = new JPopupMenu.Separator();
 
         JMenu exportMenu = new JMenu("Export");
         exportMenu.setIcon(ToolbarIcons.menuExport());
         exportMenu.add(item("Export CSV...",               ToolbarIcons.menuExport(), null, cb.onExportCsv()));
         exportMenu.add(exportComponentsItem);
         exportMenu.add(item("Export MT Messages...",       ToolbarIcons.menuExport(), null, cb.onExportMt()));
-        exportMenu.addSeparator();
-        exportMenu.add(item("Export Securities Postings CSV…", ToolbarIcons.menuExport(), null, cb.onExportSecurities()));
-        exportMenu.add(item("Export Cash Postings CSV…",       ToolbarIcons.menuExport(), null, cb.onExportCash()));
-        exportMenu.add(item("Export Account Mapping CSV…",     ToolbarIcons.menuExport(), null, cb.onExportMapping()));
+        exportMenu.add(exportPostingsSeparator);
+        exportMenu.add(exportSecuritiesItem);
+        exportMenu.add(exportCashItem);
+        exportMenu.add(exportMappingItem);
 
         fileMenu.add(newItem);
         fileMenu.addSeparator();
+        fileMenu.add(openMtItem);
         fileMenu.add(openSessionItem);
         fileMenu.add(saveItem);
-        fileMenu.addSeparator();
+        fileMenu.add(saveAsMtItem);
+        fileMenu.add(saveExcelItem);
+        JPopupMenu.Separator importExportLeadingSeparator = new JPopupMenu.Separator();
+        JPopupMenu.Separator importExportMiddleSeparator  = new JPopupMenu.Separator();
+        fileMenu.add(importExportLeadingSeparator);
         fileMenu.add(importMenu);
-        fileMenu.addSeparator();
+        fileMenu.add(importExportMiddleSeparator);
         fileMenu.add(exportMenu);
         fileMenu.addSeparator();
-        fileMenu.add(item("Validate SWIFT File...", ToolbarIcons.menuSearch(),     null, cb.onValidateFile()));
-        fileMenu.add(item("Attach Block 5...",      ToolbarIcons.menuAppendFile(), null, cb.onAttachBlock5()));
+        JMenuItem validateFileItem = item("Validate SWIFT File...", ToolbarIcons.menuSearch(), null, cb.onValidateFile());
+        fileMenu.add(validateFileItem);
+        JMenuItem attachBlock5Item = item("Attach Block 5...", ToolbarIcons.menuAppendFile(), null, cb.onAttachBlock5());
+        fileMenu.add(attachBlock5Item);
         fileMenu.addSeparator();
         fileMenu.add(item("Settings...", ToolbarIcons.menuSettings(), null, cb.onShowSettings()));
         fileMenu.addSeparator();
-        fileMenu.add(item("Exit",        ToolbarIcons.menuExit(),     null, () -> System.exit(0)));
+        fileMenu.add(item("Exit",        ToolbarIcons.menuExit(),     "ctrl Q", () -> System.exit(0)));
 
         // ── View menu ─────────────────────────────────────────────────────
         JCheckBoxMenuItem menuExplorer = new JCheckBoxMenuItem("Explorer", true);
@@ -217,13 +262,14 @@ public final class FrameMenuBar {
         detailViewGroup.add(menuComponents);
         menuTags.setSelected(true);
 
+        JPopupMenu.Separator viewMenuSeparator = new JPopupMenu.Separator();
         JMenu viewMenu = new JMenu("View");
         viewMenu.add(menuExplorer);
         viewMenu.add(menuBookmarks);
         viewMenu.add(menuSecurities);
         viewMenu.add(menuCash);
         viewMenu.add(menuAccountMapping);
-        viewMenu.addSeparator();
+        viewMenu.add(viewMenuSeparator);
         viewMenu.add(menuNotifications);
         viewMenu.add(menuTags);
         viewMenu.add(menuCompare);
@@ -267,7 +313,12 @@ public final class FrameMenuBar {
         menuBar.add(searchBtn);
         menuBar.add(settingsBtn);
 
-        return new Items(menuBar, saveItem, reloadItem, exportComponentsItem, searchBtn,
+        return new Items(menuBar, openSessionItem, saveItem, saveAsMtItem, saveExcelItem, reloadItem, exportComponentsItem, validateFileItem, attachBlock5Item,
+            importMenu, exportMenu, importExportLeadingSeparator, importExportMiddleSeparator,
+            viewMenuSeparator,
+            importSecuritiesItem, importCashItem, importMappingItem, importPostingsSeparator,
+            exportSecuritiesItem, exportCashItem, exportMappingItem, exportPostingsSeparator,
+            searchBtn,
             menuExplorer, menuBookmarks, menuSecurities, menuCash, menuAccountMapping,
             menuNotifications, menuTags, menuCompare, menuSource, menuComponents);
     }
