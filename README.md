@@ -72,8 +72,6 @@ Optional: place an `mtanalyze.properties` file next to the JAR to override defau
 
 MT Analyze is built and maintained by **Ralf Schwarz**, an independent banking-IT consultant and business analyst specialising in securities trading and settlement systems for international banks and asset managers.
 
-It is a personal open-source project, developed independently in the author's own time and not connected to any client engagement or employer.
-
 Get in touch on **[LinkedIn](https://www.linkedin.com/in/ralfschwarz/)**.
 
 ---
