@@ -206,7 +206,7 @@ public class MtAnalyzeFrame extends JFrame {
                 dispatchDeselect();
                 if (saveAsMtItem != null) saveAsMtItem.setEnabled(false);
             }
-            @Override public void onFilesDropped(List<File> files) { loadExplorerFiles(files); }
+            @Override public void onFilesDropped(List<File> files) { appendDroppedFiles(files); }
             @Override public boolean isPowerUser() { return PREFS.getBoolean(PREF_POWER_USER, false); }
             @Override public boolean isExperimentalMode() { return config.isExperimentalMode(); }
             @Override public JTable getDetailTable() { return tagPanel.getTable(); }
@@ -928,6 +928,11 @@ public class MtAnalyzeFrame extends JFrame {
         File[] arr = files.toArray(new File[0]);
         File dir = files.get(0).getParentFile();
         importer.importFileBatch(arr, dir != null ? dir : files.get(0));
+    }
+
+    /** Drops onto the entry table append to the current data instead of replacing it. */
+    private void appendDroppedFiles(List<File> files) {
+        for (File f : files) importer.appendFile(f);
     }
 
     private void saveWindowPrefs() {

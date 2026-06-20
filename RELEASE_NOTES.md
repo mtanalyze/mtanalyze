@@ -12,6 +12,23 @@ java -jar MT-Analyze-v1.0.3.jar
 
 ## Changes
 
+### Generate MT 54x Settlement Confirmation from MT 536
+
+Right-click any **MT 536** (Statement of Transactions) row in the Entries table to generate the matching settlement-confirmation message. The target type is derived automatically from the transaction's settlement indicators (`:22H::REDE//` and `:22H::PAYM//`):
+
+| REDE | PAYM | Confirmation |
+|------|------|------------------------------------|
+| RECE | FREE | MT 544 — Receive Free |
+| RECE | APMT | MT 545 — Receive Against Payment |
+| DELI | FREE | MT 546 — Deliver Free |
+| DELI | APMT | MT 547 — Deliver Against Payment |
+
+The salient settlement fields — financial instrument (35B), safekeeping account (97A::SAFE), settled quantity (36B), trade/settlement dates, settlement narrative (70E) and settlement parties — are carried over into the standard **GENL / TRADDET / FIAC / SETDET** sequences. The generated message opens in a copyable source view and is intended for inspection, not straight-through processing. On MT 536 rows that carry no transaction details (TRANSDET) the menu item is shown disabled so the feature stays discoverable.
+
+### Drag & Drop Appends to the Entries Table
+
+Dropping one or more files onto the Entries table now **appends** the parsed messages to whatever is already loaded instead of replacing it. This makes it easy to combine messages from several files by dragging them in one after another. **File → Open** and the explorer tree still load fresh (replace).
+
 ### Log File Import — Streaming & MT Type Filter
 
 Log files are now read line by line instead of being loaded entirely into memory. Large log files no longer cause high memory usage during import.
