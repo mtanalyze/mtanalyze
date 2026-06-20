@@ -1061,6 +1061,8 @@ public class MtAnalyzeFrame extends JFrame {
         notifyProwideLog(batch);
         if (batch.totalParsed == 0) { error("No valid SWIFT messages found."); return; }
         tagPanel.clear();
+        entryPanel.clearSearch();
+        tagPanel.clearSearch();
         entryPanel.loadBatch(batch.messages, batch.columnDefs);
         entryPanel.applyColumnPrefs();
         entryPanel.rebuildPositionTable();
@@ -1079,6 +1081,8 @@ public class MtAnalyzeFrame extends JFrame {
     }
 
     private void onDirectoryLoaded(ImportBatch batch, File dir, int fileCount) {
+        entryPanel.clearSearch();
+        tagPanel.clearSearch();
         entryPanel.mergeBatch(batch.messages, batch.columnDefs);
         entryPanel.applyColumnPrefs();
         entryPanel.rebuildPositionTable();
@@ -1141,6 +1145,8 @@ public class MtAnalyzeFrame extends JFrame {
 
     private void onNew() {
         detailCtrl.showCard(DetailPanelController.INSPECTOR);
+        entryPanel.clearSearch();
+        tagPanel.clearSearch();
         entryPanel.clear();
         entryPanel.rebuildPositionTable();
         tagPanel.clear();

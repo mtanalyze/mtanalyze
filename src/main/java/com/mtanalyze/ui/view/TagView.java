@@ -176,6 +176,11 @@ public class TagView extends RoundedPanel implements EntrySelectionListener {
         tranDetailModel.setRowCount(0);
     }
 
+    /** Clears the detail Find/search field; the document listener resets the filter. */
+    public void clearSearch() {
+        if (detailSearchField != null) detailSearchField.setText("");
+    }
+
     public void rebuildModel(boolean withComponents) {
         showComponents  = withComponents;
         tranDetailModel = buildDetailTableModel(withComponents);

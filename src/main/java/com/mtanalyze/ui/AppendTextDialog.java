@@ -74,7 +74,8 @@ public final class AppendTextDialog {
 
         Runnable updateFixBtn = () ->
             fixMainframeBtn.setEnabled(textArea.getText().indexOf('ä') >= 0
-                                    || textArea.getText().indexOf('ü') >= 0);
+                                    || textArea.getText().indexOf('ü') >= 0
+                                    || textArea.getText().contains("00{"));
 
         pasteBtn.addActionListener(e -> {
             try {

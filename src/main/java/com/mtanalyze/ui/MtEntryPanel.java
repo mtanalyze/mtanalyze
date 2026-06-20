@@ -512,6 +512,7 @@ public class MtEntryPanel extends JPanel {
         if (rowEntry != null) {
             String mtVal = rowEntry.data().get(EntryPanelModel.MT_COL_KEY);
             if (mtVal != null && mtVal.length() > 2) popup.add(makeIsoDocItem(mtVal));
+            addGenerateConfirmationItem(popup, modelRow, rowEntry);
         }
 
         // ── Display ───────────────────────────────────────────────────────
@@ -592,6 +593,54 @@ public class MtEntryPanel extends JPanel {
             }
         });
         return item;
+    }
+
+    /**
+     * Adds the "Generate MT 54x Settlement Confirmation" item for MT 536 rows.
+     * The concrete target type (544-547) is derived from the transaction's
+     * {@code :22H::REDE//} and {@code :22H::PAYM//} settlement indicators; when no
+     * transaction details are present the item is shown disabled so the feature
+     * stays discoverable.
+     */
+    private void addGenerateConfirmationItem(JPopupMenu popup, int modelRow, Entry rowEntry) {
+        if (!"MT536".equals(rowEntry.data().get(EntryPanelModel.MT_COL_KEY))) return;
+        String confirmType = com.mtanalyze.export.Mt54xGenerator.detectConfirmationType(rowEntry);
+        if (confirmType == null) {
+            JMenuItem disabled = new JMenuItem("Generate MT 54x (no transaction details found)",
+                    ToolbarIcons.menuViewSource());
+            disabled.setEnabled(false);
+            popup.add(disabled);
+            return;
+        }
+        JMenuItem item = new JMenuItem(
+                "Generate MT " + confirmType + " (Settlement Confirmation)",
+                ToolbarIcons.menuViewSource());
+        item.addActionListener(ae -> generateConfirmation(modelRow, confirmType));
+        popup.add(item);
+    }
+
+    private void generateConfirmation(int modelRow, String confirmType) {
+        Entry entry      = model.getEntryForRow(modelRow);
+        SwiftMessage msg = model.getMessageForRow(modelRow);
+        if (entry == null || msg == null) {
+            host.setStatus("No SWIFT message for selected entry.");
+            return;
+        }
+        String text = new com.mtanalyze.export.Mt54xGenerator().generate(msg, entry);
+        showGeneratedSource("Generated MT " + confirmType + " – Settlement Confirmation", text);
+        host.setStatus("Generated MT " + confirmType + " from MT 536 entry.");
+    }
+
+    /** Opens a non-modal source window showing the given SWIFT message text. */
+    private void showGeneratedSource(String title, String text) {
+        com.mtanalyze.ui.view.SourcePanel sourcePanel = new com.mtanalyze.ui.view.SourcePanel();
+        JDialog dialog = new JDialog(SwingUtilities.getWindowAncestor(this), title,
+                Dialog.ModalityType.MODELESS);
+        dialog.getContentPane().add(sourcePanel);
+        dialog.setSize(660, 580);
+        dialog.setLocationRelativeTo(this);
+        sourcePanel.showMessage(text);
+        dialog.setVisible(true);
     }
 
     private JMenuItem makeAddNoteMenuItem(int modelRow) {
@@ -1232,6 +1281,12 @@ public class MtEntryPanel extends JPanel {
     // -----------------------------------------------------------------------
 
     public void clear()                                                    { model.clear(); }
+
+    /** Clears the Find/search field; the document listener resets the filter and match label. */
+    public void clearSearch() {
+        if (finSearchField != null) finSearchField.setText("");
+    }
+
     public void loadBatch(List<SwiftMessage> msgs, List<ColumnDef> cols)   { model.loadBatch(msgs, cols); }
     public void mergeBatch(List<SwiftMessage> msgs, List<ColumnDef> cols)  { model.mergeBatch(msgs, cols); }
 

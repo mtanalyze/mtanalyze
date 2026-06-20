@@ -459,6 +459,7 @@ public final class MtFileIO {
      */
     public static String fixMainframeEncoding(String text) {
         return text.replace("\"00ä", "\"{")
+                   .replace("\"00{", "\"{")
                    .replace('ä', '{')
                    .replace('ü', '}');
     }
