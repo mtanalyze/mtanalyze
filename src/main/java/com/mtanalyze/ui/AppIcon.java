@@ -180,7 +180,11 @@ public final class AppIcon {
     }
 
     private static double num(String s) {
-        return Double.parseDouble(s);
+        try {
+            return Double.parseDouble(s);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Invalid SVG number: " + s, e);
+        }
     }
 
     private static List<String> tokenize(String d) {

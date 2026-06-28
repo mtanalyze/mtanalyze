@@ -133,13 +133,14 @@ public final class MtFileIO {
      * Detection reads only the first cell / first decoded line.
      */
     public static boolean isCsvSwiftContent(String content) {
-        String trimmed = content.trim();
+        String trimmed = stripBom(content.trim());
         if (trimmed.isEmpty()) return false;
         if (trimmed.charAt(0) == '"') {
             int end = findCsvClosingQuote(trimmed, 1);
-            if (end < 0) return false;
-            String first = fixMainframeEncoding(trimmed.substring(1, end)).trim();
-            return isCompleteSwiftMessage(first);
+            String first = end >= 0
+                    ? fixMainframeEncoding(trimmed.substring(1, end)).trim()
+                    : fixMainframeEncoding(trimmed.substring(1)).trim();
+            return isUsableSwiftMessage(first);
         }
         // Unquoted Mainframe-encoded content: lines start with ä (= '{') instead of '"',
         // optionally preceded by a short prefix (e.g. "00ä" → "00{1:").
@@ -161,7 +162,7 @@ public final class MtFileIO {
      * Only entries that form a complete SWIFT message are returned.
      */
     public static List<String> splitCsvIntoSwiftMessages(String content) {
-        String trimmed = content.trim();
+        String trimmed = stripBom(content.trim());
         if (!trimmed.isEmpty() && trimmed.charAt(0) != '"') {
             return splitLogIntoSwiftMessages(fixMainframeEncoding(content), "{1:", "");
         }
@@ -178,6 +179,10 @@ public final class MtFileIO {
                 if (isUsableSwiftMessage(repaired)) messages.add(deduplicateBlockClose(repaired));
                 i = end + 1;
             } else {
+                String raw   = content.substring(start + 1);
+                String fixed    = fixMainframeEncoding(raw).trim();
+                String repaired = repairTruncated(fixed);
+                if (isUsableSwiftMessage(repaired)) messages.add(deduplicateBlockClose(repaired));
                 i = content.length();
             }
         }
@@ -327,6 +332,11 @@ public final class MtFileIO {
     static String repairTruncated(String s) {
         if (!s.contains("{4:") || s.endsWith("}")) return s;
         return s + "\n-}";
+    }
+
+    /** Strips a UTF-8 BOM (﻿) if present; Java's trim() does not remove it. */
+    private static String stripBom(String s) {
+        return !s.isEmpty() && s.charAt(0) == '﻿' ? s.substring(1) : s;
     }
 
     private static boolean isCompleteSwiftMessage(String s) {
