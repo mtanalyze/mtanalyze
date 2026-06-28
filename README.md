@@ -21,7 +21,7 @@ MT Analyze is a single self-contained JAR — no installation, no admin rights.
 2. Double-click it, or run:
 
 ```bash
-java -jar MT-Analyze-1.0.2.jar
+java -jar MT-Analyze-1.0.4.jar
 ```
 
 Also available on [Maven Central](https://central.sonatype.com/artifact/com.mtanalyze/mtanalyze) for mirroring via Nexus / Artifactory.
@@ -37,6 +37,11 @@ Also available on [Maven Central](https://central.sonatype.com/artifact/com.mtan
 - **Tag View** — full tag breakdown with ISO 15022 descriptions; enable **Components** to expand multi-part fields.
 - **Diff View** — compare two or more messages; deviating cells highlighted.
 - **Source View** — raw SWIFT message with colour-coded blocks and tags.
+- **Generate MT 544–547 from MT 536** — select any MT 536 transaction entry and generate the matching settlement confirmation (MT 544 Receive Free, MT 545 Receive Against Payment, MT 546 Deliver Free, or MT 547 Deliver Against Payment). The target type is derived automatically from the REDE/PAYM indicators.
+- **Posting Reconciliation** — load cash and securities posting reports (CSV) into dedicated side panels. Filter by SAFE account code, cross-reference against MT 536/940 entries, and export.
+- **Account Mapping** — maintain a SAFE → securities / cash account number lookup table. Supports manual editing, copy-paste from Excel, and CSV import/export. Persisted across sessions.
+- **Validate SWIFT File** — full Prowide parser report for any SWIFT FIN file: Prowide log warnings, parser errors, block structure, message info, and JSON output.
+- **Paste MT Snippet** — paste a raw SWIFT message directly into the tool without a file. Includes one-click EBCDIC encoding correction for mainframe-generated messages with ä/ü artefacts.
 
 ---
 
@@ -64,7 +69,7 @@ Optional: place an `mtanalyze.properties` file next to the JAR to override defau
 
 - **[Prowide Core](https://github.com/prowide/prowide-core)** SRU2025-10.3.14 — SWIFT MT parsing (Apache 2.0)
 - **[FlatLaf](https://github.com/JFormDesigner/FlatLaf)** 3.7.1 — flat look and feel with dark mode (Apache 2.0)
-- **[Apache POI](https://poi.apache.org/)** 5.3.0 — Excel (XLSX) export (Apache 2.0)
+- **[Apache POI](https://poi.apache.org/)** 5.4.1 — Excel (XLSX) export (Apache 2.0)
 
 ---
 

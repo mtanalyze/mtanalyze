@@ -17,6 +17,7 @@ package com.mtanalyze.parser;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.Reader;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.regex.*;
@@ -69,7 +70,7 @@ public final class MtFileIO {
         // field values (e.g. 35B ISIN + description) do not break line detection.
         String crlfNormalized = content.replace("\r\n", "\n");
         String trimmed = crlfNormalized.replace("\r", "\n").trim();
-        if (trimmed.startsWith("{1:")) return trimmed;
+        if (trimmed.startsWith("{1:")) return repairTruncated(trimmed);
         String block4Body;
         String effectiveMtOverride = mtTypeOverride;
         String nvCandidate = crlfNormalized.trim();
@@ -172,8 +173,9 @@ public final class MtFileIO {
             int end = findCsvClosingQuote(content, start + 1);
             if (end >= 0) {
                 String raw   = content.substring(start + 1, end).replace("\"\"", "\"");
-                String fixed = fixMainframeEncoding(raw).trim();
-                if (isCompleteSwiftMessage(fixed)) messages.add(deduplicateBlockClose(fixed));
+                String fixed    = fixMainframeEncoding(raw).trim();
+                String repaired = repairTruncated(fixed);
+                if (isUsableSwiftMessage(repaired)) messages.add(deduplicateBlockClose(repaired));
                 i = end + 1;
             } else {
                 i = content.length();
@@ -232,6 +234,48 @@ public final class MtFileIO {
     }
 
     /**
+     * Streaming variant of {@link #splitCsvIntoSwiftMessages} for quoted single-column CSV.
+     * Reads {@code reader} in 8 KB chunks; the full file is never materialised in memory.
+     * Handles RFC 4180 {@code ""} escaping. Each cell is Mainframe-decoded and forwarded
+     * to {@code onMessage} when it forms a usable SWIFT message.
+     */
+    public static void streamCsvMessages(Reader reader, Consumer<String> onMessage) throws IOException {
+        char[] buf = new char[8192];
+        StringBuilder cell = new StringBuilder();
+        boolean inside = false;
+        boolean afterQuote = false;
+        int n;
+        while ((n = reader.read(buf)) != -1) {
+            for (int i = 0; i < n; i++) {
+                char c = buf[i];
+                if (!inside) {
+                    if (c == '"') inside = true;
+                } else if (afterQuote) {
+                    afterQuote = false;
+                    if (c == '"') {
+                        cell.append('"');
+                    } else {
+                        emitCsvCell(cell, onMessage);
+                        inside = false;
+                    }
+                } else if (c == '"') {
+                    afterQuote = true;
+                } else {
+                    cell.append(c);
+                }
+            }
+        }
+        if (inside && !cell.isEmpty()) emitCsvCell(cell, onMessage);
+    }
+
+    private static void emitCsvCell(StringBuilder cell, Consumer<String> onMessage) {
+        String fixed = fixMainframeEncoding(cell.toString()).trim();
+        String repaired = repairTruncated(fixed);
+        if (isUsableSwiftMessage(repaired)) onMessage.accept(deduplicateBlockClose(repaired));
+        cell.setLength(0);
+    }
+
+    /**
      * Feeds one log line into the pending-message accumulator and emits any complete message
      * to {@code sink}. Returns the updated accumulator ({@code null} once a message was flushed).
      */
@@ -256,7 +300,17 @@ public final class MtFileIO {
 
     private static void finalizeMessage(String raw, String newlineToken, Consumer<String> onMessage) {
         String processed = processRaw(raw, newlineToken);
-        if (isCompleteSwiftMessage(processed)) onMessage.accept(deduplicateBlockClose(processed));
+        if (isCompleteSwiftMessage(processed)) {
+            onMessage.accept(deduplicateBlockClose(processed));
+            return;
+        }
+        // processRaw truncates at the last '}', which for a truncated message lands inside
+        // block3 and removes block4 entirely. Use the full decoded content for repair.
+        String full = (newlineToken.isEmpty() ? raw : raw.replace(newlineToken, "\n")).trim();
+        String repaired = repairTruncated(full);
+        if (isUsableSwiftMessage(repaired)) {
+            onMessage.accept(deduplicateBlockClose(repaired));
+        }
     }
 
     private static String processRaw(String raw, String newlineToken) {
@@ -265,8 +319,23 @@ public final class MtFileIO {
         return (lastBrace >= 0 ? s.substring(0, lastBrace + 1) : s).trim();
     }
 
+    /**
+     * If a message has both {1: and {4: headers but the block4 is not properly closed
+     * (missing the trailing -}), appends the closer so Prowide can parse the partial content.
+     * Complete messages are returned unchanged.
+     */
+    static String repairTruncated(String s) {
+        if (!s.contains("{4:") || s.endsWith("}")) return s;
+        return s + "\n-}";
+    }
+
     private static boolean isCompleteSwiftMessage(String s) {
         return s.contains("{1:") && s.contains("{4:") && s.endsWith("}");
+    }
+
+    /** Like {@link #isCompleteSwiftMessage} but also accepts truncated messages with {1: and {4:. */
+    private static boolean isUsableSwiftMessage(String s) {
+        return s.contains("{1:") && s.contains("{4:");
     }
 
     private static String normalizeForDedup(String msg) {

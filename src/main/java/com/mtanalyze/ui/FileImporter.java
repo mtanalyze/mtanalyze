@@ -33,6 +33,7 @@ final class FileImporter {
 
     private static final String IMPORT_DIR_TITLE = "Import Directory";
     private static final String LOAD_LOG_TITLE   = "Loading Log File";
+    private static final String LOAD_CSV_TITLE   = "Loading CSV File";
 
     private final ImportContext ctx;
 
@@ -50,6 +51,10 @@ final class FileImporter {
                 ctx.config().getLogSwiftStart(),
                 ctx.config().getLogNewlineToken(),
                 ctx.config().getMaxEntries());
+            return;
+        }
+        if (isQuotedCsvSwiftFile(file)) {
+            loadCsvFileWithProgress(file);
             return;
         }
         try {
@@ -78,6 +83,22 @@ final class FileImporter {
             ctx.onFileLoaded(batch, file);
         } catch (IOException ex) {
             ctx.fileError("loading", ex);
+        }
+    }
+
+    /**
+     * Returns true when the file starts with a quoted cell that decodes to a complete SWIFT message.
+     * Reads at most 64 KB to detect; falls back to false on any error.
+     */
+    private static boolean isQuotedCsvSwiftFile(File file) {
+        try (java.io.InputStream in = Files.newInputStream(file.toPath())) {
+            byte[] buf = new byte[65536];
+            int n = in.read(buf);
+            if (n <= 0) return false;
+            String sample = new String(buf, 0, n, java.nio.charset.StandardCharsets.UTF_8).trim();
+            return !sample.isEmpty() && sample.charAt(0) == '"' && MtFileIO.isCsvSwiftContent(sample);
+        } catch (IOException e) {
+            return false;
         }
     }
 
@@ -257,6 +278,60 @@ final class FileImporter {
                         if (isCancelled() || batch.entryCount >= maxEntries) return;
                         ctx.importService().parseChunkIntoBatch(
                             chunk, null, batch, file.getAbsolutePath(), MessageOrigin.LOG_FILE, maxEntries);
+                        publish(batch.totalParsed);
+                    });
+                    batch.prowideLog.addAll(cap.stop());
+                }
+                return batch;
+            }
+
+            @Override
+            protected void process(List<Integer> vals) {
+                int n = vals.get(vals.size() - 1);
+                bar.setString("Parsed " + n + " messages…");
+            }
+
+            @Override
+            protected void done() {
+                pd.dialog().dispose();
+                if (isCancelled()) { ctx.error("Load cancelled."); return; }
+                try {
+                    ctx.onFileLoaded(get(), file);
+                } catch (InterruptedException ex) {
+                    Thread.currentThread().interrupt();
+                    ctx.error("Load interrupted.");
+                } catch (ExecutionException ex) {
+                    ctx.fileError("loading", ex);
+                }
+            }
+        };
+
+        pd.runWorker(worker);
+    }
+
+    private void loadCsvFileWithProgress(File file) {
+        JProgressBar bar = new JProgressBar();
+        bar.setIndeterminate(true);
+        bar.setStringPainted(true);
+        bar.setString("Scanning…");
+
+        FrameLayout.ProgressDialog pd = FrameLayout.buildProgressDialog(
+            ctx.frame(), LOAD_CSV_TITLE, "Loading " + file.getName() + "…", bar);
+
+        int maxEntries = ctx.config().getMaxEntries();
+
+        SwingWorker<ImportBatch, Integer> worker = new SwingWorker<>() {
+            @Override
+            protected ImportBatch doInBackground() throws Exception {
+                ImportBatch batch = new ImportBatch();
+                try (ProwideLogCapture cap = ProwideLogCapture.start();
+                     java.io.BufferedReader reader = Files.newBufferedReader(
+                             file.toPath(), java.nio.charset.StandardCharsets.UTF_8)) {
+                    MtFileIO.streamCsvMessages(reader, chunk -> {
+                        if (isCancelled() || batch.entryCount >= maxEntries) return;
+                        ctx.importService().parseChunkIntoBatch(
+                            chunk, null, batch, file.getAbsolutePath(),
+                            MessageOrigin.NAME_VALUE, maxEntries);
                         publish(batch.totalParsed);
                     });
                     batch.prowideLog.addAll(cap.stop());

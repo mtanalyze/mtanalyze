@@ -72,6 +72,12 @@ public class MtParser {
         } else {
             ParseState state = new ParseState();
             for (Tag t : b4.getTags()) processTag(t, state);
+            // Truncated message: commit any row sequence that was never closed by :16S:
+            if (state.tranData != null) {
+                entries.add(new Entry(state.tranData,
+                        new SwiftTagListBlock(state.tranTags),
+                        new SwiftTagListBlock(buildParentTags(state))));
+            }
         }
     }
 

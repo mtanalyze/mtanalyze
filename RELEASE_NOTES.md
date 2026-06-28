@@ -1,3 +1,29 @@
+# MT Analyze v1.0.4
+
+## Download & Run
+
+**Requirements:** Java 17 or higher
+
+```bash
+java -jar MT-Analyze-1.0.4.jar
+```
+
+---
+
+## Changes
+
+### Truncated Message Recovery
+
+SWIFT files that end without the closing `-}` of block 4 — for example, a mainframe export that was cut off mid-transfer — are now accepted rather than silently discarded. The parser detects the missing closer, appends it automatically, and passes the repaired message to Prowide for parsing. This applies to all import paths: direct file load, single-column CSV, and log file streaming.
+
+For MT 536 messages that end inside an open `:16R:` sequence (no matching `:16S:`), the partial transaction entry is now committed to the Entries table instead of being dropped.
+
+### Large CSV File Streaming
+
+Single-column CSV files containing Mainframe-encoded SWIFT messages (one quoted cell per row) are now read in 8 KB chunks. The full file is never materialised in memory, making it practical to open export files several hundred megabytes in size. A progress dialog shows the number of messages parsed so far, and the import can be cancelled at any point.
+
+---
+
 # MT Analyze v1.0.3
 
 ## Download & Run
