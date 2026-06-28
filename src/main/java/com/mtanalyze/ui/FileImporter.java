@@ -50,8 +50,7 @@ final class FileImporter {
         if (ImportService.isLogFile(file)) {
             loadLogFileWithProgress(file,
                 ctx.config().getLogSwiftStart(),
-                ctx.config().getLogNewlineToken(),
-                ctx.config().getMaxEntries());
+                ctx.config().getLogNewlineToken());
             return;
         }
         if (isQuotedCsvSwiftFile(file)) {
@@ -255,20 +254,50 @@ final class FileImporter {
         pd.runWorker(worker);
     }
 
-    private void loadLogFileWithProgress(File file, String swiftStart, String newlineToken, int maxEntries) {
+    private abstract class FileLoadWorker extends SwingWorker<ImportBatch, Integer> {
+        protected final int maxEntries = ctx.config().getMaxEntries();
+        private final File file;
+        private final JProgressBar bar;
+        private final FrameLayout.ProgressDialog pd;
+
+        FileLoadWorker(File file, String title) {
+            this.file = file;
+            this.bar  = new JProgressBar();
+            bar.setIndeterminate(true);
+            bar.setStringPainted(true);
+            bar.setString("Scanning…");
+            this.pd = FrameLayout.buildProgressDialog(
+                ctx.frame(), title, "Loading " + file.getName() + "…", bar);
+        }
+
+        @Override
+        protected final void process(List<Integer> vals) {
+            bar.setString("Parsed " + vals.get(vals.size() - 1) + " messages…");
+        }
+
+        @Override
+        protected final void done() {
+            pd.dialog().dispose();
+            if (isCancelled()) { ctx.error("Load cancelled."); return; }
+            try {
+                ctx.onFileLoaded(get(), file);
+            } catch (InterruptedException ex) {
+                Thread.currentThread().interrupt();
+                ctx.error("Load interrupted.");
+            } catch (ExecutionException ex) {
+                ctx.fileError(LOADING, ex);
+            }
+        }
+
+        void start() { pd.runWorker(this); }
+    }
+
+    private void loadLogFileWithProgress(File file, String swiftStart, String newlineToken) {
         Optional<Set<String>> filterOpt = ctx.promptMtTypeFilter(file.getName());
         if (filterOpt.isEmpty()) return;
         Set<String> mtTypeFilter = filterOpt.get();
 
-        JProgressBar bar = new JProgressBar();
-        bar.setIndeterminate(true);
-        bar.setStringPainted(true);
-        bar.setString("Scanning…");
-
-        FrameLayout.ProgressDialog pd = FrameLayout.buildProgressDialog(
-            ctx.frame(), LOAD_LOG_TITLE, "Loading " + file.getName() + "…", bar);
-
-        SwingWorker<ImportBatch, Integer> worker = new SwingWorker<>() {
+        new FileLoadWorker(file, LOAD_LOG_TITLE) {
             @Override
             protected ImportBatch doInBackground() throws Exception {
                 ImportBatch batch = new ImportBatch();
@@ -286,43 +315,11 @@ final class FileImporter {
                 }
                 return batch;
             }
-
-            @Override
-            protected void process(List<Integer> vals) {
-                int n = vals.get(vals.size() - 1);
-                bar.setString("Parsed " + n + " messages…");
-            }
-
-            @Override
-            protected void done() {
-                pd.dialog().dispose();
-                if (isCancelled()) { ctx.error("Load cancelled."); return; }
-                try {
-                    ctx.onFileLoaded(get(), file);
-                } catch (InterruptedException ex) {
-                    Thread.currentThread().interrupt();
-                    ctx.error("Load interrupted.");
-                } catch (ExecutionException ex) {
-                    ctx.fileError(LOADING, ex);
-                }
-            }
-        };
-
-        pd.runWorker(worker);
+        }.start();
     }
 
     private void loadCsvFileWithProgress(File file) {
-        JProgressBar bar = new JProgressBar();
-        bar.setIndeterminate(true);
-        bar.setStringPainted(true);
-        bar.setString("Scanning…");
-
-        FrameLayout.ProgressDialog pd = FrameLayout.buildProgressDialog(
-            ctx.frame(), LOAD_CSV_TITLE, "Loading " + file.getName() + "…", bar);
-
-        int maxEntries = ctx.config().getMaxEntries();
-
-        SwingWorker<ImportBatch, Integer> worker = new SwingWorker<>() {
+        new FileLoadWorker(file, LOAD_CSV_TITLE) {
             @Override
             protected ImportBatch doInBackground() throws Exception {
                 ImportBatch batch = new ImportBatch();
@@ -340,29 +337,7 @@ final class FileImporter {
                 }
                 return batch;
             }
-
-            @Override
-            protected void process(List<Integer> vals) {
-                int n = vals.get(vals.size() - 1);
-                bar.setString("Parsed " + n + " messages…");
-            }
-
-            @Override
-            protected void done() {
-                pd.dialog().dispose();
-                if (isCancelled()) { ctx.error("Load cancelled."); return; }
-                try {
-                    ctx.onFileLoaded(get(), file);
-                } catch (InterruptedException ex) {
-                    Thread.currentThread().interrupt();
-                    ctx.error("Load interrupted.");
-                } catch (ExecutionException ex) {
-                    ctx.fileError(LOADING, ex);
-                }
-            }
-        };
-
-        pd.runWorker(worker);
+        }.start();
     }
 
     private String detectDirMtOverride(File[] files) {
