@@ -163,8 +163,7 @@ public final class AppIcon {
                     cx = x; cy = y;
                     break;
                 }
-                case 'Z':
-                case 'z':
+                case 'Z', 'z':
                     path.closePath();
                     cx = subX; cy = subY;
                     break;
@@ -193,25 +192,44 @@ public final class AppIcon {
         int i = 0;
         while (i < n) {
             char c = d.charAt(i);
-            if (Character.isWhitespace(c) || c == ',') { i++; continue; }
-            if (isCommand(c)) { tokens.add(String.valueOf(c)); i++; continue; }
-            int j = i;
-            if (c == '+' || c == '-') j++;
-            boolean hasDot = false;
-            while (j < n) {
-                char ch = d.charAt(j);
-                if (ch >= '0' && ch <= '9') { j++; continue; }
-                if (ch == '.' && !hasDot) { hasDot = true; j++; continue; }
-                break;
+            if (Character.isWhitespace(c) || c == ',') {
+                i++;
+            } else if (isCommand(c)) {
+                tokens.add(String.valueOf(c));
+                i++;
+            } else {
+                int end = scanNumber(d, i, n);
+                if (end == i) {
+                    i++;
+                } else {
+                    tokens.add(d.substring(i, end));
+                    i = end;
+                }
             }
-            if (j < n && (d.charAt(j) == 'e' || d.charAt(j) == 'E')) {
-                j++;
-                if (j < n && (d.charAt(j) == '+' || d.charAt(j) == '-')) j++;
-                while (j < n && d.charAt(j) >= '0' && d.charAt(j) <= '9') j++;
-            }
-            if (j == i) { i++; }
-            else        { tokens.add(d.substring(i, j)); i = j; }
         }
         return tokens;
+    }
+
+    private static int scanNumber(String d, int start, int n) {
+        int j = start;
+        if (j < n && (d.charAt(j) == '+' || d.charAt(j) == '-')) j++;
+        boolean hasDot = false;
+        while (j < n) {
+            char ch = d.charAt(j);
+            if (ch >= '0' && ch <= '9') {
+                j++;
+            } else if (ch == '.' && !hasDot) {
+                hasDot = true;
+                j++;
+            } else {
+                break;
+            }
+        }
+        if (j < n && (d.charAt(j) == 'e' || d.charAt(j) == 'E')) {
+            j++;
+            if (j < n && (d.charAt(j) == '+' || d.charAt(j) == '-')) j++;
+            while (j < n && d.charAt(j) >= '0' && d.charAt(j) <= '9') j++;
+        }
+        return j;
     }
 }

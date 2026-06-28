@@ -24,6 +24,8 @@ import java.util.*;
 
 public final class DataHelper {
 
+    private static final String COMP_PREFIX = "Comp. ";
+
     private final Lookups lookups = new Lookups();
 
     // -----------------------------------------------------------------------
@@ -73,7 +75,7 @@ public final class DataHelper {
             out.add(new String[]{
                 entry, seqLabel, tagName,
                 firstShown ? qualifier : "",
-                lbl.isEmpty() ? ("Comp. " + c) : lbl,
+                lbl.isEmpty() ? (COMP_PREFIX + c) : lbl,
                 nvl(field.getValueDisplay(c, null))
             });
             firstShown = false;
@@ -144,7 +146,7 @@ public final class DataHelper {
             Object value = num != null ? num : nvl(field.getComponent(c));
             out.add(new CompCell(entry, seqLabel, tagName,
                                  firstShown ? qualifier : "",
-                                 lbl.isEmpty() ? ("Comp. " + c) : lbl,
+                                 lbl.isEmpty() ? (COMP_PREFIX + c) : lbl,
                                  value));
             firstShown = false;
         }
@@ -261,7 +263,7 @@ public final class DataHelper {
                 model.addRow(new Object[]{
                     seqLabel, tagName,
                     firstShown ? qualifier : "",
-                    lbl.isEmpty() ? ("Comp. " + c) : lbl,
+                    lbl.isEmpty() ? (COMP_PREFIX + c) : lbl,
                     cv.trim()
                 });
                 firstShown = false;

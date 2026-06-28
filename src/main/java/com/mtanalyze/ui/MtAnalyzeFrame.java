@@ -188,23 +188,27 @@ public class MtAnalyzeFrame extends JFrame {
         initUI();
     }
 
+    private void setSaveAsMtEnabled(boolean enabled) {
+        if (saveAsMtItem != null) saveAsMtItem.setEnabled(enabled);
+    }
+
     private MtEntryPanel.Host createEntryPanelHost() {
         return new MtEntryPanel.Host() {
             @Override public void onRowSelected(int modelRow) {
                 detailCtrl.expandIfNeeded();
                 dispatchSingleEntry(modelRow);
-                if (saveAsMtItem != null) saveAsMtItem.setEnabled(true);
+                setSaveAsMtEnabled(true);
             }
             @Override public void onMultipleRowsSelected(List<Entry> entries) {
                 switchDetailCard(DetailPanelController.COMPARE);
                 detailCtrl.expandIfNeeded();
                 for (EntrySelectionListener l : selectionListeners) l.onMultipleEntries(entries);
-                if (saveAsMtItem != null) saveAsMtItem.setEnabled(true);
+                setSaveAsMtEnabled(true);
             }
             @Override public void onRowDeselected() {
                 collapseDetailPanel();
                 dispatchDeselect();
-                if (saveAsMtItem != null) saveAsMtItem.setEnabled(false);
+                setSaveAsMtEnabled(false);
             }
             @Override public void onFilesDropped(List<File> files) { appendDroppedFiles(files); }
             @Override public boolean isPowerUser() { return PREFS.getBoolean(PREF_POWER_USER, false); }
@@ -1048,7 +1052,7 @@ public class MtAnalyzeFrame extends JFrame {
             @Override public SystemConfig  config()                         { return MtAnalyzeFrame.this.config(); }
             @Override public ImportService importService()                  { return MtAnalyzeFrame.this.importService(); }
             @Override public String        promptMtType(String m)           { return MtAnalyzeFrame.this.promptMtType(m); }
-            @Override public java.util.Set<String> promptMtTypeFilter(String f) { return MtAnalyzeFrame.this.promptMtTypeFilter(f); }
+            @Override public java.util.Optional<java.util.Set<String>> promptMtTypeFilter(String f) { return MtAnalyzeFrame.this.promptMtTypeFilter(f); }
             @Override public void          onNew()                          { MtAnalyzeFrame.this.onNew(); }
             @Override public void          onFileLoaded(ImportBatch b, File f)              { MtAnalyzeFrame.this.onFileLoaded(b, f); }
             @Override public void          onDirectoryLoaded(ImportBatch b, File d, int n)  { MtAnalyzeFrame.this.onDirectoryLoaded(b, d, n); }
@@ -1224,17 +1228,17 @@ public class MtAnalyzeFrame extends JFrame {
         return selected.replaceAll("\\D", "");
     }
 
-    private java.util.Set<String> promptMtTypeFilter(String logFileName) {
+    private java.util.Optional<java.util.Set<String>> promptMtTypeFilter(String logFileName) {
         String input = JOptionPane.showInputDialog(this,
                 "Filter MT types in " + logFileName + "\n(comma-separated, e.g. 536,548 – empty = all types):",
                 "Import Log Filter", JOptionPane.QUESTION_MESSAGE);
-        if (input == null) return null; // cancelled
+        if (input == null) return java.util.Optional.empty();
         java.util.Set<String> types = new java.util.LinkedHashSet<>();
         for (String token : input.split("[,;\\s]+")) {
             String t = token.trim().toUpperCase().replaceFirst("^MT", "");
             if (!t.isEmpty()) types.add(t);
         }
-        return types;
+        return java.util.Optional.of(types);
     }
 
     private void showFileInEditor(File file) {

@@ -19,6 +19,7 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -37,7 +38,7 @@ public class NotificationPanel extends RoundedPanel {
             this.type    = type;
             this.title   = title;
             this.message = message;
-            this.time    = LocalDateTime.now()
+            this.time    = LocalDateTime.now(ZoneId.systemDefault())
                 .format(DateTimeFormatter.ofPattern("HH:mm"));
         }
     }

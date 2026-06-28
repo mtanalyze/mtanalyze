@@ -57,7 +57,7 @@ public final class MtFileIO {
         Pattern.compile("^(?:[A-Z][A-Z0-9]*|\\d+)?[_ ]\\d{2}[A-Z]+\\s*:[^=]*=[^\\n]*");
     /** Parses a field line; groups: (1) tag, (2) qualifier, (3) value. */
     private static final Pattern MULTI_LINE_NV_PARSE_PAT =
-        Pattern.compile("^(?:[A-Z][A-Z0-9]*|\\d+)?[_ ](\\d{2}[A-Z]+)\\s*:\\s*([A-Z0-9]*)\\s*=\\s*([^\\n]*)");
+        Pattern.compile("^[A-Z0-9]*[_ ](\\d{2}[A-Z]+)\\s*:\\s*([A-Z0-9]*+)\\s*=\\s*([^\\n]*)");
 
 
 
@@ -238,6 +238,12 @@ public final class MtFileIO {
         if (pending != null) finalizeMessage(pending.toString(), newlineToken, sink);
     }
 
+    private static final class CsvParseState {
+        boolean inside;
+        boolean afterQuote;
+        final StringBuilder cell = new StringBuilder();
+    }
+
     /**
      * Streaming variant of {@link #splitCsvIntoSwiftMessages} for quoted single-column CSV.
      * Reads {@code reader} in 8 KB chunks; the full file is never materialised in memory.
@@ -246,31 +252,30 @@ public final class MtFileIO {
      */
     public static void streamCsvMessages(Reader reader, Consumer<String> onMessage) throws IOException {
         char[] buf = new char[8192];
-        StringBuilder cell = new StringBuilder();
-        boolean inside = false;
-        boolean afterQuote = false;
+        CsvParseState st = new CsvParseState();
         int n;
         while ((n = reader.read(buf)) != -1) {
             for (int i = 0; i < n; i++) {
-                char c = buf[i];
-                if (!inside) {
-                    if (c == '"') inside = true;
-                } else if (afterQuote) {
-                    afterQuote = false;
-                    if (c == '"') {
-                        cell.append('"');
-                    } else {
-                        emitCsvCell(cell, onMessage);
-                        inside = false;
-                    }
-                } else if (c == '"') {
-                    afterQuote = true;
-                } else {
-                    cell.append(c);
-                }
+                advanceCsvState(buf[i], st, onMessage);
             }
         }
-        if (inside && !cell.isEmpty()) emitCsvCell(cell, onMessage);
+        if (st.inside && !st.cell.isEmpty()) emitCsvCell(st.cell, onMessage);
+    }
+
+    private static void advanceCsvState(char c, CsvParseState st, Consumer<String> onMessage) {
+        if (!st.inside) {
+            if (c == '"') st.inside = true;
+            return;
+        }
+        if (st.afterQuote) {
+            st.afterQuote = false;
+            if (c == '"') { st.cell.append('"'); return; }
+            emitCsvCell(st.cell, onMessage);
+            st.inside = false;
+            return;
+        }
+        if (c == '"') { st.afterQuote = true; return; }
+        st.cell.append(c);
     }
 
     private static void emitCsvCell(StringBuilder cell, Consumer<String> onMessage) {
@@ -336,7 +341,7 @@ public final class MtFileIO {
 
     /** Strips a UTF-8 BOM (﻿) if present; Java's trim() does not remove it. */
     private static String stripBom(String s) {
-        return !s.isEmpty() && s.charAt(0) == '﻿' ? s.substring(1) : s;
+        return !s.isEmpty() && s.charAt(0) == '\uFEFF' ? s.substring(1) : s;
     }
 
     private static boolean isCompleteSwiftMessage(String s) {

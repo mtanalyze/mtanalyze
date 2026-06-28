@@ -39,6 +39,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -150,7 +151,7 @@ public final class ExcelExport {
      *  export timestamp below the data, plus a print-page footer and the document author. */
     private static void addBranding(Workbook wb, Sheet sheet, int dataRows) {
         CreationHelper helper = wb.getCreationHelper();
-        String timestamp = LocalDateTime.now().format(TIMESTAMP_FORMAT);
+        String timestamp = LocalDateTime.now(ZoneId.systemDefault()).format(TIMESTAMP_FORMAT);
 
         Font linkFont = wb.createFont();
         linkFont.setItalic(true);

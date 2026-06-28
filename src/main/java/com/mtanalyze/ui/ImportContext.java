@@ -19,6 +19,7 @@ import com.mtanalyze.config.SystemConfig;
 
 import java.awt.*;
 import java.io.File;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -33,8 +34,8 @@ interface ImportContext {
 
     String     promptMtType(String msg);
     /** Prompt for an MT type filter before importing a log file.
-     *  Returns an empty set if no filter (all types), or {@code null} if the user cancelled. */
-    Set<String> promptMtTypeFilter(String logFileName);
+     *  Returns an empty Optional if the user cancelled, or the selected types (empty = all). */
+    Optional<Set<String>> promptMtTypeFilter(String logFileName);
     void   onNew();
 
     void onFileLoaded(ImportBatch batch, File file);

@@ -34,6 +34,7 @@ final class FileImporter {
     private static final String IMPORT_DIR_TITLE = "Import Directory";
     private static final String LOAD_LOG_TITLE   = "Loading Log File";
     private static final String LOAD_CSV_TITLE   = "Loading CSV File";
+    private static final String LOADING          = "loading";
 
     private final ImportContext ctx;
 
@@ -82,7 +83,7 @@ final class FileImporter {
             }
             ctx.onFileLoaded(batch, file);
         } catch (IOException ex) {
-            ctx.fileError("loading", ex);
+            ctx.fileError(LOADING, ex);
         }
     }
 
@@ -255,8 +256,9 @@ final class FileImporter {
     }
 
     private void loadLogFileWithProgress(File file, String swiftStart, String newlineToken, int maxEntries) {
-        Set<String> mtTypeFilter = ctx.promptMtTypeFilter(file.getName());
-        if (mtTypeFilter == null) return;
+        Optional<Set<String>> filterOpt = ctx.promptMtTypeFilter(file.getName());
+        if (filterOpt.isEmpty()) return;
+        Set<String> mtTypeFilter = filterOpt.get();
 
         JProgressBar bar = new JProgressBar();
         bar.setIndeterminate(true);
@@ -301,7 +303,7 @@ final class FileImporter {
                     Thread.currentThread().interrupt();
                     ctx.error("Load interrupted.");
                 } catch (ExecutionException ex) {
-                    ctx.fileError("loading", ex);
+                    ctx.fileError(LOADING, ex);
                 }
             }
         };
@@ -355,7 +357,7 @@ final class FileImporter {
                     Thread.currentThread().interrupt();
                     ctx.error("Load interrupted.");
                 } catch (ExecutionException ex) {
-                    ctx.fileError("loading", ex);
+                    ctx.fileError(LOADING, ex);
                 }
             }
         };

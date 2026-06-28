@@ -16,6 +16,7 @@
 package com.mtanalyze.bookmark;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
 public record Bookmark(String isin, String seme, String rela, String filePath, String note, String timestamp) {
@@ -31,7 +32,7 @@ public record Bookmark(String isin, String seme, String rela, String filePath, S
     }
 
     public Bookmark(String isin, String seme, String rela, String filePath, String note) {
-        this(isin, seme, rela, filePath, note, LocalDateTime.now().format(TS_FMT));
+        this(isin, seme, rela, filePath, note, LocalDateTime.now(ZoneId.systemDefault()).format(TS_FMT));
     }
 
     public Bookmark withNote(String newNote) {

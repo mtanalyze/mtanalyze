@@ -32,6 +32,7 @@ import com.prowidesoftware.swift.model.mt.mt5xx.MT546;
 import com.prowidesoftware.swift.model.mt.mt5xx.MT547;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -69,12 +70,12 @@ public final class Mt54xGenerator {
     private static final String FALLBACK_RCV = "RECVRBICXXXX";
 
     /** Whether settlement parties that are mere {@code //UNKNOWN} placeholders are dropped. */
-    private final boolean noUnknownParty = false;
+    private static final boolean noUnknownParty = false;
 
     private final LocalDateTime now;
 
     public Mt54xGenerator() {
-        this(LocalDateTime.now());
+        this(LocalDateTime.now(ZoneId.systemDefault()));
     }
 
     /** Constructor with a fixed timestamp - useful for reproducible tests. */
@@ -104,8 +105,6 @@ public final class Mt54xGenerator {
         String sender   = orDefault(source.raw().getSender(), FALLBACK_SND);
         String receiver = orDefault(source.raw().getReceiver(), FALLBACK_RCV);
 
-        // 35B (financial instrument) lives at FIN level, 97A::SAFE at SUBSAFE level;
-        // both are carried in the entry's parent context, not in the transaction itself.
         Field35B instrument  = (Field35B) entry.parentContext().getFieldByName("35B");
         Field97A subsafeSafe = (Field97A) entry.parentContext().getFieldByName("97A", "SAFE");
 
