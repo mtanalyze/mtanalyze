@@ -6,11 +6,11 @@
 
     <groupId>com.mtanalyze</groupId>
     <artifactId>mtanalyze</artifactId>
-    <version>1.0.4-SNAPSHOT</version>
+    <version>1.0.4</version>
     <packaging>jar</packaging>
 
     <name>MT Analyze</name>
-    <description>Desktop application for analyzing and validating SWIFT MT financial messages.</description>
+    <description>Desktop application for analyzing SWIFT MT financial messages.</description>
     <url>https://www.mtanalyze.com</url>
 
     <developers>
@@ -245,5 +245,4 @@
             </build>
         </profile>
     </profiles>
-
 </project>
