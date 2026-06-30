@@ -16,220 +16,102 @@
 package com.mtanalyze.ui;
 
 import java.awt.*;
-import java.awt.geom.AffineTransform;
-import java.awt.geom.Path2D;
 import java.awt.image.BufferedImage;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-/**
- * Renders the application icon from {@code rs_logo.svg} on the classpath.
- * Only the path commands used by that file are supported (M/L/H/V/C/Z and lowercase).
- */
 public final class AppIcon {
-
-    private static final String LOGO_RESOURCE = "/rs_logo.svg";
-    private static final Color  FILL_COLOR    = new Color(0x1F, 0x33, 0x5D, 238); // #1f335d @ 0.9333
-    private static final Color  FILL_DARK_BG  = new Color(0xC8, 0xD6, 0xF0, 238); // lightened tint for dark UIs
-
-    // viewBox from rs_logo.svg (kept in sync with the file).
-    private static final double VIEW_W = 60.933334;
-    private static final double VIEW_H = 46.626667;
-
-    // Combined nested <g> transforms in rs_logo.svg: matrix(1.333,0,0,-1.333,0,46.627) · scale(0.1)
-    private static final AffineTransform PATH_TO_VIEWBOX =
-        new AffineTransform(0.13333333, 0, 0, -0.13333333, 0, 46.626667);
-
-    private static final Shape LOGO_SHAPE = loadShape();
 
     private AppIcon() {}
 
-    /**
-     * Default badge form: rounded brand-blue square with the white RS logo inside.
-     * Self-contained so it stays legible on both light and dark window chrome.
-     */
     public static BufferedImage createAppIcon(int size) {
-        BufferedImage img = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
+        BufferedImage img = new BufferedImage(
+            size, size, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = img.createGraphics();
-        try {
-            g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,   RenderingHints.VALUE_ANTIALIAS_ON);
-            g.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
-            g.setRenderingHint(RenderingHints.KEY_RENDERING,      RenderingHints.VALUE_RENDER_QUALITY);
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,      RenderingHints.VALUE_ANTIALIAS_ON);
+        g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_LCD_HRGB);
+        g.setRenderingHint(RenderingHints.KEY_RENDERING,         RenderingHints.VALUE_RENDER_QUALITY);
 
-            int arc = Math.max(4, size / 5);
-            g.setColor(FILL_COLOR);
-            g.fillRoundRect(0, 0, size, size, arc, arc);
+        // Background: dark blue gradient
+        int arc = Math.max(4, size / 6);
+        GradientPaint bg = new GradientPaint(
+            0, 0,    new Color(0x1B3F72),
+            0, size, new Color(0x0A1E3F));
+        g.setPaint(bg);
+        g.fillRoundRect(0, 0, size - 1, size - 1, arc, arc);
 
-            if (LOGO_SHAPE == null) return img;
-            double padding = size * 0.18;
-            double inner   = size - padding * 2;
-            double s       = Math.min(inner / VIEW_W, inner / VIEW_H);
-            double tx      = padding + (inner - VIEW_W * s) / 2.0;
-            double ty      = padding + (inner - VIEW_H * s) / 2.0;
-            g.translate(tx, ty);
-            g.scale(s, s);
-            g.setColor(FILL_DARK_BG);
-            g.fill(LOGO_SHAPE);
-        } finally {
-            g.dispose();
-        }
+        // Inner highlight (subtle top sheen)
+        GradientPaint shine = new GradientPaint(
+            0, 0,        new Color(255, 255, 255, 22),
+            0, (float)size / 3, new Color(255, 255, 255, 0));
+        g.setPaint(shine);
+        g.fillRoundRect(0, 0, size - 1, size / 3, arc, arc);
+
+        // --- Document ---
+        int dLeft  = (int)(size * 0.13f);
+        int dTop   = (int)(size * 0.07f);
+        int dW     = (int)(size * 0.58f);
+        int dH     = (int)(size * 0.76f);
+        int fold   = (int)(size * 0.16f);  // folded corner size
+
+        // Document body (white, slightly transparent)
+        g.setColor(new Color(220, 232, 248));
+        int[] docX = { dLeft, dLeft + dW - fold, dLeft + dW, dLeft + dW, dLeft };
+        int[] docY = { dTop,  dTop,               dTop + fold, dTop + dH, dTop + dH };
+        g.fillPolygon(docX, docY, 5);
+
+        // Folded corner triangle (darker shade)
+        g.setColor(new Color(160, 185, 215));
+        int[] foldX = { dLeft + dW - fold, dLeft + dW - fold, dLeft + dW };
+        int[] foldY = { dTop,               dTop + fold,        dTop + fold };
+        g.fillPolygon(foldX, foldY, 3);
+
+        // Document outline
+        g.setColor(new Color(0x4A72AA));
+        g.setStroke(new BasicStroke(Math.max(0.8f, size / 40f)));
+        g.drawPolygon(docX, docY, 5);
+        g.drawLine(dLeft + dW - fold, dTop, dLeft + dW - fold, dTop + fold);
+        g.drawLine(dLeft + dW - fold, dTop + fold, dLeft + dW, dTop + fold);
+
+        // Text lines inside document
+        g.setColor(new Color(0x3A5A8A));
+        float lineStroke = Math.max(0.8f, size / 36f);
+        g.setStroke(new BasicStroke(lineStroke, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        int lx1 = dLeft + (int)(size * 0.07f);
+        int lx2 = dLeft + dW  - (int)(size * 0.06f);
+        int lx2short = dLeft + dW - (int)(size * 0.22f);
+        int lineGap = (int)(size * 0.10f);
+        int lineStart = dTop + (int)(size * 0.22f);
+        g.drawLine(lx1, lineStart,            lx2,      lineStart);
+        g.drawLine(lx1, lineStart + lineGap,  lx2,      lineStart + lineGap);
+        g.drawLine(lx1, lineStart + lineGap*2, lx2short, lineStart + lineGap*2);
+
+        // --- Magnifying glass (gold, bottom-right, overlapping doc) ---
+        float glassStroke = Math.max(1.5f, size / 12f);
+        int gcx = (int)(size * 0.68f);
+        int gcy = (int)(size * 0.68f);
+        int gr  = (int)(size * 0.19f);
+
+        // Lens fill (semi-transparent light)
+        g.setColor(new Color(255, 255, 220, 60));
+        g.fillOval(gcx - gr, gcy - gr, gr * 2, gr * 2);
+
+        // Lens ring
+        g.setColor(new Color(0xF2C84B));
+        g.setStroke(new BasicStroke(glassStroke, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        g.drawOval(gcx - gr, gcy - gr, gr * 2, gr * 2);
+
+        // Handle (bottom-right, 45°)
+        int hx1 = (int)(gcx + gr * 0.70f);
+        int hy1 = (int)(gcy + gr * 0.70f);
+        int hx2 = (int)(gcx + gr * 1.65f);
+        int hy2 = (int)(gcy + gr * 1.65f);
+        g.drawLine(hx1, hy1, hx2, hy2);
+
+        // Gold border
+        g.setColor(new Color(0xC8A415));
+        g.setStroke(new BasicStroke(Math.max(1f, size / 32f)));
+        g.drawRoundRect(0, 0, size - 1, size - 1, arc, arc);
+
+        g.dispose();
         return img;
-    }
-
-    private static Shape loadShape() {
-        try (InputStream in = AppIcon.class.getResourceAsStream(LOGO_RESOURCE)) {
-            if (in == null) return null;
-            String svg = new String(in.readAllBytes(), StandardCharsets.UTF_8);
-            Matcher m = Pattern.compile("\\bd\\s*=\\s*\"([^\"]+)\"").matcher(svg);
-            if (!m.find()) return null;
-            Path2D path = parsePath(m.group(1));
-            return PATH_TO_VIEWBOX.createTransformedShape(path);
-        } catch (IOException ex) {
-            return null;
-        }
-    }
-
-    // -----------------------------------------------------------------------
-    // Minimal SVG path parser (M/m, L/l, H/h, V/v, C/c, Z/z)
-    // -----------------------------------------------------------------------
-
-    private static Path2D parsePath(String d) {
-        List<String> tokens = tokenize(d);
-        Path2D path = new Path2D.Double();
-        char cmd = 0;
-        double cx = 0;
-        double cy = 0;
-        double subX = 0;
-        double subY = 0;
-        int i = 0;
-        while (i < tokens.size()) {
-            String t = tokens.get(i);
-            if (t.length() == 1 && isCommand(t.charAt(0))) { cmd = t.charAt(0); i++; }
-            switch (cmd) {
-                case 'M': {
-                    double x = num(tokens.get(i++));
-                    double y = num(tokens.get(i++));
-                    path.moveTo(x, y);
-                    cx = subX = x; cy = subY = y;
-                    cmd = 'L';
-                    break;
-                }
-                case 'm': {
-                    cx += num(tokens.get(i++));
-                    cy += num(tokens.get(i++));
-                    path.moveTo(cx, cy);
-                    subX = cx; subY = cy;
-                    cmd = 'l';
-                    break;
-                }
-                case 'L':
-                    cx = num(tokens.get(i++));
-                    cy = num(tokens.get(i++));
-                    path.lineTo(cx, cy);
-                    break;
-                case 'l':
-                    cx += num(tokens.get(i++));
-                    cy += num(tokens.get(i++));
-                    path.lineTo(cx, cy);
-                    break;
-                case 'H': cx  = num(tokens.get(i++)); path.lineTo(cx, cy); break;
-                case 'h': cx += num(tokens.get(i++)); path.lineTo(cx, cy); break;
-                case 'V': cy  = num(tokens.get(i++)); path.lineTo(cx, cy); break;
-                case 'v': cy += num(tokens.get(i++)); path.lineTo(cx, cy); break;
-                case 'C': {
-                    double x1 = num(tokens.get(i++));
-                    double y1 = num(tokens.get(i++));
-                    double x2 = num(tokens.get(i++));
-                    double y2 = num(tokens.get(i++));
-                    double x  = num(tokens.get(i++));
-                    double y  = num(tokens.get(i++));
-                    path.curveTo(x1, y1, x2, y2, x, y);
-                    cx = x; cy = y;
-                    break;
-                }
-                case 'c': {
-                    double x1 = cx + num(tokens.get(i++));
-                    double y1 = cy + num(tokens.get(i++));
-                    double x2 = cx + num(tokens.get(i++));
-                    double y2 = cy + num(tokens.get(i++));
-                    double x  = cx + num(tokens.get(i++));
-                    double y  = cy + num(tokens.get(i++));
-                    path.curveTo(x1, y1, x2, y2, x, y);
-                    cx = x; cy = y;
-                    break;
-                }
-                case 'Z', 'z':
-                    path.closePath();
-                    cx = subX; cy = subY;
-                    break;
-                default:
-                    throw new IllegalArgumentException("Unsupported SVG path command: " + cmd);
-            }
-        }
-        return path;
-    }
-
-    private static boolean isCommand(char c) {
-        return "MmLlHhVvCcZz".indexOf(c) >= 0;
-    }
-
-    private static double num(String s) {
-        try {
-            return Double.parseDouble(s);
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Invalid SVG number: " + s, e);
-        }
-    }
-
-    private static List<String> tokenize(String d) {
-        List<String> tokens = new ArrayList<>();
-        int n = d.length();
-        int i = 0;
-        while (i < n) {
-            char c = d.charAt(i);
-            if (Character.isWhitespace(c) || c == ',') {
-                i++;
-            } else if (isCommand(c)) {
-                tokens.add(String.valueOf(c));
-                i++;
-            } else {
-                int end = scanNumber(d, i, n);
-                if (end == i) {
-                    i++;
-                } else {
-                    tokens.add(d.substring(i, end));
-                    i = end;
-                }
-            }
-        }
-        return tokens;
-    }
-
-    private static int scanNumber(String d, int start, int n) {
-        int j = start;
-        if (j < n && (d.charAt(j) == '+' || d.charAt(j) == '-')) j++;
-        boolean hasDot = false;
-        while (j < n) {
-            char ch = d.charAt(j);
-            if (ch >= '0' && ch <= '9') {
-                j++;
-            } else if (ch == '.' && !hasDot) {
-                hasDot = true;
-                j++;
-            } else {
-                break;
-            }
-        }
-        if (j < n && (d.charAt(j) == 'e' || d.charAt(j) == 'E')) {
-            j++;
-            if (j < n && (d.charAt(j) == '+' || d.charAt(j) == '-')) j++;
-            while (j < n && d.charAt(j) >= '0' && d.charAt(j) <= '9') j++;
-        }
-        return j;
     }
 }
