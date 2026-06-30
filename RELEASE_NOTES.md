@@ -1,3 +1,23 @@
+# MT Analyze v1.0.5
+
+## Download & Run
+
+**Requirements:** Java 17 or higher
+
+```bash
+java -jar MT-Analyze-1.0.5.jar
+```
+
+---
+
+## Changes
+
+### Removed Excel Export
+
+The **File → Save Excel…** menu item and its underlying Apache POI dependency have been removed. Component data can be exported via **File → Export → Export CSV (Components)…**, which produces the same pivoted output as a standard CSV file.
+
+---
+
 # MT Analyze v1.0.4
 
 ## Download & Run

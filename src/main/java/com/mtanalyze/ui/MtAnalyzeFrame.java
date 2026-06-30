@@ -27,7 +27,6 @@ import com.mtanalyze.parser.MtParser;
 import com.mtanalyze.parser.HintDictionary;
 import com.mtanalyze.bookmark.BookmarkManager;
 import com.mtanalyze.export.CsvExport;
-import com.mtanalyze.export.ExcelExport;
 import com.mtanalyze.export.MtExport;
 import com.mtanalyze.export.ProjectIO;
 import com.mtanalyze.ui.view.BookmarkPanel;
@@ -73,7 +72,6 @@ public class MtAnalyzeFrame extends JFrame {
     private final transient SystemConfig        config    = new SystemConfig();
     private final transient CsvExport           csvExport   = new CsvExport();
     private final transient MtExport            mtExport    = new MtExport();
-    private final transient ExcelExport         excelExport = new ExcelExport();
     private final transient ImportService       importService = new ImportService();
     private final transient HintDictionary      dict          = new HintDictionary();
     private final transient FileImporter        importer;
@@ -87,7 +85,6 @@ public class MtAnalyzeFrame extends JFrame {
     private JMenuItem          openSessionItem;
     private JMenuItem          saveItem;
     private JMenuItem          saveAsMtItem;
-    private JMenuItem          saveExcelItem;
     private JMenuItem          exportComponentsItem;
     private JMenuItem          validateFileItem;
     private JMenuItem          attachBlock5Item;
@@ -323,7 +320,6 @@ public class MtAnalyzeFrame extends JFrame {
         openSessionItem      = items.openSessionItem();
         saveItem             = items.saveItem();
         saveAsMtItem         = items.saveAsMtItem();
-        saveExcelItem        = items.saveExcelItem();
         reloadItem           = items.reloadItem();
         exportComponentsItem    = items.exportComponentsItem();
         validateFileItem        = items.validateFileItem();
@@ -361,7 +357,6 @@ public class MtAnalyzeFrame extends JFrame {
             this::onOpenSession,
             this::onSaveSession,
             this::onSaveSelectedMtAs,
-            this::onSaveExcel,
             this::onOpenFile,
             this::onAppendFile,
             this::onImportDirectory,
@@ -994,14 +989,6 @@ public class MtAnalyzeFrame extends JFrame {
             statusLabel::setText);
     }
 
-    private void onSaveExcel() {
-        excelExport.exportComponents(this,
-            entryPanel.getFullDisplaySequences(),
-            entryPanel.getRowData(),
-            SEQ_KEY,
-            statusLabel::setText);
-    }
-
     private File pickSessionSaveFile() {
         JFileChooser fc = createSessionFileChooser("Save Session");
         if (fc.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) return null;
@@ -1083,7 +1070,6 @@ public class MtAnalyzeFrame extends JFrame {
         PREFS.put(PREF_LAST_FILE, file.getAbsolutePath());
         reloadItem.setEnabled(true);
         saveItem.setEnabled(true);
-        saveExcelItem.setEnabled(true);
         markExplorerFileMtType(file);
         notifyBatchErrors(batch.errors);
         if (batch.limitReached) warnLimitReached();
@@ -1107,7 +1093,6 @@ public class MtAnalyzeFrame extends JFrame {
         notifyProwideLog(batch);
         reloadItem.setEnabled(false);
         saveItem.setEnabled(true);
-        saveExcelItem.setEnabled(true);
         if (batch.limitReached) warnLimitReached();
     }
 
@@ -1128,7 +1113,6 @@ public class MtAnalyzeFrame extends JFrame {
             file.getName() + " (" + total + " messages total)");
         reloadItem.setEnabled(true);
         saveItem.setEnabled(true);
-        saveExcelItem.setEnabled(true);
     }
 
     // -----------------------------------------------------------------------
@@ -1162,7 +1146,6 @@ public class MtAnalyzeFrame extends JFrame {
         statusLabel.setText("New model created.");
         reloadItem.setEnabled(false);
         saveItem.setEnabled(false);
-        saveExcelItem.setEnabled(false);
         currentSessionFile = null;
     }
 
@@ -1351,8 +1334,6 @@ public class MtAnalyzeFrame extends JFrame {
                                                                          11f, Font.PLAIN,  BrandTheme.FG);
         JLabel dep2    = aboutLabel("FlatLaf — Swing look and feel (Apache License 2.0)",
                                                                          11f, Font.PLAIN,  BrandTheme.FG);
-        JLabel dep3    = aboutLabel("Apache POI — Excel export (Apache License 2.0)",
-                                                                         11f, Font.PLAIN,  BrandTheme.FG);
         JLabel swift   = aboutLabel("SWIFT is a trademark of S.W.I.F.T. SCRL. (www.swift.com)",
                                                                          10f, Font.ITALIC, BrandTheme.SUB);
 
@@ -1368,8 +1349,7 @@ public class MtAnalyzeFrame extends JFrame {
         addAboutDivider(panel);
         addRow(panel, depsHdr,  4);
         addRow(panel, dep1,     2);
-        addRow(panel, dep2,     2);
-        addRow(panel, dep3,    14);
+        addRow(panel, dep2,    14);
         addAboutDivider(panel);
         panel.add(swift);
 

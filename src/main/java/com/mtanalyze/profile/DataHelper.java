@@ -83,7 +83,7 @@ public final class DataHelper {
     }
 
     // -----------------------------------------------------------------------
-    // Typed component cells (numbers stay as Number — used by Excel export)
+    // Typed component cells (numbers stay as Number for correct CSV formatting)
     // -----------------------------------------------------------------------
 
     public record CompCell(String entry, String seqLabel, String tagName, String qualifier,

@@ -39,7 +39,6 @@ public final class FrameMenuBar {
         JMenuItem             openSessionItem,
         JMenuItem             saveItem,
         JMenuItem             saveAsMtItem,
-        JMenuItem             saveExcelItem,
         JMenuItem             reloadItem,
         JMenuItem             exportComponentsItem,
         JMenuItem             validateFileItem,
@@ -80,7 +79,6 @@ public final class FrameMenuBar {
         Runnable          onOpenSession,
         Runnable          onSaveSession,
         Runnable          onSaveAsMt,
-        Runnable          onSaveExcel,
         Runnable          onOpenFile,
         Runnable          onAppendFile,
         Runnable          onImportDirectory,
@@ -139,9 +137,6 @@ public final class FrameMenuBar {
         JMenuItem saveAsMtItem = item("Save...", ToolbarIcons.menuExport(), "ctrl S", cb.onSaveAsMt());
         saveAsMtItem.setEnabled(false);
 
-        JMenuItem saveExcelItem = item("Save Excel...", ToolbarIcons.menuExport(), "ctrl E", cb.onSaveExcel());
-        saveExcelItem.setEnabled(false);
-
         JMenuItem reloadItem = new JMenuItem("Reload", ToolbarIcons.menuReload());
         reloadItem.setAccelerator(KeyStroke.getKeyStroke("ctrl R"));
         reloadItem.setEnabled(false);
@@ -186,7 +181,6 @@ public final class FrameMenuBar {
         fileMenu.add(openSessionItem);
         fileMenu.add(saveItem);
         fileMenu.add(saveAsMtItem);
-        fileMenu.add(saveExcelItem);
         JPopupMenu.Separator importExportLeadingSeparator = new JPopupMenu.Separator();
         JPopupMenu.Separator importExportMiddleSeparator  = new JPopupMenu.Separator();
         fileMenu.add(importExportLeadingSeparator);
@@ -313,7 +307,7 @@ public final class FrameMenuBar {
         menuBar.add(searchBtn);
         menuBar.add(settingsBtn);
 
-        return new Items(menuBar, openSessionItem, saveItem, saveAsMtItem, saveExcelItem, reloadItem, exportComponentsItem, validateFileItem, attachBlock5Item,
+        return new Items(menuBar, openSessionItem, saveItem, saveAsMtItem, reloadItem, exportComponentsItem, validateFileItem, attachBlock5Item,
             importMenu, exportMenu, importExportLeadingSeparator, importExportMiddleSeparator,
             viewMenuSeparator,
             importSecuritiesItem, importCashItem, importMappingItem, importPostingsSeparator,

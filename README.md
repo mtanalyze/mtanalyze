@@ -24,11 +24,6 @@ MT Analyze is a single self-contained JAR — no installation, no admin rights.
 java -jar MT-Analyze-1.0.4.jar
 ```
 
-Also available on [Maven Central](https://central.sonatype.com/artifact/com.mtanalyze/mtanalyze) for mirroring via Nexus / Artifactory.
-
-> [!IMPORTANT]
-> **CSV & regional settings.** Exported CSV files use `;` as the field separator and `.` as the decimal separator by default — the convention in many European countries where `,` is the decimal mark. If your regional settings (e.g. UK/US English) use `,` as the list separator, columns won't split correctly in Excel. Change the **Field separator** to `,` under **Settings → General → CSV Export** so the file matches your locale.
-
 ---
 
 ## Features
@@ -38,10 +33,6 @@ Also available on [Maven Central](https://central.sonatype.com/artifact/com.mtan
 - **Diff View** — compare two or more messages; deviating cells highlighted.
 - **Source View** — raw SWIFT message with colour-coded blocks and tags.
 - **Generate MT 544–547 from MT 536** — select any MT 536 transaction entry and generate the matching settlement confirmation (MT 544 Receive Free, MT 545 Receive Against Payment, MT 546 Deliver Free, or MT 547 Deliver Against Payment). The target type is derived automatically from the REDE/PAYM indicators.
-- **Posting Reconciliation** — load cash and securities posting reports (CSV) into dedicated side panels. Filter by SAFE account code, cross-reference against MT 536/940 entries, and export.
-- **Account Mapping** — maintain a SAFE → securities / cash account number lookup table. Supports manual editing, copy-paste from Excel, and CSV import/export. Persisted across sessions.
-- **Validate SWIFT File** — full Prowide parser report for any SWIFT FIN file: Prowide log warnings, parser errors, block structure, message info, and JSON output.
-- **Paste MT Snippet** — paste a raw SWIFT message directly into the tool without a file. Includes one-click EBCDIC encoding correction for mainframe-generated messages with ä/ü artefacts.
 
 ---
 
@@ -51,25 +42,10 @@ MT Analyze uses the [Prowide Core](https://github.com/prowide/prowide-core) pars
 
 ---
 
-## Configuration
-
-Optional: place an `mtanalyze.properties` file next to the JAR to override defaults (see the template in [`doc/mtanalyze.properties`](doc/mtanalyze.properties)).
-
-| Property | Default | Description |
-|---|---|---|
-| `max.entries` | `1000` | Maximum entries loaded per session |
-| `log.swift.start` | `{1:` | Marks the start of a SWIFT message in log files |
-| `log.newline.token` | `\n` | Newline token within a log-embedded message |
-| `mt.export.sender` | _(empty)_ | Default sender BIC stamped into exported MT messages (also editable in Settings) |
-| `mt.export.receiver` | _(empty)_ | Default receiver BIC stamped into exported MT messages (also editable in Settings) |
-
----
-
 ## Dependencies
 
 - **[Prowide Core](https://github.com/prowide/prowide-core)** SRU2025-10.3.14 — SWIFT MT parsing (Apache 2.0)
 - **[FlatLaf](https://github.com/JFormDesigner/FlatLaf)** 3.7.1 — flat look and feel with dark mode (Apache 2.0)
-- **[Apache POI](https://poi.apache.org/)** 5.4.1 — Excel (XLSX) export (Apache 2.0)
 
 ---
 
