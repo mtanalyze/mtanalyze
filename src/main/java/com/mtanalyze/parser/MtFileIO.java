@@ -16,8 +16,12 @@
 package com.mtanalyze.parser;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.Reader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.regex.*;
@@ -150,6 +154,42 @@ public final class MtFileIO {
         String decoded = fixMainframeEncoding(trimmed);
         int idx = decoded.indexOf("{1:");
         return idx >= 0 && idx <= 5 && decoded.contains("{4:");
+    }
+
+    /**
+     * Returns true when {@code file} starts with a quoted cell that decodes to a usable
+     * SWIFT message. Reads at most 64 KB to detect, so large single-column CSV exports
+     * (potentially hundreds of megabytes, tens of thousands of rows) can then be streamed
+     * cell-by-cell via {@link #streamCsvMessages} instead of loading the whole file into
+     * memory as one big string.
+     */
+    public static boolean isQuotedCsvSwiftFile(File file) {
+        String sample = sampleFile(file);
+        return sample != null && sample.charAt(0) == '"' && isCsvSwiftContent(sample);
+    }
+
+    /**
+     * Returns true when {@code file} looks like a single-column CSV SWIFT export, quoted
+     * or unquoted Mainframe-encoded. Reads at most 64 KB to detect. Used to exclude bulk
+     * CSV exports (potentially tens of thousands of messages in one file) from directory
+     * import, which expects one message per file.
+     */
+    public static boolean isCsvSwiftFile(File file) {
+        String sample = sampleFile(file);
+        return sample != null && isCsvSwiftContent(sample);
+    }
+
+    /** Reads at most 64 KB of {@code file} as UTF-8, trimmed; null on empty/unreadable file. */
+    private static String sampleFile(File file) {
+        try (InputStream in = Files.newInputStream(file.toPath())) {
+            byte[] buf = new byte[65536];
+            int n = in.read(buf);
+            if (n <= 0) return null;
+            String sample = new String(buf, 0, n, StandardCharsets.UTF_8).trim();
+            return !sample.isEmpty() ? sample : null;
+        } catch (IOException e) {
+            return null;
+        }
     }
 
     /**
@@ -337,6 +377,24 @@ public final class MtFileIO {
     static String repairTruncated(String s) {
         if (!s.contains("{4:") || s.endsWith("}")) return s;
         return s + "\n-}";
+    }
+
+    /**
+     * Drops the last line of the block4 body. Used when a message was cut off
+     * mid-tag (not just missing the closing {@code -}) so the fragment still fails
+     * to parse after {@link #repairTruncated}: removing the broken trailing line
+     * lets the well-formed content before it be recovered instead of discarding
+     * the whole message. Returns {@code null} once nothing more can be dropped.
+     */
+    public static String dropLastBlock4Line(String s) {
+        int block4Start = s.indexOf("{4:");
+        if (block4Start < 0) return null;
+        String body = s.endsWith("-}") ? s.substring(0, s.length() - 2) : s;
+        int lastNewline = body.lastIndexOf('\n');
+        if (lastNewline <= block4Start) return null;
+        String head = body.substring(0, lastNewline).stripTrailing();
+        if (head.length() <= block4Start + 3) return null;
+        return head + "\n-}";
     }
 
     /** Strips a UTF-8 BOM (﻿) if present; Java's trim() does not remove it. */

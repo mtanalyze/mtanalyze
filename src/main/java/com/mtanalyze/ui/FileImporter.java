@@ -53,7 +53,7 @@ final class FileImporter {
                 ctx.config().getLogNewlineToken());
             return;
         }
-        if (isQuotedCsvSwiftFile(file)) {
+        if (MtFileIO.isQuotedCsvSwiftFile(file)) {
             loadCsvFileWithProgress(file);
             return;
         }
@@ -86,23 +86,11 @@ final class FileImporter {
         }
     }
 
-    /**
-     * Returns true when the file starts with a quoted cell that decodes to a complete SWIFT message.
-     * Reads at most 64 KB to detect; falls back to false on any error.
-     */
-    private static boolean isQuotedCsvSwiftFile(File file) {
-        try (java.io.InputStream in = Files.newInputStream(file.toPath())) {
-            byte[] buf = new byte[65536];
-            int n = in.read(buf);
-            if (n <= 0) return false;
-            String sample = new String(buf, 0, n, java.nio.charset.StandardCharsets.UTF_8).trim();
-            return !sample.isEmpty() && sample.charAt(0) == '"' && MtFileIO.isCsvSwiftContent(sample);
-        } catch (IOException e) {
-            return false;
-        }
-    }
-
     void appendFile(File file) {
+        if (!ImportService.isLogFile(file) && MtFileIO.isQuotedCsvSwiftFile(file)) {
+            appendCsvFileStreaming(file);
+            return;
+        }
         try {
             String content = new String(Files.readAllBytes(file.toPath()));
             int parsed;
@@ -132,9 +120,39 @@ final class FileImporter {
         }
     }
 
+    /**
+     * Streams a large single-column CSV file cell by cell instead of loading the whole
+     * file into memory, so directories/files with tens of thousands of rows don't blow
+     * up heap usage the way materialising every message into a {@code List<String>} first
+     * would.
+     */
+    private void appendCsvFileStreaming(File file) {
+        ImportBatch batch = new ImportBatch();
+        int maxEntries = ctx.config().getMaxEntries();
+        try (ProwideLogCapture cap = ProwideLogCapture.start();
+             java.io.BufferedReader reader = Files.newBufferedReader(
+                     file.toPath(), java.nio.charset.StandardCharsets.UTF_8)) {
+            MtFileIO.streamCsvMessages(reader, chunk -> {
+                if (batch.entryCount >= maxEntries) return;
+                ctx.importService().parseChunkIntoBatch(
+                    chunk, null, batch, file.getAbsolutePath(), MessageOrigin.NAME_VALUE, maxEntries);
+            });
+            batch.prowideLog.addAll(cap.stop());
+        } catch (IOException ex) {
+            ctx.fileError("appending", ex);
+            return;
+        }
+        if (finalizeAppend(batch) > 0) ctx.onFileAppended(file);
+    }
+
     void importDirectory(File dir) {
+        // Directory import expects one message per file; a CSV export bundles many
+        // messages in a single file (possibly tens of thousands) and is imported
+        // separately via "Open File" / "Append File" instead, so it's excluded here
+        // even when its extension (e.g. .txt) would otherwise match.
         File[] files = dir.listFiles(f ->
-            f.isFile() && f.getName().matches("(?i).*\\.(txt|swift|mt5\\d{2}|mt9\\d{2}|ste|log)"));
+            f.isFile() && f.getName().matches("(?i).*\\.(txt|swift|mt5\\d{2}|mt9\\d{2}|ste|log)")
+                && !MtFileIO.isCsvSwiftFile(f));
         if (files == null || files.length == 0) {
             JOptionPane.showMessageDialog(ctx.frame(),
                 "No SWIFT files found in:\n" + dir.getAbsolutePath(),
@@ -164,6 +182,10 @@ final class FileImporter {
                 chunks, mtTypeOverride, sourceFile, origin, ctx.config().getMaxEntries(), mtTypeFilter);
             batch.prowideLog.addAll(cap.stop());
         }
+        return finalizeAppend(batch);
+    }
+
+    private int finalizeAppend(ImportBatch batch) {
         if (batch.totalParsed > 0) {
             ctx.onContentAppended(batch);
             return batch.totalParsed;
@@ -342,7 +364,10 @@ final class FileImporter {
 
     private String detectDirMtOverride(File[] files) {
         for (File f : files) {
-            if (ImportService.isLogFile(f)) continue;
+            // Log files and quoted-CSV exports never need an MT type override (each row/message
+            // already carries its own {1:...} header) — skip them so a large CSV export isn't
+            // read fully into memory just to determine this.
+            if (ImportService.isLogFile(f) || MtFileIO.isQuotedCsvSwiftFile(f)) continue;
             try {
                 String sample = new String(Files.readAllBytes(f.toPath()));
                 if (MtFileIO.needsMtTypeOverride(sample)) {

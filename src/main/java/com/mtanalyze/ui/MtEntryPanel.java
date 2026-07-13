@@ -900,8 +900,7 @@ public class MtEntryPanel extends JPanel {
         rowSorter.setRowFilter(new RowFilter<>() {
             @Override
             public boolean include(Entry<? extends EntryTableModel, ? extends Integer> e) {
-                return passesDropFilter(e, dropFilters)
-                    && (orMode ? FilterSupport.passesQuickFilterOr(e, quickFilters) : passesQuickFilter(e, quickFilters))
+                return FilterSupport.passesFilters(e, dropFilters, quickFilters, orMode)
                     && passesTextSearch(e, lq);
             }
         });
@@ -916,20 +915,6 @@ public class MtEntryPanel extends JPanel {
 
     private void setFinNavEnabled(boolean enabled) {
         if (finPrevBtn != null) { finPrevBtn.setEnabled(enabled); finNextBtn.setEnabled(enabled); }
-    }
-
-    @SuppressWarnings("java:S4968")
-    static boolean passesDropFilter(
-            RowFilter.Entry<? extends EntryTableModel, ? extends Integer> e,
-            Map<Integer, Set<String>> filters) {
-        return FilterSupport.passesDropFilter(e, filters);
-    }
-
-    @SuppressWarnings("java:S4968")
-    static boolean passesQuickFilter(
-            RowFilter.Entry<? extends EntryTableModel, ? extends Integer> e,
-            Map<Integer, String> filters) {
-        return FilterSupport.passesQuickFilter(e, filters);
     }
 
     @SuppressWarnings("java:S4968")

@@ -52,10 +52,25 @@ public final class FilterSupport {
         return true;
     }
 
-    public static boolean passesQuickFilterOr(
-            RowFilter.Entry<?, ?> e, Map<Integer, String> filters) {
-        if (filters.isEmpty()) return true;
-        for (Map.Entry<Integer, String> f : filters.entrySet()) {
+    /**
+     * Combines drop filters (column value checkboxes) and quick filters (expression
+     * text fields) into a single decision. In AND mode every active filter, of
+     * either kind, must match. In OR mode a row is included as soon as any single
+     * active filter, of either kind, matches — so OR spans both filter rows rather
+     * than only the quick-filter row.
+     */
+    public static boolean passesFilters(
+            RowFilter.Entry<?, ?> e,
+            Map<Integer, Set<String>> dropFilters,
+            Map<Integer, String> quickFilters,
+            boolean orMode) {
+        if (!orMode) return passesDropFilter(e, dropFilters) && passesQuickFilter(e, quickFilters);
+        if (dropFilters.isEmpty() && quickFilters.isEmpty()) return true;
+        for (Map.Entry<Integer, Set<String>> f : dropFilters.entrySet()) {
+            Object v = e.getValue(f.getKey());
+            if (f.getValue().contains(v != null ? v.toString() : "")) return true;
+        }
+        for (Map.Entry<Integer, String> f : quickFilters.entrySet()) {
             Object v = e.getValue(f.getKey());
             if (QuickFilterParser.matches(f.getValue(), v != null ? v.toString() : "")) return true;
         }
@@ -87,8 +102,7 @@ public final class FilterSupport {
             sorter.setRowFilter(new RowFilter<>() {
                 @Override
                 public boolean include(Entry<? extends M, ? extends Integer> e) {
-                    return passesDropFilter(e, dropFilters)
-                            && (orMode ? passesQuickFilterOr(e, quickFilters) : passesQuickFilter(e, quickFilters));
+                    return passesFilters(e, dropFilters, quickFilters, orMode);
                 }
             });
         }

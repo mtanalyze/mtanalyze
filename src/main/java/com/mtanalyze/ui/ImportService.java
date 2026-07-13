@@ -20,8 +20,10 @@ import com.mtanalyze.model.SwiftMessage;
 import com.mtanalyze.parser.MtFileIO;
 import com.prowidesoftware.swift.model.mt.AbstractMT;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.List;
 import java.util.Locale;
@@ -36,6 +38,10 @@ final class ImportService {
 
     void parseFileIntoBatch(File file, String mtOverride, ImportBatch batch,
                             String logSwiftStart, String logNewlineToken, int maxEntries) {
+        if (!isLogFile(file) && MtFileIO.isQuotedCsvSwiftFile(file)) {
+            parseCsvFileStreaming(file, mtOverride, batch, maxEntries);
+            return;
+        }
         try {
             String content = new String(Files.readAllBytes(file.toPath()));
             List<String> chunks;
@@ -54,6 +60,22 @@ final class ImportService {
                 if (batch.entryCount >= maxEntries) break;
                 parseChunkIntoBatch(chunk, mtOverride, batch, file.getAbsolutePath(), origin, maxEntries);
             }
+        } catch (IOException ex) {
+            batch.errors++;
+        }
+    }
+
+    /**
+     * Streams a single-column CSV file cell by cell instead of loading the whole file
+     * into memory and materialising every message into a {@code List<String>} first —
+     * needed for directory imports containing CSV exports with tens of thousands of rows.
+     */
+    private void parseCsvFileStreaming(File file, String mtOverride, ImportBatch batch, int maxEntries) {
+        try (BufferedReader reader = Files.newBufferedReader(file.toPath(), StandardCharsets.UTF_8)) {
+            MtFileIO.streamCsvMessages(reader, chunk -> {
+                if (batch.entryCount >= maxEntries) return;
+                parseChunkIntoBatch(chunk, mtOverride, batch, file.getAbsolutePath(), MessageOrigin.NAME_VALUE, maxEntries);
+            });
         } catch (IOException ex) {
             batch.errors++;
         }
@@ -78,7 +100,7 @@ final class ImportService {
                              String sourceFile, MessageOrigin origin, int maxEntries) {
         if (batch.entryCount >= maxEntries) { batch.limitReached = true; return; }
         try {
-            AbstractMT mt = AbstractMT.parse(MtFileIO.wrapBlock4IfNeeded(chunk, mtOverride));
+            AbstractMT mt = parseWithTruncationRecovery(chunk, mtOverride);
             if (mt == null) return;
             if (!batch.mtTypeFilter.isEmpty()) {
                 com.prowidesoftware.swift.model.SwiftBlock2 b2 = mt.getSwiftMessage().getBlock2();
@@ -94,6 +116,27 @@ final class ImportService {
             String msg = ex.getMessage();
             if (msg != null && !msg.isBlank())
                 batch.prowideLog.add("[SEVERE ] " + msg);
+        }
+    }
+
+    /**
+     * Parses a chunk, retrying with the last (incomplete) block4 line dropped each
+     * time Prowide rejects it. A message cut off mid-tag would otherwise fail to
+     * parse even after {@link MtFileIO#repairTruncated}, discarding the entire
+     * chunk instead of the handful of well-formed tags before the broken one.
+     */
+    private static AbstractMT parseWithTruncationRecovery(String chunk, String mtOverride) throws Exception {
+        String candidate = MtFileIO.wrapBlock4IfNeeded(chunk, mtOverride);
+        Exception firstFailure = null;
+        while (true) {
+            try {
+                return AbstractMT.parse(candidate);
+            } catch (Exception ex) {
+                if (firstFailure == null) firstFailure = ex;
+                String shorter = MtFileIO.dropLastBlock4Line(candidate);
+                if (shorter == null) throw firstFailure;
+                candidate = shorter;
+            }
         }
     }
 }
