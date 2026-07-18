@@ -22,6 +22,7 @@ import com.mtanalyze.model.EntrySelectionListener;
 import com.mtanalyze.model.SwiftMessage;
 import com.mtanalyze.parser.Lookups;
 import com.mtanalyze.parser.MtParser;
+import com.mtanalyze.ui.FilterSupport;
 import com.mtanalyze.ui.ToolbarIcons;
 
 import javax.swing.*;
@@ -212,8 +213,11 @@ public final class DiffPanel extends JPanel implements EntrySelectionListener {
         JCheckBoxMenuItem diffOnlyItem = new JCheckBoxMenuItem("Differences only", ToolbarIcons.menuDiff(), false);
         diffOnlyItem.addActionListener(e ->
             sorter.setRowFilter(diffOnlyItem.isSelected() ? buildDiffFilter(numEntries) : null));
+        JMenuItem copyItem = new JMenuItem("Copy Table", ToolbarIcons.menuCopyTable());
+        copyItem.addActionListener(e -> FilterSupport.copyTableToClipboard(table));
         JPopupMenu popup = new JPopupMenu();
         popup.add(diffOnlyItem);
+        popup.add(copyItem);
         table.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override public void mousePressed (java.awt.event.MouseEvent e) { maybeShow(e); }
             @Override public void mouseReleased(java.awt.event.MouseEvent e) { maybeShow(e); }

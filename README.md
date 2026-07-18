@@ -33,7 +33,6 @@ java -jar MT-Analyze-1.0.4.jar
 - **Diff View** — compare two or more messages; deviating cells highlighted.
 - **Source View** — raw SWIFT message with colour-coded blocks and tags.
 - **Generate MT 544–547 from MT 536** — select any MT 536 transaction entry and generate the matching settlement confirmation.
-- 
 
 ---
 
