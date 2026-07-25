@@ -1,0 +1,176 @@
+﻿Market;Country;Name;BIC
+ALBANIA;AL;Albanian Securities Register ALREG;RSTAALTT
+ALBANIA;AL;BANK OF ALBANIA ;STANALTRXXX
+ARGENTINA;AR;Caja de Valores S.A. (CVSA);CAVLARBA
+ARGENTINA;AR;Central de Registracion y Liquidacion de Titulos Publicos (CRYL);BCRAARBA
+AUSTRALIA;AU;Austraclear Limited;ACLRAU2S
+AUSTRALIA;AU;Clearing House Electronic Subregister System (CHESS);CAETAU21
+AUSTRIA;AT;OeKB CSD GmbH ;OCSDATWWXXX
+BAHRAIN;BH;Bahrain Stock Exchange;XBAHBHB1
+BANGLADESH;BD;Dhaka Stock Exchange LTD;XDHABDD1
+BANGLADESH;BD;Central Bank of Bangladesh;BBHOBDDH
+BARBADOS;BB;Barbados Central Securities Depository Inc;BCSDBBB1
+BELGIUM;BE;Euroclear Belgium (ex-CIK);CIKBBEBBXXX
+BELGIUM;BE;The Banque Nationale de Belgique/Nationale Bank van België;NBBEBEBB216
+BENIN;BJ;Dépositaire Central/Banque de Reglement (DCBR Benin);BRVICIA1
+BERMUDA;BM;Bermuda Stock Exchange LTD;XBDABMH1
+BOLIVIA;BO;Bolsa Boliviana de Valores S.A.;XBOLBOL1
+BOSNIA AND HERZEGOVINA;BA;Sarajevo & Banja Luka CSD;CBBSBA22
+BOTSWANA;BW;Botswana Stock Exchange;XBOTBWG1
+BOTSWANA;BW;Bank of Botswana;BBOTBWGX
+BRAZIL;BR;Companhia Brasilieira de Liquidacao e Custodia (CBLC);CLCBBRRJ
+BRAZIL;BR;Center for the Custody and Financial Settlement of Securities (CETIP);CETIBRR1
+BRAZIL;BR;Special Settlement and Custody System (SELIC);SSCSBRR1
+BULGARIA;BG;Tzentralen Depozitar AD (CD AD);CEDPBGSF
+BULGARIA;BG;Bulgarian National Bank;BNBGBGSF
+BURKINA FASO;BF;Dépositaire Central/Banque de Règlement (DCBR Burkina Faso);BRVICIA1
+CANADA;CA;The Canadian Depository for Securities Limited ;CDSLCATT
+CHILE;CL;Depósito Central de Valores S.A. (DCV);DCVVCLRM
+CHINA;CN;Shanghai Securities Central Clearing & Registering Corporation (SSCCRC);SSCECNS1
+CHINA;CN;Shanghai Clearing House Co. (SHCH);CHFMCNSH
+CHINA;CN;Shenzhen Securities Clearing Co.  Ltd (SSCC);SSCCCNS1
+CHINA;CN;"China Central Depository & Clearing Co.;Ltd.(CCDC; ChinaBond))";NDCCCNB1
+CHINA;CN;China Securities Depository and Clearing Corporation Limited ( CSDC) Beijing Branch;CSDACNB1BJB
+CLEARSTREAM;XS;Clearstream Banking Luxembourg;CEDELULL
+COLOMBIA;CO;Deposito Centralizado de Valores (DECEVAL);DCVDCOB1
+COLOMBIA;CO;Deposito Central de Valores (DCV);DCVCCOB1
+COSTA RICA;CR;INTERCLEAR ;CEVCCRS1
+CROATIA;HR;Sredisnja Depozitarna Agencija d.d.;SDAHHR22
+CYPRUS;CY;Cyprus Stock Exchange - Clearing and Settlement;XCYSCY2N
+CZECH REPUBLIC;CZ;UNIVYC PLC ;UNIYCZPP
+CZECH REPUBLIC;CZ;Czech National Bank (TKD System);CNBACZPP
+DENMARK;DK;VP A/S - the Danish Securities Centre;VPDKDKKKXXX
+DOMINICAN REPUBLIC;DO;Central de Valores Dominicana C Pora  (CEVALDOM);CVDPDOSD
+ECUADOR;EC;Deposito Centralizado de Valores Decevale SA (DECEVALE);DCVEECE1
+EGYPT;EG;"Misr for Clearing; Settlement and Depository";MCSDEGCA
+EGYPT;EG;Central Bank of Egypt / Egyptian Central Securities Depository (ECSD);CBEGEGCXCSD
+EL SALVADOR;SV;Central de Deposito de Valores de El Salvador SA de CV (CDV);CDVSSVS1
+ESTONIA;EE;Estonian CSD;LCDELV22XXX
+EUROCLEAR;XS;Euroclear Bank;MGTCBEBE
+FINLAND;FI;Finnish Central Securities Depository Ltd (APK);APKEFIHHXXX
+FRANCE;FR;Euroclear France (Ex Sicovam);SICVFRPPXXX
+GERMANY;DE;Clearstream Banking Frankfurt;DAKVDEFFXXX
+GEORGIA;GE;National Bank of Georgia;BNLNGE22XXX
+GHANA;GH;Bank of Ghana;BAGHGHAC
+GREECE;GR;Central Securities Depository S.A. (CSD);HCSDGRAA
+GREECE;GR;Bank of Greece;BNGRGRAASSS
+GUATEMALA;GT;Bolsa de  Valores Nacional SA;XGTGGTG1
+GUATEMALA;GT;Corporation Bursatil SA;CORRGTG1
+GUINEA BISSAU;GW;Dépositaire Central/Banque de Règlement (DCBR Guinea Bissau);BRVICIA1 
+HONDURAS;HN;Central Hondurena de Valores y Liquidacion (CEHVAL);CHVLHNT1
+HONG KONG;HK;Hongkong Securities Clearing Company Limited  (Hongkong Clearing);XHKCHKH1
+HONG KONG;HK;Central Moneymarkets Unit (CMU) Hong Kong Monetary Authority;HKMAHKHC
+HUNGARY;HU;Központi Elszámolóház és Értéktár Rt (KELER);KELRHUHBXXX
+ICELAND;IS;"Nasdaq CSD SE; branch in Iceland";LCDELV22XXX
+ICELAND;IS;Verðbréfamiðstöð Íslands hf. (“VBM”);VEIAISR2XXX 
+INDIA;IN;National Securities Depository Ltd. (NSDL);NSDLINB1
+INDIA;IN;The Reserve Bank of India (RBI);RBISINBB
+INDIA;IN;Central Depository Services Limited (CDS);CDSCINB1
+INDONESIA;ID;PT Kustodian Sentral Efek Indonesia (KSEI);KSEIIDJA
+INDONESIA;ID;Bank Indonesia;INDOIDJA
+IRELAND;IE;Euroclear Bank on behalf of Central Bank of Ireland;IRCEIE2D
+IRELAND;IE;Euroclear Bank;MGTCBEBE
+ISRAEL;IL;TASE Clearing house;XTAEILIT
+ITALY;IT;Monte Titoli spa;MOTIITMM
+IVORY COAST;CI;Bourse Regionale des Valeurs Immobilieres S.A.;BRVICIA1
+JAMAICA;JM;Jamaica Central Securities Depository (JCSD);JCSDJMK1
+JAPAN;JP;Japan Securities Depository Centre (Jasdec);JJSDJPJT
+JAPAN;JP;The Bank of Japan;BOJPJPJT
+JORDAN;JO;Securities Depository Center (SDC);SEDCJOAX
+JORDAN;JO;Central Bank of Jordan ;CBJOJOAX
+KAZAKHSTAN;KZ;The Central Depository of Securities;CEDUKZKA
+KAZAKHSTAN;KZ;Astana International Exchange Central Securities Depository ;ASIHKZ22
+KENYA;KE;Central Bank of Kenya - CDS; CBKEKENB
+KENYA;KE;Central Depository and Settlement Corporation; CDSNKENA
+KUWEIT;KW;Kuwait Clearing Company S.A.K.;KCCKKWKW
+LATVIA;LV;Latvijas Centralais Depozitarijs;LCDELV22XXX
+LEBANON;LB;Custodian and Clearing Centre of Financial Instruments for Lebanon and the Middle East (Midclear);MIDRLBBE
+LEBANON;LB;Banque du Liban (BDL);BDLCLBBX
+LIECHTENSTEIN;LI;SIS - SEGAINTERSETTLE AG;INSECHZZXXX
+LITHUANIA;LT;Lietuvos Centrinio Vertybiniu Popieriu Depozitoriumo ;LCDELV22XXX
+LUXEMBOURG;LU;LuxCSD S.A;LUXCLULLXXX
+MACAO;MO;MACAO CENTRAL SECURITIES DEPOSITORY AND CLEARING LIMITED;MCESMOMMXXX
+MACEDONIA;MK;Central Securities Depository AD Skopje;CDHVMK21
+MALAYSIA;MY;Bank Negara Malaysia;BNMAMYKL
+MALAYSIA;MY;Malaysian Central Depository Sdn Bhd;MCDSMYK1
+MALAWI;MW;Malawi Central Securities Depository (CSD);RBMAMWMW
+MALI;ML;Dépositaire Central/Banque de Règlement (DCBR Mali);BRVICIA1
+MALTA;MT;Malta Stock Exchange;XMALMTMT 
+MAURITIUS;MU;Central Depository & Settlement Co. Ltd;CEDTMUM1XXX
+MAURITIUS;MU;Bank Of Mauritius;BOMMMUPLXXX
+MEXICO;MX;"S.D. INDEVAL; S.A. DE C.V. (INDEVAL) ";INDEMXMM
+MOROCCO;MA;Maroclear;MAROMAM1
+NAMIBIA;NA;Namibian Stock Exchange;XNAMNAN1
+THE NETHERLANDS;NL;Euroclear Netherlands;NECINL2AXXX
+NEW ZEALAND;NZ;New Zealand Central Securities Depository (Reserve Bank of New Zealand);RBNZNZ22
+NEW ZEALAND;NZ;New Zealand Stock Exchange (FASTER);XAUKNZ21
+NEW ZEALAND;NZ;NEW ZEALAND EXCHANGE LIMITED (NZX);NZXCNZ2WXXX
+NICARAGUA;NI;Central Nicaraguense de Valores (CENIVAL);CNVCNIM1
+NIGER;NE;Dépositaire Central/Banque de Règlement (DCBR Niger);BRVICIA1
+NIGERIA;NG;Central Securities Clearing System Ltd (CSCS);CSCYNGLA
+NIGERIA;NG;CENTRAL BANK OF NIGERIA;CBNINGLA
+NORWAY;NO;Verdipapirsentralen (VPS);VPSNNOKK
+OMAN;OM;The Muscat Depository and Securities Registration Company;MDSROMR1
+PAKISTAN;PK;Central Depository Company of Pakistan Ltd.;CDCPPKK1
+PAKISTAN;PK;The State Bank of Pakistan ;SBPPPKKA
+PALESTINIAN AUTONOMOUS AREA;PS;"The Clearing; Depository and Settlement Department (PSE CDS)";CDSEPS21
+PANAMA;PA;"Central Latinoamericana de Valores; S. A. (Latinclear)";CLVLPAP1
+PARAGUAY;PY;Bolsa de Valores y Productos de Asuncion SA (BVPASA);XVPAPYP1
+PERU;PE;Caja de Valores y Liquidaciones (CAVALI ICLV S.A.);CVLIPEPL
+PHILIPPINES;PH;"Philippine Central Depository; Inc.  (PCD)";PHCDPHM1
+PHILIPPINES;PH;Bureau Of Treasury (RoSS);BUTRPHM1
+POLAND;PL;Krajowy Depozyt Papierow Wartosciowych;KDPWPLPW
+POLAND;PL;Rejestr Papierów Wartościowych  (National Bank of Poland);NBPLPLPW
+PORTUGAL;PT;Banco de Portugal  Credit Operations and Markets Department;BGALPTPL
+PORTUGAL;PT;Interbolsa;IBLSPTPPXXX
+PORTUGAL;PT;PEXsettle;PEXSPTP1
+QATAR;QA;Qatar Central Securities Depository (QCSD);QCSDQAQ2
+ROMANIA;RO;Depozitarul Central S.A.;DECNROBU
+ROMANIA;RO;National Bank of Romania;NBORROBB 
+RUSSIA;RU;National Settlement Depository (NSD);NADCRUMM
+RWANDA;RW;National Bank of Rwanda;CBRWRWR1
+SAUDI ARABIA;SA;Tadawul Saudi Stock Market;SDCPSARIXXX 
+SENEGAL;SN;Dépositaire Central/Banque de Règlement (DCBR Senegal);BRVICIA1
+SERBIA;RS;Central Securities Depository and Clearing House;CSDERSB1
+SINGAPORE;SG;The Central Depository (Pte) Limited (CDP);CDPLSGSG
+SINGAPORE;SG;The Monetary Authority of Singapore;MASGSGSM
+SLOVAK REPUBLIC;SK;"CENTRALNY DEPOZITAR CENNYCH PAPIEROV SR; A.S.";CSDSSKBAXXX
+SLOVENIA;SI;Centralna Klirinsko Depotna Druzba d.d. (KDD);KDDSSI22XXX
+SOUTH AFRICA;ZA;STRATE Ltd;STRAZAJJ
+SOUTH KOREA;KR;Korea Securities Depository;KSDCKRSE
+SPAIN;ES;Iberclear;IBRCESMMXXX
+SRI LANKA;LK;Central Depository Systems (Pvt) Ltd (CDS);CDSPLKLC 
+SRI LANKA;LK;Central Bank of Sri Lanka;CBCELKLS
+SWAZILAND;SZ;Central Bank of Swaziland;SWAZSZMB
+SWEDEN;SE;Euroclear Sweden AB;VPCSSESSXXX
+SWITZERLAND;CH;SIS - SEGAINTERSETTLE AG;"INSECHZZXXX
+"
+TAIWAN;TW;TAIWAN DEPOSITORY AND CLEARING CORP;TDCCTWTP
+TAIWAN;TW;Central Bank of China;CBCTTWTP
+TANZANIA;TZ;DAR ES SALAAM STOCK EXCHANGE;DSTXTZTZ
+THAILAND;TH;"Thailand Securities Depository Co.; Ltd.";TSDCTHBK
+TOGO;TG;Dépositaire Central/Banque de Règlement (DCBR Togo);BRVICIA1
+TRINIDAD & TOBAGO;TT;Trinidad and Tobago Central Securities Depository;TTCSTTP1
+TRINIDAD & TOBAGO;TT;Central Bank of Trinidad And Tobago;CBTTTTPS
+TUNISIA;TN;Societe Tunisienne Interprofessionnelle pour la Compensation et le Depot des Valeurs Mobilieres (STICODEVAM);STICTNT1
+TURKEY;TR;IMKB Takas ve Saklama Bankasi A. S.;TVSBTRIS
+TURKEY;TR;Central Bank of Turkey;TCMBTR2A
+TURKEY;TR;Merkezi Kayit Kurulusu A.S.;MKKCTRIS
+UGANDA;UG;Bank of Uganda;UGBAUGKA
+UGANDA;UG;UGANDA SECURITIES EXCHANGE LIMITED;UGSXUGKA
+UKRAINE;UA;National Depository of Ukraine (NDU);NADUUAUK
+UKRAINE;UA;National Bank of Ukraine (NBU);NBUAUAUX
+U.K.;GB;Euroclear UK and Ireland LTD (previously known as CRESTCO LTD);CRSTGB22
+UNITED ARAB EMIRATES;AE;Abu Dhabi Stock Market (ADSM);ADSEAEA1 
+UNITED ARAB EMIRATES;AE;Dubai Financial Market (DFM);DFMTAEA1
+UNITED ARAB EMIRATES;AE;Dubai International Financial Exchange Ltd. (DIFX);DIFXAEAA
+URUGUAY;UY;Banco Central del Uruguay ;CBCUUYMM
+U.S.;US;The Depository Trust Company (DTCC);DTCYUS33
+U.S.;US;Federal Reserve Bank (FED);FRNYUS33
+VENEZUELA;VE;Caja Venezolana de Valores  (CVV);CVVCVEA1
+VENEZUELA;VE;Banco Central de Venezuela;BCVEVECA
+VIETNAM;VN;Vietnam Securities Depository;VISDVNV1
+ZAMBIA;ZM;LuSE Central Shares Depository;LCSDZML1
+ZAMBIA;ZM;Bank of Zambia;BAZAZMLU
+ZIMBABWE;ZW;Zimbabwe stock exchange;XZIMZWH1
+ZIMBABWE;ZW;Chengetedzai Depository Company;CHDYZWH1XXX

@@ -137,27 +137,69 @@ public final class ColumnChooser {
                                           Map<String, Boolean> working,
                                           Map<JCheckBox, String> cbToKey,
                                           HintDictionary dict) {
-        JPanel grp = new JPanel();
-        grp.setLayout(new BoxLayout(grp, BoxLayout.Y_AXIS));
-        grp.setBorder(BorderFactory.createTitledBorder(
-            BorderFactory.createEtchedBorder(), name,
-            TitledBorder.LEFT, TitledBorder.TOP,
-            grp.getFont().deriveFont(Font.BOLD)));
+        JPanel checkList = new JPanel();
+        checkList.setLayout(new BoxLayout(checkList, BoxLayout.Y_AXIS));
+        List<JCheckBox> groupBoxes = new ArrayList<>();
+        for (ColumnDef cd : cols) groupBoxes.add(addCheckBox(checkList, cd, working, cbToKey, dict));
+
+        JPanel header = buildGroupHeader(name, groupBoxes, working, cbToKey);
+
+        JPanel grp = new JPanel(new BorderLayout(0, 2));
+        grp.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createEtchedBorder(),
+            new EmptyBorder(2, 6, 6, 6)));
         grp.setAlignmentX(Component.LEFT_ALIGNMENT);
-        for (ColumnDef cd : cols) addCheckBox(grp, cd, working, cbToKey, dict);
+        grp.add(header,    BorderLayout.NORTH);
+        grp.add(checkList, BorderLayout.CENTER);
         return grp;
     }
 
-    private static void addCheckBox(JPanel grp, ColumnDef cd,
-                                    Map<String, Boolean> working,
-                                    Map<JCheckBox, String> cbToKey,
-                                    HintDictionary dict) {
+    private static JPanel buildGroupHeader(String name, List<JCheckBox> groupBoxes,
+                                           Map<String, Boolean> working,
+                                           Map<JCheckBox, String> cbToKey) {
+        JLabel title = new JLabel(name);
+        title.setFont(title.getFont().deriveFont(Font.BOLD));
+
+        JButton allBtn  = groupLinkButton("All");
+        JButton noneBtn = groupLinkButton("None");
+        allBtn.addActionListener(e -> setGroupSelected(groupBoxes, working, cbToKey, true));
+        noneBtn.addActionListener(e -> setGroupSelected(groupBoxes, working, cbToKey, false));
+
+        JPanel header = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        header.setOpaque(false);
+        header.add(title);
+        header.add(allBtn);
+        header.add(noneBtn);
+        return header;
+    }
+
+    private static void setGroupSelected(List<JCheckBox> groupBoxes, Map<String, Boolean> working,
+                                         Map<JCheckBox, String> cbToKey, boolean selected) {
+        for (JCheckBox cb : groupBoxes) {
+            cb.setSelected(selected);
+            working.put(cbToKey.get(cb), selected);
+        }
+    }
+
+    private static JButton groupLinkButton(String text) {
+        JButton btn = new JButton(text);
+        btn.setFont(btn.getFont().deriveFont(Font.PLAIN, btn.getFont().getSize2D() - 1f));
+        btn.setMargin(new Insets(0, 4, 0, 4));
+        btn.setFocusable(false);
+        return btn;
+    }
+
+    private static JCheckBox addCheckBox(JPanel grp, ColumnDef cd,
+                                         Map<String, Boolean> working,
+                                         Map<JCheckBox, String> cbToKey,
+                                         HintDictionary dict) {
         JCheckBox cb = new JCheckBox(buildCheckBoxLabel(cd, dict), Boolean.TRUE.equals(working.get(cd.key)));
         cb.setToolTipText(buildColumnTooltip(cd, dict));
         cb.setAlignmentX(Component.LEFT_ALIGNMENT);
         cb.addActionListener(ev -> working.put(cd.key, cb.isSelected()));
         grp.add(cb);
         cbToKey.put(cb, cd.key);
+        return cb;
     }
 
     // -----------------------------------------------------------------------

@@ -41,6 +41,7 @@ import java.util.Optional;
  *   dict_qualifiers.csv       – qualifier;description
  *   dict_components.csv       – component_label;description
  *   dict_qualifier_values.csv – qualifier;value;description
+ *   pset.csv                  – Market;Country;Name;BIC (Place of Settlement directory)
  */
 public final class HintDictionary {
 
@@ -51,6 +52,10 @@ public final class HintDictionary {
     private final Map<String, String>         qualifierValues  = new HashMap<>();
     /** Contains-fallback: qualifier → list of [value, description] pairs. */
     private final Map<String, List<String[]>> qualifierEntries = new HashMap<>();
+    /** PSET directory: full BIC (as given in pset.csv) → [name, market, countryCode]. */
+    private final Map<String, String[]>       psetByBic       = new HashMap<>();
+    /** PSET directory fallback: 8-char BIC prefix → [name, market, countryCode]. */
+    private final Map<String, String[]>       psetByBic8      = new HashMap<>();
 
     /** User-defined entries (loaded from Preferences at runtime). */
     private final List<String[]>              userEntries           = new ArrayList<>();
@@ -73,6 +78,7 @@ public final class HintDictionary {
         loadCsvFromFileOrResource("/dict_qualifiers.csv",       2, c -> qualifiers.put(c[0].toUpperCase(), c[1]));
         loadCsvFromFileOrResource("/dict_components.csv",       2, c -> components.put(c[0].toLowerCase(), c[1]));
         loadCsvFromFileOrResource("/dict_qualifier_values.csv", 3, this::registerQualifierValue);
+        loadCsvFromFileOrResource("/pset.csv",                  4, this::registerPset);
     }
 
     private void registerQualifierValue(String[] c) {
@@ -81,6 +87,36 @@ public final class HintDictionary {
         qualifierValues.put(qKey + '\t' + vKey, c[2]);
         qualifierEntries.computeIfAbsent(qKey, k -> new ArrayList<>())
                         .add(new String[]{vKey, c[2]});
+    }
+
+    private void registerPset(String[] c) {
+        String market  = c[0].trim();
+        String country = c[1].trim();
+        String name    = c[2].trim();
+        String bic     = c[3].trim().toUpperCase();
+        if (bic.isEmpty()) return;
+        String[] info = {name, market, country};
+        psetByBic.put(bic, info);
+        String bic8 = bic.length() >= 8 ? bic.substring(0, 8) : bic;
+        psetByBic8.putIfAbsent(bic8, info);
+    }
+
+    /**
+     * Description for a Place-of-Settlement BIC (e.g. field 95a::PSET//xxx), resolved
+     * from the pset.csv directory. Tries an exact BIC match first, then falls back to
+     * the 8-character institution prefix so both 8- and 11-character BICs resolve.
+     */
+    public String psetDescription(String bic) {
+        if (bic == null) return null;
+        String v = bic.trim().toUpperCase();
+        if (v.isEmpty()) return null;
+        String[] info = psetByBic.get(v);
+        if (info == null) {
+            String key8 = v.length() >= 8 ? v.substring(0, 8) : v;
+            info = psetByBic8.get(key8);
+        }
+        if (info == null) return null;
+        return info[0] + " — " + info[1] + " (" + info[2] + ")";
     }
 
     /** Description for a SWIFT tag (e.g. {@code "35B"}). */

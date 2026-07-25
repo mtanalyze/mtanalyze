@@ -28,6 +28,8 @@ import com.mtanalyze.ui.ToolbarIcons;
 import javax.swing.*;
 import javax.swing.table.*;
 import java.awt.*;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.Transferable;
 import java.util.*;
 import java.util.List;
 
@@ -214,7 +216,7 @@ public final class DiffPanel extends JPanel implements EntrySelectionListener {
         diffOnlyItem.addActionListener(e ->
             sorter.setRowFilter(diffOnlyItem.isSelected() ? buildDiffFilter(numEntries) : null));
         JMenuItem copyItem = new JMenuItem("Copy Table", ToolbarIcons.menuCopyTable());
-        copyItem.addActionListener(e -> FilterSupport.copyTableToClipboard(table));
+        copyItem.addActionListener(e -> copyTableWithHighlights(table, numEntries));
         JPopupMenu popup = new JPopupMenu();
         popup.add(diffOnlyItem);
         popup.add(copyItem);
@@ -225,6 +227,74 @@ public final class DiffPanel extends JPanel implements EntrySelectionListener {
                 if (e.isPopupTrigger()) popup.show(e.getComponent(), e.getX(), e.getY());
             }
         });
+    }
+
+    // -----------------------------------------------------------------------
+    // Clipboard export with diff highlights (for pasting into Word/Outlook)
+    // -----------------------------------------------------------------------
+
+    /**
+     * Copies the table to the clipboard in two flavors at once: plain TSV text
+     * (so Excel/Notepad get tab-separated values) and HTML with the same
+     * yellow diff highlighting used on screen (so Word/Outlook paste a
+     * formatted table instead of raw text).
+     */
+    private static void copyTableWithHighlights(JTable table, int numEntries) {
+        if (table.getRowCount() == 0) return;
+        String plain = FilterSupport.buildTableTsv(table);
+        String html  = buildHtmlTable(table, numEntries);
+        DataFlavor htmlFlavor;
+        try {
+            htmlFlavor = new DataFlavor("text/html;class=java.lang.String");
+        } catch (ClassNotFoundException e) {
+            throw new IllegalStateException(e);
+        }
+        final DataFlavor hf = htmlFlavor;
+        Transferable transferable = new Transferable() {
+            @Override public DataFlavor[] getTransferDataFlavors() {
+                return new DataFlavor[]{ hf, DataFlavor.stringFlavor };
+            }
+            @Override public boolean isDataFlavorSupported(DataFlavor flavor) {
+                return flavor.equals(hf) || flavor.equals(DataFlavor.stringFlavor);
+            }
+            @Override public Object getTransferData(DataFlavor flavor) {
+                return flavor.equals(hf) ? html : plain;
+            }
+        };
+        Toolkit.getDefaultToolkit().getSystemClipboard().setContents(transferable, null);
+    }
+
+    private static String buildHtmlTable(JTable table, int numEntries) {
+        TableModel model    = table.getModel();
+        int        viewRows = table.getRowCount();
+        int        viewCols = table.getColumnCount();
+        StringBuilder sb = new StringBuilder();
+        sb.append("<table style=\"border-collapse:collapse;font-family:Segoe UI,Arial,sans-serif;font-size:12px\">");
+        sb.append("<tr>");
+        for (int vc = 0; vc < viewCols; vc++)
+            sb.append("<th style=\"border:1px solid #999;background-color:#f0f0f0;padding:4px 8px;text-align:left\">")
+              .append(escHtml(table.getColumnName(vc)))
+              .append("</th>");
+        sb.append("</tr>");
+        for (int vr = 0; vr < viewRows; vr++) {
+            int     modelRow = table.convertRowIndexToModel(vr);
+            boolean diff     = numEntries >= 2 && rowHasDiff(model, modelRow, numEntries);
+            String  ref      = str(model.getValueAt(modelRow, FIXED_COLS));
+            sb.append("<tr>");
+            for (int vc = 0; vc < viewCols; vc++) {
+                int    modelCol = table.convertColumnIndexToModel(vc);
+                String text     = str(model.getValueAt(modelRow, modelCol));
+                sb.append("<td style=\"border:1px solid #ccc;padding:4px 8px;vertical-align:top;white-space:pre-wrap\">");
+                if (diff && modelCol >= FIXED_COLS)
+                    sb.append(modelCol == FIXED_COLS ? "<b>" + escHtml(text) + "</b>" : inlineDiff(text, ref));
+                else
+                    sb.append(escHtml(text));
+                sb.append("</td>");
+            }
+            sb.append("</tr>");
+        }
+        sb.append("</table>");
+        return sb.toString();
     }
 
     private static RowFilter<DefaultTableModel, Integer> buildDiffFilter(int numEntries) {
@@ -349,44 +419,49 @@ public final class DiffPanel extends JPanel implements EntrySelectionListener {
         private boolean hasDiff(JTable table, int viewRow) {
             if (numEntries < 2) return false;
             int modelRow = table.convertRowIndexToModel(viewRow);
-            Object first = table.getModel().getValueAt(modelRow, FIXED_COLS);
-            for (int i = 1; i < numEntries; i++)
-                if (!Objects.equals(first, table.getModel().getValueAt(modelRow, FIXED_COLS + i)))
-                    return true;
-            return false;
+            return rowHasDiff(table.getModel(), modelRow, numEntries);
         }
+    }
 
-        private static String inlineDiff(String val, String ref) {
-            if (val.equals(ref)) return escHtml(val);
-            int pre = prefixLen(val, ref);
-            int suf = suffixLen(val, ref, pre);
-            String head = val.substring(0, pre);
-            String mid  = val.substring(pre, val.length() - suf);
-            String tail = val.substring(val.length() - suf);
-            String result = escHtml(head);
-            if (!mid.isEmpty())
-                result += "<span style='background:#FFE082;color:#000'>" + escHtml(mid) + "</span>";
-            result += escHtml(tail);
-            return result;
-        }
+    /** Shared by the on-screen renderer and the clipboard HTML export. */
+    private static boolean rowHasDiff(TableModel model, int modelRow, int numEntries) {
+        Object first = model.getValueAt(modelRow, FIXED_COLS);
+        for (int i = 1; i < numEntries; i++)
+            if (!Objects.equals(first, model.getValueAt(modelRow, FIXED_COLS + i)))
+                return true;
+        return false;
+    }
 
-        private static int prefixLen(String a, String b) {
-            int n = Math.min(a.length(), b.length());
-            for (int i = 0; i < n; i++) if (a.charAt(i) != b.charAt(i)) return i;
-            return n;
-        }
+    private static String inlineDiff(String val, String ref) {
+        if (val.equals(ref)) return escHtml(val);
+        int pre = prefixLen(val, ref);
+        int suf = suffixLen(val, ref, pre);
+        String head = val.substring(0, pre);
+        String mid  = val.substring(pre, val.length() - suf);
+        String tail = val.substring(val.length() - suf);
+        String result = escHtml(head);
+        if (!mid.isEmpty())
+            result += "<span style=\"background-color:#FFE082;color:#0000CC;text-decoration:underline\">" + escHtml(mid) + "</span>";
+        result += escHtml(tail);
+        return result;
+    }
 
-        private static int suffixLen(String a, String b, int pre) {
-            int max = Math.min(a.length(), b.length()) - pre;
-            int s = 0;
-            while (s < max && a.charAt(a.length() - 1 - s) == b.charAt(b.length() - 1 - s)) s++;
-            return s;
-        }
+    private static int prefixLen(String a, String b) {
+        int n = Math.min(a.length(), b.length());
+        for (int i = 0; i < n; i++) if (a.charAt(i) != b.charAt(i)) return i;
+        return n;
+    }
 
-        private static String str(Object o)    { return o != null ? o.toString().trim() : ""; }
-        private static String escHtml(String s) {
-            return s.replace("&", "&amp;").replace("<", "&lt;")
-                    .replace(">", "&gt;").replace("\n", "<br>");
-        }
+    private static int suffixLen(String a, String b, int pre) {
+        int max = Math.min(a.length(), b.length()) - pre;
+        int s = 0;
+        while (s < max && a.charAt(a.length() - 1 - s) == b.charAt(b.length() - 1 - s)) s++;
+        return s;
+    }
+
+    private static String str(Object o)    { return o != null ? o.toString().trim() : ""; }
+    private static String escHtml(String s) {
+        return s.replace("&", "&amp;").replace("<", "&lt;")
+                .replace(">", "&gt;").replace("\n", "<br>");
     }
 }

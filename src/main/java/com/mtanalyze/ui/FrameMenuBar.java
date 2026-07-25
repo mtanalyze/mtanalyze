@@ -88,6 +88,7 @@ public final class FrameMenuBar {
         Runnable          onExportCsv,
         Runnable          onExportCsvComponents,
         Runnable          onExportMt,
+        Runnable          onExportMtVisible,
         Runnable          onImportSecurities,
         Runnable          onImportCash,
         Runnable          onImportMapping,
@@ -169,7 +170,8 @@ public final class FrameMenuBar {
         exportMenu.setIcon(ToolbarIcons.menuExport());
         exportMenu.add(item("Export CSV...",               ToolbarIcons.menuExport(), null, cb.onExportCsv()));
         exportMenu.add(exportComponentsItem);
-        exportMenu.add(item("Export MT Messages...",       ToolbarIcons.menuExport(), null, cb.onExportMt()));
+        exportMenu.add(item("Export MT Messages (All)...",       ToolbarIcons.menuExport(), null, cb.onExportMt()));
+        exportMenu.add(item("Export MT Messages (Visible)...",   ToolbarIcons.menuExport(), null, cb.onExportMtVisible()));
         exportMenu.add(exportPostingsSeparator);
         exportMenu.add(exportSecuritiesItem);
         exportMenu.add(exportCashItem);

@@ -1289,6 +1289,12 @@ public class MtEntryPanel extends JPanel {
     public JTextField                getSearchField()                        { return finSearchField; }
     public Project                   getProject()                           { return model.getProject(); }
     public List<SwiftMessage>        getLoadedMessages()                    { return model.getLoadedMessages(); }
+    public List<SwiftMessage>        getVisibleMessages()                   {
+        LinkedHashSet<SwiftMessage> visible = new LinkedHashSet<>();
+        for (int viewRow = 0; viewRow < mtEntryTable.getRowCount(); viewRow++)
+            visible.add(model.getMessageForRow(mtEntryTable.convertRowIndexToModel(viewRow)));
+        return new ArrayList<>(visible);
+    }
     public List<ColumnDef>           getColumnDefs()                        { return model.getColumnDefs(); }
     public List<Map<String, String>> getRowData()                           { return model.getRowData(); }
     public List<SwiftTagListBlock>   getFullDisplaySequences()              { return model.getFullDisplaySequences(); }
@@ -1403,8 +1409,14 @@ public class MtEntryPanel extends JPanel {
             }
             super.getTableCellRendererComponent(table, display, isSelected, hasFocus, row, col);
             String raw = value != null ? value.toString() : "";
-            String desc = columnDef.qualifier.isEmpty() ? null
-                    : dict.qualifierValueDescription(columnDef.qualifier, raw);
+            String desc;
+            if ("PSET".equalsIgnoreCase(columnDef.qualifier)) {
+                desc = dict.psetDescription(raw);
+                if (desc == null) desc = dict.qualifierValueDescription(columnDef.qualifier, raw);
+            } else {
+                desc = columnDef.qualifier.isEmpty() ? null
+                        : dict.qualifierValueDescription(columnDef.qualifier, raw);
+            }
             String rawTip = raw.isEmpty() ? null : raw;
             String tip = desc != null ? desc : rawTip;
             setToolTipText(tip);
