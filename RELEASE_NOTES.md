@@ -1,3 +1,99 @@
+# MT Analyze v1.0.9
+
+## Download & Run
+
+**Requirements:** Java 17 or higher
+
+```bash
+java -jar MT-Analyze-1.0.9.jar
+```
+
+---
+
+## Changes
+
+### PSET Directory Lookup
+
+The Entries table and tooltips now resolve **Place of Settlement** BICs (field `95a::PSET//…`) against a bundled directory of ~175 central securities depositories (`pset.csv`), showing the CSD name, market and country instead of a bare BIC. Both 8- and 11-character BICs resolve, falling back from an exact match to the 8-character institution prefix.
+
+### Export Visible MT Messages
+
+**File → Export → Export MT Messages (Visible)…** exports only the rows currently shown in the Entries table — i.e. whatever survives the active filters and search — instead of every loaded message. The existing **Export MT Messages (All)…** item is unchanged.
+
+### Column Chooser — Select All / None per Group
+
+Each column group in the Column Chooser now has **All** / **None** links in its header to toggle every checkbox in that group at once, instead of clicking each column individually.
+
+---
+
+# MT Analyze v1.0.8
+
+## Download & Run
+
+**Requirements:** Java 17 or higher
+
+```bash
+java -jar MT-Analyze-1.0.8.jar
+```
+
+---
+
+## Changes
+
+### New App Icon
+
+The application icon and window icon were redrawn as a bold "MT" mark on a dark-blue rounded square, replacing the previous document-and-magnifying-glass artwork, to match the branding used on the landing page favicon.
+
+---
+
+# MT Analyze v1.0.7
+
+## Download & Run
+
+**Requirements:** Java 17 or higher
+
+```bash
+java -jar MT-Analyze-1.0.7.jar
+```
+
+---
+
+## Changes
+
+### Copy Table in Diff View
+
+The Diff View's right-click menu gained a **Copy Table** item. It copies the comparison table to the clipboard in two formats at once: plain tab-separated text (for pasting into Excel or Notepad) and HTML with the same yellow diff highlighting shown on screen (for pasting a formatted table into Word or Outlook).
+
+---
+
+# MT Analyze v1.0.6
+
+## Download & Run
+
+**Requirements:** Java 17 or higher
+
+```bash
+java -jar MT-Analyze-1.0.6.jar
+```
+
+---
+
+## Changes
+
+### Truncated Message Recovery, Take Two
+
+Messages that are cut off **mid-tag** in block 4 (not just missing the closing `-}`) previously still failed to parse even after the v1.0.4 truncation repair, discarding the entire message. The last incomplete line of block 4 is now dropped and the parse retried, recovering the well-formed tags before the break instead of losing the whole entry.
+
+### Large Single-Column CSV Import Fix
+
+Single-column CSV SWIFT exports are now detected and streamed cell-by-cell during **directory import** as well as direct file load — previously only direct file load used the streaming path, so large CSV exports dropped into a folder import could exhaust memory. CSV files are also now excluded from the "one message per file" assumption directory import otherwise makes.
+
+### Combined Filter OR Mode
+
+Quick-filter OR mode (**Match any filter**) now spans both filter rows: a row is included if *any* active filter matches, whether it's a column drop-filter checkbox or a quick-filter expression. Previously OR mode only combined the quick-filter expressions and always required drop-filters to match separately, which made the OR toggle behave inconsistently once both filter kinds were in use.
+
+---
+
 # MT Analyze v1.0.5
 
 ## Download & Run
