@@ -21,7 +21,7 @@ MT Analyze is a single self-contained JAR — no installation, no admin rights.
 2. Double-click it, or run:
 
 ```bash
-java -jar MT-Analyze-1.0.4.jar
+java -jar MT-Analyze-1.0.9.jar
 ```
 
 ---
@@ -32,7 +32,6 @@ java -jar MT-Analyze-1.0.4.jar
 - **Tag View** — full tag breakdown with ISO 15022 descriptions; enable **Components** to expand multi-part fields.
 - **Diff View** — compare two or more messages; deviating cells highlighted.
 - **Source View** — raw SWIFT message with colour-coded blocks and tags.
-- **Generate MT 544–547 from MT 536** — select any MT 536 transaction entry and generate the matching settlement confirmation.
 
 ---
 
