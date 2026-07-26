@@ -473,6 +473,9 @@ public class MtEntryPanel extends JPanel {
         JMenuItem hide = new JMenuItem("Hide Column",         ToolbarIcons.menuHideColumn());
         hide.addActionListener(ae -> { cd.setVisible(false); rebuildPositionTable(); });
         popup.add(hide);
+        JMenuItem hideEmpty = new JMenuItem("Hide Empty Columns", ToolbarIcons.menuHideColumn());
+        hideEmpty.addActionListener(ae -> hideEmptyColumns());
+        popup.add(hideEmpty);
         JMenuItem colChooserItem = new JMenuItem("Show/Hide Columns…", ToolbarIcons.menuShowColumns());
         colChooserItem.addActionListener(ae -> ColumnChooser.show(
             SwingUtilities.getWindowAncestor(this), model.activeColumnDefs(),
@@ -1169,6 +1172,27 @@ public class MtEntryPanel extends JPanel {
         }
         ordered.addAll(byKey.values());
         cols.clear(); cols.addAll(ordered);
+    }
+
+    /** Hides every currently visible column that has no non-blank value in the currently filtered rows. */
+    private void hideEmptyColumns() {
+        int rowCount = mtEntryTable.getRowCount();
+        if (rowCount == 0) return;
+        List<ColumnDef> visibleDefs = new ArrayList<>();
+        for (ColumnDef cd : model.activeColumnDefs()) if (cd.isVisible()) visibleDefs.add(cd);
+        boolean changed = false;
+        for (int modelCol = 0; modelCol < visibleDefs.size(); modelCol++) {
+            boolean hasValue = false;
+            for (int viewRow = 0; viewRow < rowCount; viewRow++) {
+                int modelRow = mtEntryTable.convertRowIndexToModel(viewRow);
+                Object val = entryTableModel.getValueAt(modelRow, modelCol);
+                if (val != null && !val.toString().isBlank()) { hasValue = true; break; }
+            }
+            if (!hasValue) { visibleDefs.get(modelCol).setVisible(false); changed = true; }
+        }
+        if (!changed) return;
+        rebuildPositionTable();
+        if (model.isSeqMode()) saveColumnPrefs();
     }
 
     public void rebuildPositionTable() {
