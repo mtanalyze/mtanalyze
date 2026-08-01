@@ -353,23 +353,6 @@ public class AccountMappingPanel extends RoundedPanel implements EditMenuContrib
         }
     }
 
-    public String lookupSafeBySecuritiesAccount(String accountNo) {
-        return lookupSafe(accountNo, COL_SECURITIES);
-    }
-
-    public String lookupSafeByCashAccount(String accountNo) {
-        return lookupSafe(accountNo, COL_CASH);
-    }
-
-    private String lookupSafe(String accountNo, int col) {
-        if (accountNo == null || accountNo.isBlank()) return null;
-        for (int r = 0; r < tableModel.getRowCount(); r++) {
-            if (accountNo.equalsIgnoreCase(nvl(tableModel.getValueAt(r, col))))
-                return nvl(tableModel.getValueAt(r, COL_SAFE));
-        }
-        return null;
-    }
-
     private List<String[]> collectEntries() {
         List<String[]> result = new ArrayList<>();
         for (int r = 0; r < tableModel.getRowCount(); r++) {

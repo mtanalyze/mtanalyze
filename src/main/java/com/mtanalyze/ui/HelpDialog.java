@@ -78,7 +78,6 @@ public final class HelpDialog {
 
         return "<html><head>" /* + buildCss(fgHex, bgHex, codeBg, divider, ff, fs) */ + "</head><body>"
             + buildShortcutsSection()
-            + buildExplorerSection()
             + buildSequenceModeSection()
             + buildFilterRowSection()
             + buildQuickFilterSection()
@@ -96,7 +95,6 @@ public final class HelpDialog {
             + "<tr><td><code>Ctrl+Shift+O</code></td><td>Append MT file — add to the current view</td></tr>"
             + "<tr><td><code>Ctrl+R</code></td><td>Reload current file from disk</td></tr>"
             + "<tr><td><code>Ctrl+F</code></td><td>Focus the search field of the active panel</td></tr>"
-            + "<tr><td><code>Ctrl+E</code></td><td>Show / hide the Explorer panel</td></tr>"
             + "<tr><td><code>Ctrl+D</code></td><td>Show / hide the Detail panel</td></tr>"
             + "<tr><td><code>Ctrl+C</code></td><td>Copy selected cell value to clipboard</td></tr>"
             + "<tr><td><code>Space</code></td><td>Move focus to detail panel and select first row</td></tr>"
@@ -197,37 +195,8 @@ public final class HelpDialog {
             + "</table>";
     }
 
-    private static String buildExplorerSection() {
-        return "<h2>Explorer Panel</h2>"
-            + "<p>The Explorer panel on the left side shows a persistent folder tree of SWIFT message files. "
-            + "Toggle it with <code>Ctrl+E</code> or hover over the divider when it is collapsed.</p>"
-            + "<table>"
-            + "<tr><th>Action</th><th>How</th></tr>"
-            + "<tr><td>Add a root folder</td><td>Click the <b>+</b> button in the Explorer header, "
-                + "or drag a folder from the OS file manager onto the panel</td></tr>"
-            + "<tr><td>Open file(s)</td><td>Select one or more files and press <b>Enter</b> or "
-                + "<b>double-click</b>; the Explorer collapses automatically after opening</td></tr>"
-            + "<tr><td>Refresh folder tree</td><td>Click the <b>↺</b> button in the Explorer header</td></tr>"
-            + "<tr><td>Remove a root folder</td><td>Right-click the root folder node and choose "
-                + "<b>Remove from Explorer</b></td></tr>"
-            + "</table>"
-            + "<hr/>";
-    }
-
     private static String buildContextMenuSection() {
         return "<h2>Context Menus (right-click)</h2>"
-            + "<h3>Explorer Panel — file or folder node</h3>"
-            + "<table>"
-            + "<tr><th>Item</th><th>Description</th></tr>"
-            + "<tr><td><b>Use in MT Entries / Use N Files in MT Entries</b></td>"
-                + "<td>Load the selected file(s) into the MT Entries table; Explorer collapses automatically</td></tr>"
-            + "<tr><td><b>View Source</b></td>"
-                + "<td>Open the selected file in a source viewer with syntax highlighting</td></tr>"
-            + "<tr><td><b>Import Directory</b></td>"
-                + "<td>Load all SWIFT files from the selected folder into the current view</td></tr>"
-            + "<tr><td><b>Remove from Explorer</b></td>"
-                + "<td>Remove the root folder from the Explorer tree (files are not deleted)</td></tr>"
-            + "</table>"
             + "<h3>Entries Table — cell</h3>"
             + "<table>"
             + "<tr><th>Item</th><th>Description</th></tr>"
@@ -241,7 +210,6 @@ public final class HelpDialog {
                 + "The correct occurrence is resolved automatically when the same tag appears multiple times.</td></tr>"
             + "<tr><td><b>Export Message</b></td><td>Export the raw SWIFT MT message for this row</td></tr>"
             + "<tr><td><b>Show in Editor</b></td><td>Open the source file in the system default text editor</td></tr>"
-            + "<tr><td><b>Add Bookmark</b></td><td>Add this entry to the bookmark list</td></tr>"
             + "<tr><td><b>Delete Row</b></td><td>Remove the selected row from the current view</td></tr>"
             + "</table>"
             + "<h3>Entries Table — column header</h3>"

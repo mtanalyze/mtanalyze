@@ -23,7 +23,6 @@ import com.prowidesoftware.swift.model.SwiftTagListBlock;
 import com.mtanalyze.parser.HintDictionary;
 import com.mtanalyze.profile.SavedColumnLayouts;
 import com.mtanalyze.profile.SavedQuickFilters;
-import com.mtanalyze.ui.view.MessageSourcePanel;
 import com.mtanalyze.ui.view.RoundedPanel;
 import com.mtanalyze.ui.filter.ColumnFilterRow;
 import com.mtanalyze.ui.filter.FinFilterRow;
@@ -51,7 +50,7 @@ import java.util.prefs.Preferences;
 
 /**
  * Panel that shows the parsed MT entries in a filterable, sortable table.
- * All interactions with the rest of the application (detail panel, bookmarks,
+ * All interactions with the rest of the application (detail panel,
  * file loading) are routed through the {@link Host} callback interface.
  */
 public class MtEntryPanel extends JPanel {
@@ -71,7 +70,6 @@ public class MtEntryPanel extends JPanel {
         void switchDetailCard(String card);
         void onAddNote(int modelRow);
         void onSetNote(int modelRow, String note);
-        void addBookmarkForRow(int modelRow);
         void exportMessageForRow(int modelRow);
         void showAppendTextDialog();
         void setStatus(String message);
@@ -345,7 +343,7 @@ public class MtEntryPanel extends JPanel {
             @Override protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
                 if (!model.allEntries().isEmpty()) return;
-                MessageSourcePanel.paintHintLines(g, this,
+                FrameLayout.paintHintLines(g, this,
                     "Drop a SWIFT MT file here", "to load it into the Entries view");
             }
         };
@@ -529,11 +527,10 @@ public class MtEntryPanel extends JPanel {
         popup.add(clearFiltersItem);
         addFilterModeMenuItem(popup);
 
-        // ── Bookmarks, Notes & Export ─────────────────────────────────────
+        // ── Notes & Export ─────────────────────────────────────────────────
         popup.addSeparator();
         popup.add(makeAddNoteMenuItem(modelRow));
         popup.add(buildAvailableNotesMenu(modelRow));
-        if (host.isPowerUser()) popup.add(makeBookmarkMenuItem(modelRow));
         if (host.isPowerUser()) popup.add(makeExportMessageMenuItem(modelRow));
 
         // ── Destructive ───────────────────────────────────────────────────
@@ -686,12 +683,6 @@ public class MtEntryPanel extends JPanel {
         JMenuItem item = new JMenuItem(truncated ? note.substring(0, 47) + "…" : note);
         item.setToolTipText(truncated ? note : null);
         item.addActionListener(ae -> host.onSetNote(modelRow, note));
-        return item;
-    }
-
-    private JMenuItem makeBookmarkMenuItem(int modelRow) {
-        JMenuItem item = new JMenuItem("Add Bookmark", ToolbarIcons.menuBookmark());
-        item.addActionListener(ae -> host.addBookmarkForRow(modelRow));
         return item;
     }
 
@@ -955,11 +946,6 @@ public class MtEntryPanel extends JPanel {
         if (finFilterRow != null) finFilterRow.appendToFilterByQualifier(qualifier, value);
     }
 
-    public void applyFilterForSafe(String safeValue) {
-        setOrMode(true);
-        if (finFilterRow != null) finFilterRow.setFilterByQualifiers(List.of("SAFE"), safeValue);
-    }
-
     // -----------------------------------------------------------------------
     // Quick-filter profiles
     // -----------------------------------------------------------------------
@@ -1117,11 +1103,13 @@ public class MtEntryPanel extends JPanel {
         int n = mtEntryTable.getColumnModel().getColumnCount();
         if (n == 0) return;
         List<ColumnDef> active = model.activeColumnDefs();
+        Map<String, ColumnDef> byKey = new HashMap<>();
+        for (ColumnDef cd : active) if (cd.isVisible()) byKey.put(cd.key, cd);
         List<ColumnDef> reordered = new ArrayList<>(n);
         for (int i = 0; i < n; i++) {
-            String lbl = String.valueOf(mtEntryTable.getColumnModel().getColumn(i).getHeaderValue());
-            for (ColumnDef cd : active)
-                if (cd.isVisible() && cd.label.equals(lbl)) { reordered.add(cd); break; }
+            String key = String.valueOf(mtEntryTable.getColumnModel().getColumn(i).getIdentifier());
+            ColumnDef cd = byKey.get(key);
+            if (cd != null) reordered.add(cd);
         }
         for (ColumnDef cd : active) if (!cd.isVisible()) reordered.add(cd);
         active.clear(); active.addAll(reordered);
@@ -1198,6 +1186,7 @@ public class MtEntryPanel extends JPanel {
     private void configureTableColumns(List<ColumnDef> visible) {
         for (int i = 0; i < visible.size(); i++) {
             TableColumn col = mtEntryTable.getColumnModel().getColumn(i);
+            col.setIdentifier(visible.get(i).key);
             if (EntryPanelModel.TYPE_COL_KEY.equals(visible.get(i).key)) {
                 col.setPreferredWidth(36);
                 col.setMinWidth(36);
@@ -1301,21 +1290,6 @@ public class MtEntryPanel extends JPanel {
     public SwiftMessage              getMessageForRow(int r)                { return model.getMessageForRow(r); }
     public com.mtanalyze.model.Entry getEntryForRow(int r)                 { return model.getEntryForRow(r); }
     public String                    getRowValue(int r, String key)         { return model.getRowValue(r, key); }
-    public boolean                   isFileLoaded(String path)              { return model.isFileLoaded(path); }
-    public int                       findRowByTagValue(String q, String v)  { return model.findRowByTagValue(q, v); }
-    public int                       findRowByFileAndIsin(String f, String i){ return model.findRowByFileAndIsin(f, i); }
-    public String                    findValueByTagQualifier(int r, String t, String q) { return model.findValueByTagQualifier(r, t, q); }
-
-    public void selectAndScrollToModelRow(int modelRow) {
-        int viewRow = mtEntryTable.convertRowIndexToView(modelRow);
-        if (viewRow < 0) {
-            host.setStatus("Bookmark entry is currently filtered out.");
-            return;
-        }
-        mtEntryTable.setRowSelectionInterval(viewRow, viewRow);
-        mtEntryTable.scrollRectToVisible(mtEntryTable.getCellRect(viewRow, 0, true));
-        mtEntryTable.requestFocusInWindow();
-    }
 
     /** Shows/hides power-user toolbar components. */
     public void applyPowerUserMode(boolean on) {

@@ -25,9 +25,6 @@ import java.util.Objects;
 
 /**
  * A parsed SWIFT message with its provenance metadata.
- * {@code persistedFile} starts as {@code sourceFile} for {@link MessageOrigin#SWIFT_FILE}
- * origins and {@code null} otherwise.  It can be set later when the user exports the message
- * to a SWIFT file, which is a prerequisite for bookmarking.
  */
 public class SwiftMessage {
 

@@ -400,8 +400,9 @@ public class MtParser {
         String key = baseKey + "\t" + n;
 
         if (knownColKeys.add(key)) {
-            String label = seqLabel.trim() + " / " + tagName.trim()
-                    + (qualifier.isEmpty() ? "" : " / " + qualifier.trim())
+            String prefix = seqLabel.isEmpty() ? "" : seqLabel.trim() + "/";
+            String label = prefix + tagName.trim()
+                    + (qualifier.isEmpty() ? "" : ":" + qualifier.trim())
                     + (n > 1 ? " (" + n + ")" : "");
             columnDefs.add(new ColumnDef(seqLabel, tagName, qualifier, n, label));
         }

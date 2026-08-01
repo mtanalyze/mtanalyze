@@ -47,7 +47,6 @@ public final class ToolbarIcons {
     private static final Color COLOR_DESTRUCTIVE = new Color(220,  53,  69);  // delete / remove
     private static final Color COLOR_FILTER      = new Color(251, 140,   0);  // filter actions
     private static final Color COLOR_EXPORT      = new Color(  0, 150, 136);  // export / import arrows
-    public static final Color COLOR_BOOKMARK    = new Color(210, 158,  55);  // bookmarks
     private static final Color COLOR_RELOAD      = new Color( 21, 128, 196);  // reload / refresh
     private static final Color COLOR_PLUS        = new Color( 52, 168,  83);  // add / create actions
     private static final Color COLOR_COLUMN      = new Color(100,  96, 205);  // column / layout actions
@@ -430,7 +429,7 @@ public final class ToolbarIcons {
         });
     }
 
-    // ── Bookmark / Export / Delete ────────────────────────────────────
+    // ── Export / Delete ───────────────────────────────────────────────
 
     public static Icon menuNote() {
         return makeMenuIcon((g, c) -> {
@@ -448,17 +447,6 @@ public final class ToolbarIcons {
             g.drawLine(5, 6, 12, 6);
             g.drawLine(5, 9, 12, 9);
             g.drawLine(5, 12, 9, 12);
-        });
-    }
-
-    public static Icon menuBookmark() {
-        return makeMenuIcon((g, c) -> {
-            g.setColor(COLOR_BOOKMARK);
-            Path2D.Float ribbon = new Path2D.Float();
-            ribbon.moveTo(3, 1);  ribbon.lineTo(13, 1);
-            ribbon.lineTo(13, 15); ribbon.lineTo(8, 11);
-            ribbon.lineTo(3, 15); ribbon.closePath();
-            g.fill(ribbon);
         });
     }
 
@@ -486,7 +474,7 @@ public final class ToolbarIcons {
         });
     }
 
-    // ── Explorer ──────────────────────────────────────────────────────
+    // ── File / directory ──────────────────────────────────────────────
 
     public static Icon menuOpen() {
         return makeMenuIcon((g, c) -> {
@@ -496,15 +484,6 @@ public final class ToolbarIcons {
             Path2D.Float tab = new Path2D.Float();
             tab.moveTo(1, 6); tab.lineTo(1, 4); tab.lineTo(5, 4); tab.lineTo(7, 6);
             g.draw(tab);
-        });
-    }
-
-    public static Icon menuViewInEditor() {
-        return makeMenuIcon((g, c) -> {
-            setupDocIcon(g, c);
-            g.drawLine(4, 7, 8, 7);
-            g.drawLine(4, 9, 11, 9);
-            g.drawLine(4, 11, 9, 11);
         });
     }
 
@@ -519,15 +498,6 @@ public final class ToolbarIcons {
             g.setColor(COLOR_EXPORT);
             g.drawLine(13, 2, 13, 11);
             g.fillPolygon(new int[]{10, 13, 15}, new int[]{8, 12, 8}, 3);
-        });
-    }
-
-    public static Icon menuRemove() {
-        return makeMenuIcon((g, c) -> {
-            g.setColor(COLOR_DESTRUCTIVE);
-            g.setStroke(new BasicStroke(1.5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-            g.drawOval(1, 1, 14, 14);
-            g.drawLine(4, 8, 12, 8);
         });
     }
 
@@ -672,49 +642,6 @@ public final class ToolbarIcons {
                 try { painter.paint(g2, c, x, y); } finally { g2.dispose(); }
             }
         };
-    }
-
-    public static Icon folderIcon() {
-        return makeThemedIcon(20, 18, (g2, c, x, y) -> {
-            g2.setStroke(new BasicStroke(1.5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-            g2.drawLine(x + 1,  y + 6, x + 1,  y + 4);
-            g2.drawLine(x + 1,  y + 4, x + 8,  y + 4);
-            g2.drawLine(x + 8,  y + 4, x + 10, y + 6);
-            g2.drawRoundRect(x + 1, y + 6, 18, 11, 2, 2);
-        });
-    }
-
-    public static Icon bookmarkRibbon() {
-        return makeThemedIcon(14, 20, (g2, c, x, y) -> {
-            g2.setColor(COLOR_BOOKMARK);
-            int[] px = {x + 1, x + 13, x + 13, x + 7, x + 1};
-            int[] py = {y,     y,       y + 20,  y + 14, y + 20};
-            g2.fillPolygon(px, py, 5);
-        });
-    }
-
-    public static Icon securitiesIcon() {
-        return makeThemedIcon(20, 20, (g2, c, x, y) -> {
-            g2.setStroke(new BasicStroke(1.4f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-            g2.drawRect(x + 2, y + 1, 14, 18);
-            g2.drawLine(x + 5, y + 6,  x + 13, y + 6);
-            g2.drawLine(x + 5, y + 10, x + 13, y + 10);
-            g2.drawLine(x + 5, y + 14, x + 13, y + 14);
-        });
-    }
-
-    public static Icon cashIcon() {
-        return makeThemedIcon(20, 20, (g2, c, x, y) -> {
-            g2.setStroke(new BasicStroke(1.4f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-            g2.drawRect(x + 2, y + 1, 14, 18);
-            g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-            g2.setFont(g2.getFont().deriveFont(Font.BOLD, 12f));
-            FontMetrics fm = g2.getFontMetrics();
-            String euro = "€";
-            int tx = x + 2 + (14 - fm.stringWidth(euro)) / 2;
-            int ty = y + 1 + (18 + fm.getAscent() - fm.getDescent()) / 2;
-            g2.drawString(euro, tx, ty);
-        });
     }
 
     public static Icon clipboardIcon() {

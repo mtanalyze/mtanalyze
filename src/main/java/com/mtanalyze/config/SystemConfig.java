@@ -30,6 +30,7 @@ public final class SystemConfig {
 
     private static final String KEY_MT_EXPORT_SENDER   = "mt.export.sender";
     private static final String KEY_MT_EXPORT_RECEIVER = "mt.export.receiver";
+    private static final String KEY_EXPERIMENTAL_MODE  = "experimental.mode";
 
     private static final int DEFAULT_MAX_ENTRIES = 1000;
 
@@ -75,7 +76,12 @@ public final class SystemConfig {
     }
 
     public boolean isExperimentalMode() {
-        return Boolean.parseBoolean(props.getProperty("experimental.mode", "false"));
+        return Boolean.parseBoolean(props.getProperty(KEY_EXPERIMENTAL_MODE, "false"));
+    }
+
+    public void setExperimentalMode(boolean on) throws IOException {
+        props.setProperty(KEY_EXPERIMENTAL_MODE, String.valueOf(on));
+        persist();
     }
 
     public int getMaxEntries() {
@@ -97,18 +103,22 @@ public final class SystemConfig {
     }
 
     public void saveMtExportBic(String sender, String receiver) throws IOException {
-        if (configFile == null)
-            throw new IOException("Cannot resolve location for " + FILE_NAME + ".");
         setOrRemove(KEY_MT_EXPORT_SENDER,   sender);
         setOrRemove(KEY_MT_EXPORT_RECEIVER, receiver);
-        Files.createDirectories(configFile.getParent());
-        try (OutputStream out = Files.newOutputStream(configFile)) {
-            props.store(out, "MT Analyze configuration file");
-        }
+        persist();
     }
 
     private void setOrRemove(String key, String value) {
         if (value == null || value.isEmpty()) props.remove(key);
         else                                  props.setProperty(key, value);
+    }
+
+    private void persist() throws IOException {
+        if (configFile == null)
+            throw new IOException("Cannot resolve location for " + FILE_NAME + ".");
+        Files.createDirectories(configFile.getParent());
+        try (OutputStream out = Files.newOutputStream(configFile)) {
+            props.store(out, "MT Analyze configuration file");
+        }
     }
 }

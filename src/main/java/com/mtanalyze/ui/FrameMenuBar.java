@@ -47,22 +47,15 @@ public final class FrameMenuBar {
         JMenu                 exportMenu,
         JSeparator            importExportLeadingSeparator,
         JSeparator            importExportMiddleSeparator,
+        JSeparator            importExportTrailingSeparator,
         JSeparator            viewMenuSeparator,
-        JMenuItem             importSecuritiesItem,
-        JMenuItem             importCashItem,
         JMenuItem             importMappingItem,
-        JSeparator            importPostingsSeparator,
-        JMenuItem             exportSecuritiesItem,
-        JMenuItem             exportCashItem,
+        JSeparator            importMappingSeparator,
         JMenuItem             exportMappingItem,
-        JSeparator            exportPostingsSeparator,
+        JSeparator            exportMappingSeparator,
         JButton               searchButton,
-        JCheckBoxMenuItem     menuExplorer,
-        JCheckBoxMenuItem     menuBookmarks,
-        JCheckBoxMenuItem     menuSecurities,
-        JCheckBoxMenuItem     menuCash,
+        JCheckBoxMenuItem     menuNotifications,
         JCheckBoxMenuItem     menuAccountMapping,
-        JRadioButtonMenuItem  menuNotifications,
         JRadioButtonMenuItem  menuTags,
         JRadioButtonMenuItem  menuCompare,
         JRadioButtonMenuItem  menuSource,
@@ -89,11 +82,7 @@ public final class FrameMenuBar {
         Runnable          onExportCsvComponents,
         Runnable          onExportMt,
         Runnable          onExportMtVisible,
-        Runnable          onImportSecurities,
-        Runnable          onImportCash,
         Runnable          onImportMapping,
-        Runnable          onExportSecurities,
-        Runnable          onExportCash,
         Runnable          onExportMapping,
         Runnable          onShowSettings,
         Runnable          onShowSearchPopup,
@@ -101,14 +90,10 @@ public final class FrameMenuBar {
         Runnable          onAbout,
         // Edit menu (rebuilt on open)
         Consumer<JMenu>   populateEditMenu,
-        // View menu – left sidebar / bottom
-        Runnable          onToggleExplorer,
-        Runnable          onToggleBookmarks,
-        Runnable          onToggleSecurities,
-        Runnable          onToggleCash,
+        // View menu – bottom panel
+        Runnable          onToggleNotifications,
         Runnable          onToggleAccountMapping,
         // View menu – right detail panel
-        Runnable          onShowNotifications,
         Runnable          onShowTags,
         Runnable          onShowDiff,
         Runnable          onShowSource,
@@ -145,10 +130,8 @@ public final class FrameMenuBar {
 
         JMenuItem exportComponentsItem = item("Export CSV (Components)...", ToolbarIcons.menuExport(), null, cb.onExportCsvComponents());
 
-        JMenuItem importSecuritiesItem = item("Import Securities Postings CSV…", ToolbarIcons.menuOpen(),       null, cb.onImportSecurities());
-        JMenuItem importCashItem       = item("Import Cash Postings CSV…",       ToolbarIcons.menuOpen(),       null, cb.onImportCash());
         JMenuItem importMappingItem    = item("Import Account Mapping CSV…",     ToolbarIcons.menuImportFile(), null, cb.onImportMapping());
-        JPopupMenu.Separator importPostingsSeparator = new JPopupMenu.Separator();
+        JPopupMenu.Separator importMappingSeparator = new JPopupMenu.Separator();
 
         JMenu importMenu = new JMenu("Import");
         importMenu.setIcon(ToolbarIcons.menuImportFile());
@@ -156,15 +139,11 @@ public final class FrameMenuBar {
         importMenu.add(item("Append MT File...",           ToolbarIcons.menuAppendFile(), null, cb.onAppendFile()));
         importMenu.add(item("Import Directory...",         ToolbarIcons.menuImportDir(),  null, cb.onImportDirectory()));
         importMenu.add(reloadItem);
-        importMenu.add(importPostingsSeparator);
-        importMenu.add(importSecuritiesItem);
-        importMenu.add(importCashItem);
+        importMenu.add(importMappingSeparator);
         importMenu.add(importMappingItem);
 
-        JMenuItem exportSecuritiesItem = item("Export Securities Postings CSV…", ToolbarIcons.menuExport(), null, cb.onExportSecurities());
-        JMenuItem exportCashItem       = item("Export Cash Postings CSV…",       ToolbarIcons.menuExport(), null, cb.onExportCash());
         JMenuItem exportMappingItem    = item("Export Account Mapping CSV…",     ToolbarIcons.menuExport(), null, cb.onExportMapping());
-        JPopupMenu.Separator exportPostingsSeparator = new JPopupMenu.Separator();
+        JPopupMenu.Separator exportMappingSeparator = new JPopupMenu.Separator();
 
         JMenu exportMenu = new JMenu("Export");
         exportMenu.setIcon(ToolbarIcons.menuExport());
@@ -172,9 +151,7 @@ public final class FrameMenuBar {
         exportMenu.add(exportComponentsItem);
         exportMenu.add(item("Export MT Messages (All)...",       ToolbarIcons.menuExport(), null, cb.onExportMt()));
         exportMenu.add(item("Export MT Messages (Visible)...",   ToolbarIcons.menuExport(), null, cb.onExportMtVisible()));
-        exportMenu.add(exportPostingsSeparator);
-        exportMenu.add(exportSecuritiesItem);
-        exportMenu.add(exportCashItem);
+        exportMenu.add(exportMappingSeparator);
         exportMenu.add(exportMappingItem);
 
         fileMenu.add(newItem);
@@ -189,7 +166,8 @@ public final class FrameMenuBar {
         fileMenu.add(importMenu);
         fileMenu.add(importExportMiddleSeparator);
         fileMenu.add(exportMenu);
-        fileMenu.addSeparator();
+        JPopupMenu.Separator importExportTrailingSeparator = new JPopupMenu.Separator();
+        fileMenu.add(importExportTrailingSeparator);
         JMenuItem validateFileItem = item("Validate SWIFT File...", ToolbarIcons.menuSearch(), null, cb.onValidateFile());
         fileMenu.add(validateFileItem);
         JMenuItem attachBlock5Item = item("Attach Block 5...", ToolbarIcons.menuAppendFile(), null, cb.onAttachBlock5());
@@ -200,35 +178,15 @@ public final class FrameMenuBar {
         fileMenu.add(item("Exit",        ToolbarIcons.menuExit(),     "ctrl Q", () -> System.exit(0)));
 
         // ── View menu ─────────────────────────────────────────────────────
-        JCheckBoxMenuItem menuExplorer = new JCheckBoxMenuItem("Explorer", true);
-        menuExplorer.setIcon(ToolbarIcons.folderIcon());
-        menuExplorer.setAccelerator(KeyStroke.getKeyStroke("ctrl 1"));
-        menuExplorer.addActionListener(e -> cb.onToggleExplorer().run());
-
-        JCheckBoxMenuItem menuBookmarks = new JCheckBoxMenuItem("Bookmarks", false);
-        menuBookmarks.setIcon(ToolbarIcons.bookmarkRibbon());
-        menuBookmarks.setAccelerator(KeyStroke.getKeyStroke("ctrl 2"));
-        menuBookmarks.addActionListener(e -> cb.onToggleBookmarks().run());
-
-        JCheckBoxMenuItem menuSecurities = new JCheckBoxMenuItem("Securities Posting", false);
-        menuSecurities.setIcon(ToolbarIcons.securitiesIcon());
-        menuSecurities.addActionListener(e -> cb.onToggleSecurities().run());
-        menuSecurities.setVisible(false);
-
-        JCheckBoxMenuItem menuCash = new JCheckBoxMenuItem("Cash Posting", false);
-        menuCash.setIcon(ToolbarIcons.cashIcon());
-        menuCash.addActionListener(e -> cb.onToggleCash().run());
-        menuCash.setVisible(false);
+        JCheckBoxMenuItem menuNotifications = new JCheckBoxMenuItem("Notifications", false);
+        menuNotifications.setIcon(ToolbarIcons.notificationIcon());
+        menuNotifications.setAccelerator(KeyStroke.getKeyStroke("ctrl 3"));
+        menuNotifications.addActionListener(e -> cb.onToggleNotifications().run());
 
         JCheckBoxMenuItem menuAccountMapping = new JCheckBoxMenuItem("Account Mapping", false);
         menuAccountMapping.setIcon(ToolbarIcons.accountMappingIcon());
         menuAccountMapping.addActionListener(e -> cb.onToggleAccountMapping().run());
         menuAccountMapping.setVisible(false);
-
-        JRadioButtonMenuItem menuNotifications = new JRadioButtonMenuItem("Notifications");
-        menuNotifications.setIcon(ToolbarIcons.notificationIcon());
-        menuNotifications.setAccelerator(KeyStroke.getKeyStroke("ctrl 3"));
-        menuNotifications.addActionListener(e -> cb.onShowNotifications().run());
 
         JRadioButtonMenuItem menuTags = new JRadioButtonMenuItem("Tags");
         menuTags.setIcon(ToolbarIcons.tagsIcon());
@@ -251,7 +209,6 @@ public final class FrameMenuBar {
         menuComponents.addActionListener(e -> cb.onShowComponents().run());
 
         ButtonGroup detailViewGroup = new ButtonGroup();
-        detailViewGroup.add(menuNotifications);
         detailViewGroup.add(menuTags);
         detailViewGroup.add(menuCompare);
         detailViewGroup.add(menuSource);
@@ -260,13 +217,9 @@ public final class FrameMenuBar {
 
         JPopupMenu.Separator viewMenuSeparator = new JPopupMenu.Separator();
         JMenu viewMenu = new JMenu("View");
-        viewMenu.add(menuExplorer);
-        viewMenu.add(menuBookmarks);
-        viewMenu.add(menuSecurities);
-        viewMenu.add(menuCash);
+        viewMenu.add(menuNotifications);
         viewMenu.add(menuAccountMapping);
         viewMenu.add(viewMenuSeparator);
-        viewMenu.add(menuNotifications);
         viewMenu.add(menuTags);
         viewMenu.add(menuCompare);
         viewMenu.add(menuSource);
@@ -311,12 +264,13 @@ public final class FrameMenuBar {
 
         return new Items(menuBar, openSessionItem, saveItem, saveAsMtItem, reloadItem, exportComponentsItem, validateFileItem, attachBlock5Item,
             importMenu, exportMenu, importExportLeadingSeparator, importExportMiddleSeparator,
+            importExportTrailingSeparator,
             viewMenuSeparator,
-            importSecuritiesItem, importCashItem, importMappingItem, importPostingsSeparator,
-            exportSecuritiesItem, exportCashItem, exportMappingItem, exportPostingsSeparator,
+            importMappingItem, importMappingSeparator,
+            exportMappingItem, exportMappingSeparator,
             searchBtn,
-            menuExplorer, menuBookmarks, menuSecurities, menuCash, menuAccountMapping,
-            menuNotifications, menuTags, menuCompare, menuSource, menuComponents);
+            menuNotifications, menuAccountMapping,
+            menuTags, menuCompare, menuSource, menuComponents);
     }
 
     // -----------------------------------------------------------------------
@@ -338,5 +292,36 @@ public final class FrameMenuBar {
         if (accel != null) i.setAccelerator(KeyStroke.getKeyStroke(accel));
         i.addActionListener(e -> action.run());
         return i;
+    }
+
+    /**
+     * Replaces the quick-filter / column-layout widgets belonging to {@code oldPanel} with
+     * {@code newPanel}'s own, at the same position — used when the active document tab changes.
+     */
+    public static void swapEntryPanelWidgets(JMenuBar bar, MtEntryPanel oldPanel, MtEntryPanel newPanel) {
+        if (oldPanel == newPanel) return;
+        int idx = bar.getComponentZOrder(oldPanel.colLayoutIconLabel);
+        bar.remove(oldPanel.colLayoutIconLabel);
+        bar.remove(oldPanel.colLayoutGap1);
+        bar.remove(oldPanel.columnLayoutCombo);
+        bar.remove(oldPanel.colLayoutGapAfter);
+        bar.remove(oldPanel.quickFilterIconLabel);
+        bar.remove(oldPanel.quickFilterGap1);
+        bar.remove(oldPanel.quickFilterCombo);
+        bar.remove(oldPanel.filterModeBtn);
+        bar.remove(oldPanel.quickFilterGapAfter);
+        bar.remove(oldPanel.seqModeBtn);
+        bar.add(newPanel.colLayoutIconLabel,   idx++);
+        bar.add(newPanel.colLayoutGap1,        idx++);
+        bar.add(newPanel.columnLayoutCombo,    idx++);
+        bar.add(newPanel.colLayoutGapAfter,    idx++);
+        bar.add(newPanel.quickFilterIconLabel, idx++);
+        bar.add(newPanel.quickFilterGap1,      idx++);
+        bar.add(newPanel.quickFilterCombo,     idx++);
+        bar.add(newPanel.filterModeBtn,        idx++);
+        bar.add(newPanel.quickFilterGapAfter,  idx++);
+        bar.add(newPanel.seqModeBtn,           idx);
+        bar.revalidate();
+        bar.repaint();
     }
 }

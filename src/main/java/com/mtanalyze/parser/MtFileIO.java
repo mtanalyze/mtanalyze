@@ -110,6 +110,7 @@ public final class MtFileIO {
     }
 
     private static String matchMtTypeByTags(String body) {
+        if (tagPresent(body, ":16R:SUBBAL"))   return "535";
         if (tagPresent(body, ":16R:SUBSAFE"))  return "536";
         if (tagPresent(body, ":16R:TRANSDET")) return "537";
         if (tagPresent(body, ":60F:") || tagPresent(body, ":60M:")) return "940";

@@ -36,7 +36,7 @@ final class SettingsDialog {
 
     private SettingsDialog() {}
 
-    record Config(CsvKeys csv, ThemeConfig theme, MtKeys mt, PowerUserConfig powerUser) {
+    record Config(CsvKeys csv, ThemeConfig theme, MtKeys mt, PowerUserConfig powerUser, ExperimentalConfig experimental) {
         record CsvKeys(String fieldSep, String decimalSep) {
         }
 
@@ -55,6 +55,14 @@ final class SettingsDialog {
         record PowerUserConfig(String prefKey, Runnable onChange) {
         }
 
+        record ExperimentalConfig(Supplier<Boolean> isEnabled, ExperimentalSaver save, Runnable onChange) {
+        }
+
+        @FunctionalInterface
+        interface ExperimentalSaver {
+            void save(boolean enabled) throws IOException;
+        }
+
     }
 
     private record FormFields(JTextField fieldSep, JTextField decimalSep, JTextField sender, JTextField receiver) {
@@ -69,6 +77,7 @@ final class SettingsDialog {
         String currentTheme = prefs.get(cfg.theme.prefKey, "Dark");
         JCheckBox darkModeCheck  = new JCheckBox("Dark Mode",       MtAnalyzeFrame.isDarkTheme(currentTheme));
         JCheckBox powerUserCheck = new JCheckBox("Power User Mode", prefs.getBoolean(cfg.powerUser.prefKey, false));
+        JCheckBox experimentalCheck = new JCheckBox("Experimental Features", cfg.experimental.isEnabled.get());
 
         JTextField fieldSepField = new JTextField(
                 prefs.get(cfg.csv.fieldSep, CsvExport.DEFAULT_FIELD_SEP), 4);
@@ -82,7 +91,7 @@ final class SettingsDialog {
                 fieldSepField, decimalSepField,
                 senderField, receiverField);
 
-        JPanel generalPanel = buildGeneralPanel(darkModeCheck, powerUserCheck, fields);
+        JPanel generalPanel = buildGeneralPanel(darkModeCheck, powerUserCheck, experimentalCheck, fields);
 
         // ---- User Dictionary tab ----
         DefaultTableModel dictModel = new DefaultTableModel(
@@ -119,13 +128,14 @@ final class SettingsDialog {
         buttons.add(cancel);
 
         ok.addActionListener(e -> {
-            if (!saveSettings(dlg, prefs, cfg, fields)) return;
+            if (!saveSettings(dlg, prefs, cfg, fields, experimentalCheck.isSelected())) return;
             if (!saveDictEntries(dlg, dictTable, dictModel, dict)) return;
             String newTheme = darkModeCheck.isSelected() ? "Dark" : "Light";
             prefs.put(cfg.theme.prefKey, newTheme);
             cfg.theme.onChange.accept(newTheme);
             prefs.putBoolean(cfg.powerUser.prefKey, powerUserCheck.isSelected());
             cfg.powerUser.onChange.run();
+            cfg.experimental.onChange.run();
             dlg.dispose();
         });
         cancel.addActionListener(e -> dlg.dispose());
@@ -144,7 +154,7 @@ final class SettingsDialog {
     // -----------------------------------------------------------------------
 
     private static JPanel buildGeneralPanel(JCheckBox darkModeCheck, JCheckBox powerUserCheck,
-                                             FormFields fields) {
+                                             JCheckBox experimentalCheck, FormFields fields) {
         FormPanel fp = new FormPanel();
         JPanel form = fp.panel;
         GridBagConstraints lc = fp.lc;
@@ -174,6 +184,9 @@ final class SettingsDialog {
         FormPanel.addRow(form, lc, fc, 8,  "Sender BIC:",         fields.sender);
         FormPanel.addRow(form, lc, fc, 9,  "Receiver BIC:",       fields.receiver);
 
+        addSectionSeparator(form, 10, "Experimental");
+        FormPanel.addRow(form, lc, fc, 11, "",                    experimentalCheck);
+
         return form;
     }
 
@@ -182,7 +195,8 @@ final class SettingsDialog {
     private static final String CSV_FILE_FILTER = "CSV files (*.csv)";
     private static final String COL_QUALIFIER   = "Qualifier";
 
-    private static boolean saveSettings(JDialog dlg, Preferences prefs, Config cfg, FormFields fields) {
+    private static boolean saveSettings(JDialog dlg, Preferences prefs, Config cfg, FormFields fields,
+                                         boolean experimentalEnabled) {
         String fieldSep   = fields.fieldSep.getText();
         String decimalSep = fields.decimalSep.getText();
         String sender     = fields.sender.getText().trim().toUpperCase(Locale.ROOT);
@@ -203,9 +217,10 @@ final class SettingsDialog {
         prefs.put(cfg.csv.decimalSep,   decimalSep);
         try {
             cfg.mt.save.save(sender, receiver);
+            cfg.experimental.save.save(experimentalEnabled);
         } catch (IOException ex) {
             JOptionPane.showMessageDialog(dlg,
-                    "Could not save MT export BICs to properties file:\n" + ex.getMessage(),
+                    "Could not save settings to properties file:\n" + ex.getMessage(),
                     "Save Error", JOptionPane.ERROR_MESSAGE);
             return false;
         }

@@ -261,56 +261,6 @@ final class EntryPanelModel {
         };
     }
 
-    public boolean isFileLoaded(String filePath) {
-        return allEntries.stream().anyMatch(e -> filePath.equals(e.getValue(FILE_COL_KEY)));
-    }
-
-    public int findRowByTagValue(String qualifier, String value) {
-        for (ColumnDef cd : allColumnDefs) {
-            if ("20C".equals(cd.tagName)) {
-                for (int i = 0; i < allEntries.size(); i++) {
-                    String val = allEntries.get(i).data().get(cd.key);
-                    if (val != null && !val.isEmpty()
-                            && (cd.qualifier.equals(qualifier) || hasQualifierPrefix(val, qualifier))
-                            && value.equals(cleanTagValue(val, qualifier)))
-                        return i;
-                }
-            }
-        }
-        return -1;
-    }
-
-    public int findRowByFileAndIsin(String filePath, String isin) {
-        for (ColumnDef cd : allColumnDefs) {
-            if ("35B".equals(cd.tagName)) {
-                for (int i = 0; i < allEntries.size(); i++) {
-                    Entry e   = allEntries.get(i);
-                    String val = e.data().get(cd.key);
-                    if (val != null && !val.isEmpty()
-                            && (cd.qualifier.equals("ISIN") || hasQualifierPrefix(val, "ISIN"))
-                            && isin.equals(cleanTagValue(val, "ISIN"))
-                            && filePath.equals(e.getValue(FILE_COL_KEY)))
-                        return i;
-                }
-            }
-        }
-        return -1;
-    }
-
-    public String findValueByTagQualifier(int modelRow, String tagName, String qualifier) {
-        if (modelRow < 0 || modelRow >= allEntries.size()) return "";
-        Map<String, String> row = allEntries.get(modelRow).data();
-        for (ColumnDef cd : allColumnDefs) {
-            if (cd.tagName.equals(tagName)) {
-                String val = row.get(cd.key);
-                if (val != null && !val.isEmpty()
-                        && (cd.qualifier.equals(qualifier) || hasQualifierPrefix(val, qualifier)))
-                    return cleanTagValue(val, qualifier);
-            }
-        }
-        return "";
-    }
-
     // ── Column management (package-private, used by panel's prefs methods) ─
 
     private void mergeColumnDefs(List<ColumnDef> incoming) {
@@ -388,13 +338,6 @@ final class EntryPanelModel {
         return "";
     }
 
-    static boolean hasQualifierPrefix(String val, String qualifier) {
-        return val.startsWith(":" + qualifier + "//")
-            || val.startsWith(":" + qualifier + "/")
-            || val.startsWith(qualifier + " ")
-            || val.startsWith(qualifier + "\t");
-    }
-
     static String cleanTagValue(String val, String qualifier) {
         if (val == null || val.isEmpty()) return "";
         String s   = val.trim();
@@ -434,7 +377,7 @@ final class EntryPanelModel {
         if (p.length != 4 || p[1].startsWith("_")) return null;
         int occ;
         try { occ = Integer.parseInt(p[3]); } catch (NumberFormatException e) { return null; }
-        String label = p[1] + (p[2].isEmpty() ? "" : " / " + p[2]) + (occ > 1 ? " (" + occ + ")" : "");
+        String label = p[1] + (p[2].isEmpty() ? "" : ":" + p[2]) + (occ > 1 ? " (" + occ + ")" : "");
         return new ColumnDef("", p[1], p[2], occ, label);
     }
 }

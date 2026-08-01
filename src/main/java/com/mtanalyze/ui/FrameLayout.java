@@ -15,8 +15,6 @@
  */
 package com.mtanalyze.ui;
 
-import com.mtanalyze.ui.view.MessageSourcePanel;
-
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.text.JTextComponent;
@@ -133,8 +131,67 @@ public final class FrameLayout {
         btns.add(closeBtn);
 
         JPanel wrapper = new JPanel(new BorderLayout(0, 0));
-        wrapper.add(MessageSourcePanel.buildSectionHeader(titleLabel, btns), BorderLayout.NORTH);
+        wrapper.add(buildSectionHeader(titleLabel, btns), BorderLayout.NORTH);
         wrapper.add(content, BorderLayout.CENTER);
         return wrapper;
+    }
+
+    // -----------------------------------------------------------------------
+    // Section headers
+    // -----------------------------------------------------------------------
+
+    public static JPanel buildSectionHeader(String titleText, JPanel btns) {
+        JLabel label = new JLabel(titleText);
+        label.setFont(label.getFont().deriveFont(Font.BOLD));
+        return buildSectionHeader(label, btns);
+    }
+
+    public static JPanel buildSectionHeader(JComponent title, JPanel btns) {
+        JPanel header = new JPanel(new BorderLayout());
+        header.setBorder(new javax.swing.border.AbstractBorder() {
+            @Override public void paintBorder(Component c, Graphics g, int x, int y, int w, int h) {
+                Color col = UIManager.getColor("Separator.foreground");
+                if (col != null) { g.setColor(col); g.drawLine(x, y + h - 1, x + w - 1, y + h - 1); }
+            }
+            @Override public Insets getBorderInsets(Component c)              { return new Insets(3, 6, 3, 4); }
+            @Override public Insets getBorderInsets(Component c, Insets ins)  { ins.set(3, 6, 3, 4); return ins; }
+        });
+        header.add(title, BorderLayout.WEST);
+        if (btns != null) header.add(btns, BorderLayout.EAST);
+        return header;
+    }
+
+    // -----------------------------------------------------------------------
+    // Hint painting
+    // -----------------------------------------------------------------------
+
+    /** Paints centred, muted hint text (e.g. "Drop a file here") inside an empty component. */
+    public static void paintHintLines(Graphics g, Component c, String... lines) {
+        Graphics2D g2 = (Graphics2D) g.create();
+        try {
+            g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+            Color fg = UIManager.getColor("Label.disabledForeground");
+            g2.setColor(fg != null ? fg : Color.GRAY);
+            FontMetrics fm = g2.getFontMetrics();
+            int lineH = fm.getHeight();
+            int blockH = lines.length * lineH + (lines.length - 1) * 4;
+            int y = hintTopY(c, blockH) + fm.getAscent();
+            for (String line : lines) {
+                g2.drawString(line, (c.getWidth() - fm.stringWidth(line)) / 2, y);
+                y += lineH + 4;
+            }
+        } finally {
+            g2.dispose();
+        }
+    }
+
+    private static int hintTopY(Component c, int blockH) {
+        Component root = SwingUtilities.getRoot(c);
+        if (root != null && c.isShowing()) {
+            Point p = SwingUtilities.convertPoint(c, 0, 0, root);
+            int localY = root.getHeight() / 3 - p.y - blockH / 2;
+            return Math.max(4, Math.min(localY, c.getHeight() - blockH - 4));
+        }
+        return (c.getHeight() - blockH) / 2;
     }
 }

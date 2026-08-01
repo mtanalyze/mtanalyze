@@ -17,39 +17,32 @@ package com.mtanalyze.ui;
 
 import com.mtanalyze.export.CsvExport;
 import com.mtanalyze.ui.view.AccountMappingPanel;
-import com.mtanalyze.ui.view.BookmarkPanel;
-import com.mtanalyze.ui.view.CashPostingPanel;
-import com.mtanalyze.ui.view.MessageSourcePanel;
-import com.mtanalyze.ui.view.SecuritiesPostingPanel;
+import com.mtanalyze.ui.view.NotificationPanel;
 
 import javax.swing.*;
 import java.awt.*;
 import java.util.Map;
-import java.util.function.Consumer;
 import java.util.prefs.Preferences;
 
+/** Collapsible bottom panel hosting Notifications and the Account Mapping table. */
 class BottomPanelController {
 
-    static final String BOOKMARKS       = "bookmarks_bottom";
-    static final String SECURITIES      = "securities_bottom";
-    static final String CASH            = "cash_bottom";
+    static final String NOTIFICATIONS   = "notifications_bottom";
     static final String ACCOUNT_MAPPING = "acctmap_bottom";
 
-    private static final String PREF_SPLIT   = "bookmark_split";
+    private static final String PREF_SPLIT   = "bottom_panel_split";
     private static final String TOOLTIP_AND  = "Quick Filter: AND – click to switch to OR";
     private static final String TOOLTIP_OR   = "Quick Filter: OR – click to switch to AND";
 
-    private final BookmarkPanel           bookmarkPanel;
+    private final NotificationPanel       notificationPanel;
     private final AccountMappingPanel     accountMappingPanel;
-    private final SecuritiesPostingPanel  securitiesPanel;
-    private final CashPostingPanel        cashPanel;
     private final Map<String, EditMenuContributor> contributors;
 
     private final Preferences prefs;
     private final Runnable    onSync;
 
     private boolean    collapsed  = true;
-    private String     activeCard = BOOKMARKS;
+    private String     activeCard = ACCOUNT_MAPPING;
 
     private JPanel     wrapperPanel;
     private CardLayout cardLayout;
@@ -57,33 +50,18 @@ class BottomPanelController {
     private JLabel     titleLabel;
     private JButton    pasteBtn;
     private JButton    filterModeBtn;
+    private JPanel     clearAllWrap;
     private JSplitPane split;
 
-    BottomPanelController(BookmarkPanel bookmarkPanel,
-                          Consumer<String> onApplySafeFilter,
-                          CsvExport.Prefs csvPrefs,
+    BottomPanelController(CsvExport.Prefs csvPrefs,
                           Preferences prefs,
                           String accountMappingPrefKey,
                           Runnable onSync) {
-        this.bookmarkPanel = bookmarkPanel;
-        this.prefs         = prefs;
-        this.onSync        = onSync;
-
+        this.prefs = prefs;
+        this.onSync = onSync;
+        notificationPanel   = new NotificationPanel();
         accountMappingPanel = new AccountMappingPanel(prefs, accountMappingPrefKey, csvPrefs);
-        securitiesPanel = new SecuritiesPostingPanel(csvPrefs,
-            cv -> { String safe = accountMappingPanel.lookupSafeBySecuritiesAccount(cv);
-                    if (safe != null && !safe.isEmpty()) onApplySafeFilter.accept(safe); },
-            cv -> { String safe = accountMappingPanel.lookupSafeBySecuritiesAccount(cv);
-                    return safe != null && !safe.isEmpty(); });
-        cashPanel = new CashPostingPanel(csvPrefs,
-            cv -> { String safe = accountMappingPanel.lookupSafeByCashAccount(cv);
-                    if (safe != null && !safe.isEmpty()) onApplySafeFilter.accept(safe); },
-            cv -> { String safe = accountMappingPanel.lookupSafeByCashAccount(cv);
-                    return safe != null && !safe.isEmpty(); });
         contributors = Map.of(
-            BOOKMARKS,       bookmarkPanel,
-            SECURITIES,      securitiesPanel,
-            CASH,            cashPanel,
             ACCOUNT_MAPPING, accountMappingPanel
         );
     }
@@ -91,12 +69,10 @@ class BottomPanelController {
     JPanel buildPanel() {
         cardLayout = new CardLayout();
         cardPanel  = new JPanel(cardLayout);
-        cardPanel.add(bookmarkPanel,       BOOKMARKS);
-        cardPanel.add(securitiesPanel,     SECURITIES);
-        cardPanel.add(cashPanel,           CASH);
+        cardPanel.add(notificationPanel,   NOTIFICATIONS);
         cardPanel.add(accountMappingPanel, ACCOUNT_MAPPING);
 
-        titleLabel = new JLabel(MtAnalyzeFrame.BOOKMARKS);
+        titleLabel = new JLabel(getTitle(activeCard));
         titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD));
 
         JButton closeBtn = FrameLayout.makeCloseButton(this::collapse);
@@ -109,7 +85,7 @@ class BottomPanelController {
         pasteBtn.setOpaque(false);
         pasteBtn.setPreferredSize(new Dimension(20, 20));
         pasteBtn.setVisible(false);
-        pasteBtn.addActionListener(e -> onPasteClick());
+        pasteBtn.addActionListener(e -> accountMappingPanel.pasteFromClipboard());
 
         filterModeBtn = new JButton(ToolbarIcons.filterAnd());
         filterModeBtn.setToolTipText(TOOLTIP_AND);
@@ -121,13 +97,19 @@ class BottomPanelController {
         filterModeBtn.setVisible(false);
         filterModeBtn.addActionListener(e -> onFilterModeClick());
 
+        clearAllWrap = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        clearAllWrap.setOpaque(false);
+        clearAllWrap.add(notificationPanel.getClearAllButton());
+        clearAllWrap.setVisible(false);
+
         JPanel closeBtnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 2, 2));
         closeBtnPanel.setOpaque(false);
+        closeBtnPanel.add(clearAllWrap);
         closeBtnPanel.add(filterModeBtn);
         closeBtnPanel.add(pasteBtn);
         closeBtnPanel.add(closeBtn);
 
-        JPanel titleBar = MessageSourcePanel.buildSectionHeader(titleLabel, closeBtnPanel);
+        JPanel titleBar = FrameLayout.buildSectionHeader(titleLabel, closeBtnPanel);
 
         wrapperPanel = new JPanel(new BorderLayout(0, 0));
         wrapperPanel.add(titleBar,  BorderLayout.NORTH);
@@ -144,12 +126,12 @@ class BottomPanelController {
 
     void show(String card) {
         activeCard = card;
-        if (BOOKMARKS.equals(card)) bookmarkPanel.refresh();
         if (cardLayout != null && cardPanel != null) cardLayout.show(cardPanel, card);
         if (titleLabel != null) titleLabel.setText(getTitle(card));
-        boolean hasFilter = SECURITIES.equals(card) || CASH.equals(card) || ACCOUNT_MAPPING.equals(card);
-        if (pasteBtn != null) pasteBtn.setVisible(hasFilter);
-        updateFilterModeBtn(card, hasFilter);
+        boolean isAcctMap = ACCOUNT_MAPPING.equals(card);
+        if (pasteBtn != null) pasteBtn.setVisible(isAcctMap);
+        updateFilterModeBtn(isAcctMap);
+        if (clearAllWrap != null) clearAllWrap.setVisible(NOTIFICATIONS.equals(card));
         if (wrapperPanel != null) wrapperPanel.setMinimumSize(new Dimension(0, 150));
         int saved = prefs.getInt(PREF_SPLIT, 200);
         SwingUtilities.invokeLater(() -> {
@@ -178,62 +160,29 @@ class BottomPanelController {
     String  getActiveCard()                            { return activeCard; }
     EditMenuContributor getContributor(String card)    { return contributors.get(card); }
 
+    NotificationPanel      notificationPanel()         { return notificationPanel; }
     AccountMappingPanel    accountMappingPanel()       { return accountMappingPanel; }
-    SecuritiesPostingPanel securitiesPanel()           { return securitiesPanel; }
-    CashPostingPanel       cashPanel()                 { return cashPanel; }
     JTable                 accountMappingTable()       { return accountMappingPanel.getTable(); }
 
     // -----------------------------------------------------------------------
 
     private static String getTitle(String card) {
-        if (BOOKMARKS.equals(card))       return MtAnalyzeFrame.BOOKMARKS;
-        if (CASH.equals(card))            return "Cash Posting";
-        if (ACCOUNT_MAPPING.equals(card)) return "Account Mapping";
-        return "Securities Posting";
+        if (NOTIFICATIONS.equals(card)) return "Notifications";
+        return "Account Mapping";
     }
 
-    private void updateFilterModeBtn(String card, boolean hasFilter) {
+    private void updateFilterModeBtn(boolean isAcctMap) {
         if (filterModeBtn == null) return;
-        filterModeBtn.setVisible(hasFilter);
-        if (hasFilter) {
-            boolean or = getOrMode(card);
+        filterModeBtn.setVisible(isAcctMap);
+        if (isAcctMap) {
+            boolean or = accountMappingPanel.isFinFilterOrMode();
             filterModeBtn.setIcon(or ? ToolbarIcons.filterOr() : ToolbarIcons.filterAnd());
             filterModeBtn.setToolTipText(or ? TOOLTIP_OR : TOOLTIP_AND);
         }
     }
 
-    private boolean getOrMode(String card) {
-        if (SECURITIES.equals(card)) return securitiesPanel.isFinFilterOrMode();
-        if (CASH.equals(card))       return cashPanel.isFinFilterOrMode();
-        return accountMappingPanel.isFinFilterOrMode();
-    }
-
-    private void onPasteClick() {
-        if      (SECURITIES.equals(activeCard))      securitiesPanel.pasteFromClipboard();
-        else if (CASH.equals(activeCard))            cashPanel.pasteFromClipboard();
-        else if (ACCOUNT_MAPPING.equals(activeCard)) accountMappingPanel.pasteFromClipboard();
-    }
-
     private void onFilterModeClick() {
-        boolean or;
-        switch (activeCard) {
-            case SECURITIES -> {
-                securitiesPanel.setFinFilterOrMode(!securitiesPanel.isFinFilterOrMode());
-                or = securitiesPanel.isFinFilterOrMode();
-            }
-            case CASH -> {
-                cashPanel.setFinFilterOrMode(!cashPanel.isFinFilterOrMode());
-                or = cashPanel.isFinFilterOrMode();
-            }
-            case ACCOUNT_MAPPING -> {
-                accountMappingPanel.setFinFilterOrMode(!accountMappingPanel.isFinFilterOrMode());
-                or = accountMappingPanel.isFinFilterOrMode();
-            }
-            default -> {
-                return;
-            }
-        }
-        filterModeBtn.setIcon(or ? ToolbarIcons.filterOr() : ToolbarIcons.filterAnd());
-        filterModeBtn.setToolTipText(or ? TOOLTIP_OR : TOOLTIP_AND);
+        accountMappingPanel.setFinFilterOrMode(!accountMappingPanel.isFinFilterOrMode());
+        updateFilterModeBtn(true);
     }
 }

@@ -16,57 +16,37 @@
 package com.mtanalyze.ui;
 
 
-import com.mtanalyze.model.Entry;
-import com.mtanalyze.model.EntrySelectionListener;
-import com.mtanalyze.model.MessageOrigin;
 import com.mtanalyze.model.SwiftMessage;
-import com.mtanalyze.bookmark.Bookmark;
 import com.mtanalyze.config.SystemConfig;
 import com.mtanalyze.parser.MtFileIO;
 import com.mtanalyze.parser.MtParser;
 import com.mtanalyze.parser.HintDictionary;
-import com.mtanalyze.bookmark.BookmarkManager;
 import com.mtanalyze.export.CsvExport;
 import com.mtanalyze.export.MtExport;
 import com.mtanalyze.export.ProjectIO;
-import com.mtanalyze.ui.view.BookmarkPanel;
-import com.mtanalyze.ui.view.MessageSourcePanel;
 import com.mtanalyze.ui.view.NotificationPanel;
-import com.mtanalyze.ui.view.SourcePanel;
-import com.mtanalyze.ui.view.TagView;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
-import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
-import java.awt.event.KeyEvent;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
 import java.util.*;
 import java.util.List;
 import java.util.prefs.Preferences;
 
 public class MtAnalyzeFrame extends JFrame {
 
-    private static final String MSG_SINGULAR = " message";
-    private static final String MSG_PLURAL   = " messages";
-    public static final String BOOKMARKS = "Bookmarks";
     private static final String APP_NAME                 = "MT Analyze";
     private static final String GITHUB_URL               = "https://github.com/mtanalyze/mtanalyze";
     private static final String DEVELOPER_URL            = "https://www.linkedin.com/in/ralfschwarz/";
-    private static final String LABEL_SECURITIES        = "Securities Posting";
-    private static final String LABEL_CASH              = "Cash Posting";
     private static final String LABEL_ACCOUNT_MAPPING   = "Account Mapping";
-    private static final String PASTE_MT_SNIPPET        = "Paste MT Snippet";
+    private static final String LABEL_NOTIFICATIONS     = "Notifications";
+    static final String PASTE_MT_SNIPPET                = "Paste MT Snippet";
     private static final String MENU_PASTE              = "Paste";
-
-    // -----------------------------------------------------------------------
-    private final List<EntrySelectionListener> selectionListeners = new ArrayList<>();
 
     // -----------------------------------------------------------------------
     private final transient SystemConfig        config    = new SystemConfig();
@@ -74,12 +54,13 @@ public class MtAnalyzeFrame extends JFrame {
     private final transient MtExport            mtExport    = new MtExport();
     private final transient ImportService       importService = new ImportService();
     private final transient HintDictionary      dict          = new HintDictionary();
-    private final transient FileImporter        importer;
 
     // UI fields
     // -----------------------------------------------------------------------
-    private final MtEntryPanel       entryPanel;
-    private TagView            tagPanel;
+    private JTabbedPane        tabs;
+    private JPanel             eastSlot;
+    private JPanel             statusRight;
+    private transient MtEntryPanel menuBarEntryPanel;
     private JLabel             statusLabel;
     private JMenuItem          reloadItem;
     private JMenuItem          openSessionItem;
@@ -92,16 +73,12 @@ public class MtAnalyzeFrame extends JFrame {
     private JMenu              exportMenu;
     private JSeparator         importExportLeadingSeparator;
     private JSeparator         importExportMiddleSeparator;
+    private JSeparator         importExportTrailingSeparator;
     private JSeparator         viewMenuSeparator;
-    private JMenuItem          importSecuritiesItem;
-    private JMenuItem          importCashItem;
     private JMenuItem          importMappingItem;
-    private JSeparator         importPostingsSeparator;
-    private JMenuItem          exportSecuritiesItem;
-    private JMenuItem          exportCashItem;
+    private JSeparator         importMappingSeparator;
     private JMenuItem          exportMappingItem;
-    private JSeparator         exportPostingsSeparator;
-    private File               currentSessionFile;
+    private JSeparator         exportMappingSeparator;
 
     private static final Preferences PREFS = Preferences.userNodeForPackage(MtAnalyzeFrame.class);
     private static final String PREF_COL_ORDER  = "col_order";
@@ -121,44 +98,22 @@ public class MtAnalyzeFrame extends JFrame {
     private static final String PREF_USER_DICT             = "user_qualifier_values";
     private static final String PREF_QUICK_FILTER_PROFILES = "quick_filter_profiles";
     private static final String PREF_COL_LAYOUT_PROFILES   = "col_layout_profiles";
-    private static final String PREF_EXPLORER_ROOTS        = "explorer_roots";
-    private static final String PREF_EXPLORER_SPLIT        = "explorer_split";
-    private static final String PREF_BOOKMARKS             = "bookmarks";
     private static final String PREF_POWER_USER            = "power_user";
     private static final String PREF_ACCOUNT_MAPPING       = "account_mapping";
-    private static final String NAV_CARD_EXPLORER       = "explorer";
     private static final String THEME_LIGHT             = "Light";
 
     private JButton    menuSearchBtn;
 
-    private MessageSourcePanel           messageSourcePanel;
-    private BookmarkPanel              bookmarkPanel;
     private transient BottomPanelController      bottomCtrl;
-    private JPanel         navPanel;
-    private CardLayout     navCardLayout;
-    private JCheckBoxMenuItem    menuExplorer;
-    private JCheckBoxMenuItem    menuBookmarks;
-    private JCheckBoxMenuItem    menuSecurities;
-    private JCheckBoxMenuItem    menuCash;
+    private JCheckBoxMenuItem    menuNotifications;
     private JCheckBoxMenuItem    menuAccountMapping;
-    private JRadioButtonMenuItem menuNotifications;
     private JRadioButtonMenuItem menuTags;
     private JRadioButtonMenuItem menuCompare;
     private JRadioButtonMenuItem menuSource;
     private JRadioButtonMenuItem menuComponents;
-    private ToolWindowButton  explorerTwBtn;
-    private ToolWindowButton  bookmarksTwBtn;
-    private JSplitPane    explorerSplit;
 
-    private ToolWindowButton       securitiesTwBtn;
-    private ToolWindowButton       cashTwBtn;
+    private ToolWindowButton       notificationsTwBtn;
     private ToolWindowButton       accountMappingTwBtn;
-    private transient DetailPanelController  detailCtrl;
-    private boolean       explorerCollapsed    = false;
-    private final transient BookmarkManager bookmarkManager;
-
-    /** The table that last received focus – drives the Edit menu content. */
-    private JTable focusedTable;
 
     private static final String SEQ_KEY            = MtParser.SEQ_KEY;
     private static final String ERROR_TITLE         = "Error";
@@ -177,91 +132,7 @@ public class MtAnalyzeFrame extends JFrame {
         } else {
             dict.loadUserEntriesFromFile();
         }
-        bookmarkManager = new BookmarkManager(PREFS, PREF_BOOKMARKS);
-        entryPanel = new MtEntryPanel(createEntryPanelHost(), PREFS,
-            new MtEntryPanel.PrefKeys(PREF_COL_ORDER, PREF_COL_VIS,
-                                      PREF_QUICK_FILTER_PROFILES, PREF_COL_LAYOUT_PROFILES), dict);
-        importer = new FileImporter(createImportContext());
         initUI();
-    }
-
-    private void setSaveAsMtEnabled(boolean enabled) {
-        if (saveAsMtItem != null) saveAsMtItem.setEnabled(enabled);
-    }
-
-    private MtEntryPanel.Host createEntryPanelHost() {
-        return new MtEntryPanel.Host() {
-            @Override public void onRowSelected(int modelRow) {
-                detailCtrl.expandIfNeeded();
-                dispatchSingleEntry(modelRow);
-                setSaveAsMtEnabled(true);
-            }
-            @Override public void onMultipleRowsSelected(List<Entry> entries) {
-                switchDetailCard(DetailPanelController.COMPARE);
-                detailCtrl.expandIfNeeded();
-                for (EntrySelectionListener l : selectionListeners) l.onMultipleEntries(entries);
-                setSaveAsMtEnabled(true);
-            }
-            @Override public void onRowDeselected() {
-                collapseDetailPanel();
-                dispatchDeselect();
-                setSaveAsMtEnabled(false);
-            }
-            @Override public void onFilesDropped(List<File> files) { appendDroppedFiles(files); }
-            @Override public boolean isPowerUser() { return PREFS.getBoolean(PREF_POWER_USER, false); }
-            @Override public boolean isExperimentalMode() { return config.isExperimentalMode(); }
-            @Override public JTable getDetailTable() { return tagPanel.getTable(); }
-            @Override public void focusDetailTag(ColumnDef cd) { tagPanel.focusTag(cd); }
-            @Override public void switchDetailCard(String card) { MtAnalyzeFrame.this.switchDetailCard(card); }
-            @Override public void onAddNote(int modelRow) {
-                Entry entry = entryPanel.getEntryForRow(modelRow);
-                if (entry == null) return;
-                entry.data().putIfAbsent(Entry.NOTE_COL_KEY, "");
-                detailCtrl.expandIfNeeded();
-                switchDetailCard(DetailPanelController.INSPECTOR);
-                dispatchSingleEntry(modelRow);
-                tagPanel.activateNoteEditing();
-            }
-            @Override public void onSetNote(int modelRow, String note) {
-                Entry entry = entryPanel.getEntryForRow(modelRow);
-                if (entry == null) return;
-                entry.data().put(Entry.NOTE_COL_KEY, note);
-                int colIdx = findPositionColumnIndex(Entry.NOTE_COL_KEY);
-                if (colIdx >= 0)
-                    entryPanel.getTable().getModel().setValueAt(note, modelRow, colIdx);
-                detailCtrl.expandIfNeeded();
-                switchDetailCard(DetailPanelController.INSPECTOR);
-                dispatchSingleEntry(modelRow);
-                tagPanel.activateNoteEditing();
-            }
-            @Override public void addBookmarkForRow(int modelRow) { addBookmarkFromRow(modelRow); }
-            @Override public void exportMessageForRow(int modelRow) {
-                mtExport.exportSingle(MtAnalyzeFrame.this,
-                    entryPanel.getMessageForRow(modelRow).raw(),
-                    config.getMtExportSender(),
-                    config.getMtExportReceiver(),
-                    entryPanel.getRowValue(modelRow, EntryPanelModel.FILE_COL_KEY),
-                    statusLabel::setText);
-            }
-            @Override public void showAppendTextDialog() { MtAnalyzeFrame.this.showAppendTextDialog(); }
-            @Override public void setStatus(String message) { if (statusLabel != null) statusLabel.setText(message); }
-        };
-    }
-
-    private TagView.Host createTagPanelHost() {
-        return new TagView.Host() {
-            @Override public boolean isPowerUser() { return MtAnalyzeFrame.this.isPowerUser(); }
-            @Override public JMenuItem makeReferenceSearchItem(String value) { return MtAnalyzeFrame.this.makeReferenceSearchItem(value); }
-            @Override public JMenuItem makeCopyCellItem(JTable t, int vr, int vc) { return MtAnalyzeFrame.this.makeCopyCellItem(t, vr, vc); }
-            @Override public JMenuItem makeCopyTableItem(JTable t) { return MtAnalyzeFrame.this.makeCopyTableItem(t); }
-            @Override public void showAddToDictionaryDialog(String q, String v) { HintDictionaryDialog.showAddEntry(MtAnalyzeFrame.this, q, v, dict); }
-            @Override public void appendToEntryFilterByQualifier(String q, String v) { entryPanel.appendToEntryFilterByQualifier(q, v); }
-            @Override public void onDetailValueEdited(DefaultTableModel m, int r, String v) { MtAnalyzeFrame.this.onDetailValueEdited(m, r, v); }
-        };
-    }
-
-    private void tagPanelRebuild(boolean withComponents) {
-        tagPanel.rebuildModel(withComponents);
     }
 
     private void initUI() {
@@ -269,42 +140,81 @@ public class MtAnalyzeFrame extends JFrame {
         setSize(1280, 820);
         setLocationRelativeTo(null);
         setupIcons();
-        entryPanel.init();
-        setupMenuBar();
-        tagPanel = new TagView(createTagPanelHost(), PREFS, dict);
-        selectionListeners.add(tagPanel);
-        tagPanel.setOnComponentsToggled(active -> {
-            if (Boolean.TRUE.equals(active)) switchToComponents();
-            else                             deactivateComponents(true);
-        });
-        trackFocus(tagPanel.getTable());
-        bindLeftToPositionTable();
-        trackFocus(entryPanel.getTable());
-        JPanel tranListPanel  = entryPanel.buildContentPanel();
-        JLabel entriesTitle   = new JLabel("MT Entries");
-        entriesTitle.setFont(entriesTitle.getFont().deriveFont(Font.BOLD));
-        JButton appendBtn = new JButton("+");
-        appendBtn.setMargin(new Insets(1, 5, 1, 5));
-        appendBtn.setToolTipText("Append file (Ctrl+Shift+O)");
-        appendBtn.addActionListener(e -> onAppendFile());
-        JButton pasteBtn = new JButton(ToolbarIcons.clipboardIcon());
-        pasteBtn.setMargin(new Insets(1, 4, 1, 4));
-        pasteBtn.setToolTipText(PASTE_MT_SNIPPET);
-        pasteBtn.addActionListener(e -> showAppendTextDialog());
-        JPanel entriesWrapper = FrameLayout.wrapDetailCard(tranListPanel, entriesTitle, this::onNew, appendBtn, pasteBtn);
-        detailCtrl = new DetailPanelController(tagPanel, this::syncDetailMenuItems);
-        JPanel detailCardPanel = detailCtrl.buildCardPanel();
-        selectionListeners.add(detailCtrl.sourcePanel());
-        selectionListeners.add(detailCtrl.diffPanel());
-        JSplitPane innerSplit = buildInnerSplit(entriesWrapper, detailCardPanel);
-        JSplitPane outerSplit = buildOuterSplit(innerSplit);
         setupStatusBar();
-        assembleMainLayout(outerSplit);
+        bottomCtrl = buildBottomCtrl();
+        tabs = new JTabbedPane();
+        tabs.addChangeListener(this::onTabChanged);
+        Document first = createDocument();
+        addDocumentTab(first);
+        menuBarEntryPanel = first.entryPanel();
+        setupMenuBar();
+        eastSlot = new JPanel(new BorderLayout());
+        eastSlot.add(first.detailCtrl().buildDetailBar(), BorderLayout.CENTER);
+        assembleMainLayout(tabs, eastSlot);
         applyPowerUserMode();
         applyExperimentalMode();
         bindGlobalShortcuts();
-        SwingUtilities.invokeLater(this::collapseExplorer);
-        SwingUtilities.invokeLater(this::collapseDetailPanel);
+        SwingUtilities.invokeLater(first::collapseDetailPanel);
+    }
+
+    /** Resolves the document behind the currently selected tab. */
+    private Document activeDocument() {
+        Component sel = tabs.getSelectedComponent();
+        return sel == null ? null : (Document) ((JComponent) sel).getClientProperty(Document.class);
+    }
+
+    private Document addDocumentTab(Document doc) {
+        JComponent root = doc.rootComponent();
+        root.putClientProperty(Document.class, doc);
+        tabs.addTab(doc.title(), root);
+        tabs.setTabComponentAt(tabs.indexOfComponent(root), buildTabHeader(doc));
+        tabs.setSelectedComponent(root);
+        return doc;
+    }
+
+    private static final Object TAB_LABEL_KEY = new Object();
+
+    private JComponent buildTabHeader(Document doc) {
+        JLabel label = new JLabel(doc.title());
+        JButton close = FrameLayout.makeCloseButton(() -> closeTab(doc));
+        JPanel header = new JPanel(new BorderLayout(4, 0));
+        header.setOpaque(false);
+        header.add(label,  BorderLayout.CENTER);
+        header.add(close,  BorderLayout.EAST);
+        doc.rootComponent().putClientProperty(TAB_LABEL_KEY, label);
+        return header;
+    }
+
+    /** Closes a tab; a fresh empty document is opened if that was the last one. */
+    private void closeTab(Document doc) {
+        tabs.remove(doc.rootComponent());
+        if (tabs.getTabCount() == 0) addDocumentTab(createDocument());
+    }
+
+    /** Runs on every tab switch: pushes the newly active document's state into the shared chrome. */
+    private void onTabChanged(javax.swing.event.ChangeEvent e) {
+        // Fires once synchronously from addDocumentTab() while initUI() is still assembling the
+        // chrome for the very first tab (eastSlot/statusRight don't exist yet) — nothing to swap.
+        if (eastSlot == null || statusRight == null) return;
+        Document doc = activeDocument();
+        if (doc == null) return;
+        onDocumentStateChanged(doc);
+
+        eastSlot.removeAll();
+        eastSlot.add(doc.detailCtrl().buildDetailBar(), BorderLayout.CENTER);
+        eastSlot.revalidate();
+        eastSlot.repaint();
+
+        FrameMenuBar.swapEntryPanelWidgets(getJMenuBar(), menuBarEntryPanel, doc.entryPanel());
+        menuBarEntryPanel = doc.entryPanel();
+
+        statusRight.removeAll();
+        statusRight.add(doc.entryPanel().rowCountLabel);
+        statusRight.revalidate();
+        statusRight.repaint();
+
+        String title = doc.title();
+        setTitle("Untitled".equals(title) ? APP_NAME : APP_NAME + " — " + title);
     }
 
     private void setupIcons() {
@@ -314,8 +224,45 @@ public class MtAnalyzeFrame extends JFrame {
         setIconImages(icons);
     }
 
+    private BottomPanelController buildBottomCtrl() {
+        CsvExport.Prefs postingCsvPrefs = new CsvExport.Prefs(PREFS, PREF_CSV_FIELD_SEP, PREF_CSV_DECIMAL_SEP);
+        BottomPanelController ctrl = new BottomPanelController(
+            postingCsvPrefs, PREFS, PREF_ACCOUNT_MAPPING, this::syncBottomTwButtons);
+        ctrl.notificationPanel().setOnAdded(() -> {
+            if (notificationsTwBtn != null) notificationsTwBtn.setBadge(true);
+        });
+        return ctrl;
+    }
+
+    private Document createDocument() {
+        return new Document(this, PREFS,
+            new MtEntryPanel.PrefKeys(PREF_COL_ORDER, PREF_COL_VIS, PREF_QUICK_FILTER_PROFILES, PREF_COL_LAYOUT_PROFILES),
+            dict, config, importService, mtExport, bottomCtrl,
+            statusLabel::setText, this::isPowerUser, this::onDocumentStateChanged);
+    }
+
+    /** Pushes a document's enablement/detail-card state into the shared chrome, if it's the active one. */
+    private void onDocumentStateChanged(Document d) {
+        updateTabTitle(d);
+        if (d != activeDocument()) return;
+        if (reloadItem   != null) reloadItem  .setEnabled(d.isReloadable());
+        if (saveItem     != null) saveItem    .setEnabled(d.hasContent());
+        if (saveAsMtItem != null) saveAsMtItem.setEnabled(d.hasSelection());
+        String card = d.detailActiveCard();
+        if (menuTags       != null) menuTags      .setSelected(d.isTagsActive());
+        if (menuCompare    != null) menuCompare   .setSelected(DetailPanelController.COMPARE.equals(card));
+        if (menuSource     != null) menuSource    .setSelected(DetailPanelController.EDITOR.equals(card));
+        if (menuComponents != null) menuComponents.setSelected(d.isComponentsActive());
+    }
+
+    /** Keeps a tab's header label in sync with its document's current title, active or not. */
+    private void updateTabTitle(Document d) {
+        Object label = d.rootComponent().getClientProperty(TAB_LABEL_KEY);
+        if (label instanceof JLabel l) l.setText(d.title());
+    }
+
     private void setupMenuBar() {
-        FrameMenuBar.Items items = FrameMenuBar.build(entryPanel, createMenuCallbacks());
+        FrameMenuBar.Items items = FrameMenuBar.build(menuBarEntryPanel, createMenuCallbacks());
         setJMenuBar(items.menuBar());
         openSessionItem      = items.openSessionItem();
         saveItem             = items.saveItem();
@@ -328,22 +275,15 @@ public class MtAnalyzeFrame extends JFrame {
         exportMenu              = items.exportMenu();
         importExportLeadingSeparator = items.importExportLeadingSeparator();
         importExportMiddleSeparator  = items.importExportMiddleSeparator();
+        importExportTrailingSeparator = items.importExportTrailingSeparator();
         viewMenuSeparator            = items.viewMenuSeparator();
-        importSecuritiesItem    = items.importSecuritiesItem();
-        importCashItem          = items.importCashItem();
         importMappingItem       = items.importMappingItem();
-        importPostingsSeparator = items.importPostingsSeparator();
-        exportSecuritiesItem    = items.exportSecuritiesItem();
-        exportCashItem          = items.exportCashItem();
+        importMappingSeparator  = items.importMappingSeparator();
         exportMappingItem       = items.exportMappingItem();
-        exportPostingsSeparator = items.exportPostingsSeparator();
+        exportMappingSeparator  = items.exportMappingSeparator();
         menuSearchBtn        = items.searchButton();
-        menuExplorer         = items.menuExplorer();
-        menuBookmarks        = items.menuBookmarks();
-        menuSecurities       = items.menuSecurities();
-        menuCash             = items.menuCash();
-        menuAccountMapping   = items.menuAccountMapping();
         menuNotifications    = items.menuNotifications();
+        menuAccountMapping   = items.menuAccountMapping();
         menuTags             = items.menuTags();
         menuCompare          = items.menuCompare();
         menuSource           = items.menuSource();
@@ -363,35 +303,27 @@ public class MtAnalyzeFrame extends JFrame {
             this::onReloadFile,
             this::onValidateFile,
             this::onAttachBlock5,
-            () -> csvExport.export(this, entryPanel.getColumnDefs(), entryPanel.getRowData(), statusLabel::setText, csvPrefs),
-            () -> csvExport.exportComponents(this, entryPanel.getFullDisplaySequences(), entryPanel.getRowData(), SEQ_KEY, statusLabel::setText, csvPrefs),
-            () -> mtExport.export(this, entryPanel.getLoadedMessages().stream().map(SwiftMessage::raw).toList(),
+            () -> csvExport.export(this, activeDocument().entryPanel().getColumnDefs(), activeDocument().entryPanel().getRowData(), statusLabel::setText, csvPrefs),
+            () -> csvExport.exportComponents(this, activeDocument().entryPanel().getFullDisplaySequences(), activeDocument().entryPanel().getRowData(), SEQ_KEY, statusLabel::setText, csvPrefs),
+            () -> mtExport.export(this, activeDocument().entryPanel().getLoadedMessages().stream().map(SwiftMessage::raw).toList(),
                                   config.getMtExportSender(), config.getMtExportReceiver(),
                                   statusLabel::setText),
-            () -> mtExport.export(this, entryPanel.getVisibleMessages().stream().map(SwiftMessage::raw).toList(),
+            () -> mtExport.export(this, activeDocument().entryPanel().getVisibleMessages().stream().map(SwiftMessage::raw).toList(),
                                   config.getMtExportSender(), config.getMtExportReceiver(),
                                   statusLabel::setText),
-            () -> bottomCtrl.securitiesPanel().showLoadDialog(),
-            () -> bottomCtrl.cashPanel().showLoadDialog(),
             () -> bottomCtrl.accountMappingPanel().showImportDialog(),
-            () -> bottomCtrl.securitiesPanel().showExportDialog(),
-            () -> bottomCtrl.cashPanel().showExportDialog(),
             () -> bottomCtrl.accountMappingPanel().showExportDialog(),
             this::showSettings,
             this::showSearchPopup,
             () -> HelpDialog.show(this),
             this::showAboutDialog,
             this::populateEditMenu,
-            this::switchNavPanel,
-            () -> bottomCtrl.toggle(BottomPanelController.BOOKMARKS),
-            () -> bottomCtrl.toggle(BottomPanelController.SECURITIES),
-            () -> bottomCtrl.toggle(BottomPanelController.CASH),
+            () -> bottomCtrl.toggle(BottomPanelController.NOTIFICATIONS),
             () -> bottomCtrl.toggle(BottomPanelController.ACCOUNT_MAPPING),
-            () -> switchDetailCard(DetailPanelController.NOTIFICATIONS),
-            () -> switchDetailCard(DetailPanelController.INSPECTOR),
-            () -> switchDetailCard(DetailPanelController.COMPARE),
-            () -> switchDetailCard(DetailPanelController.EDITOR),
-            this::switchToComponents
+            () -> activeDocument().switchDetailCard(DetailPanelController.INSPECTOR),
+            () -> activeDocument().switchDetailCard(DetailPanelController.COMPARE),
+            () -> activeDocument().switchDetailCard(DetailPanelController.EDITOR),
+            () -> activeDocument().switchToComponents()
         );
     }
 
@@ -400,36 +332,21 @@ public class MtAnalyzeFrame extends JFrame {
             new SettingsDialog.Config.CsvKeys(PREF_CSV_FIELD_SEP, PREF_CSV_DECIMAL_SEP),
             new SettingsDialog.Config.ThemeConfig(PREF_THEME, this::applyTheme),
             new SettingsDialog.Config.MtKeys(config::getMtExportSender, config::getMtExportReceiver, config::saveMtExportBic),
-            new SettingsDialog.Config.PowerUserConfig(PREF_POWER_USER, this::applyPowerUserMode)),
+            new SettingsDialog.Config.PowerUserConfig(PREF_POWER_USER, this::applyPowerUserMode),
+            new SettingsDialog.Config.ExperimentalConfig(config::isExperimentalMode, config::setExperimentalMode, this::applyExperimentalMode)),
             dict);
     }
 
-    private void switchNavPanel() {
-        boolean show = menuExplorer.isSelected();
-        if (explorerTwBtn != null) explorerTwBtn.setSelected(show);
-        navCardLayout.show(navPanel, MtAnalyzeFrame.NAV_CARD_EXPLORER);
-        if (show == explorerCollapsed) toggleMessageSourcePanel();
-    }
-
-
-
-    private void collapseBottomPanel() { bottomCtrl.collapse(); }
-
     private void syncBottomTwButtons() {
-        boolean collapsed = bottomCtrl.isCollapsed();
-        String  card      = bottomCtrl.getActiveCard();
-        boolean bmActive  = !collapsed && BottomPanelController.BOOKMARKS.equals(card);
-        boolean seActive  = !collapsed && BottomPanelController.SECURITIES.equals(card);
-        boolean caActive  = !collapsed && BottomPanelController.CASH.equals(card);
-        boolean amActive  = !collapsed && BottomPanelController.ACCOUNT_MAPPING.equals(card);
-        if (bookmarksTwBtn      != null) bookmarksTwBtn     .setSelected(bmActive);
-        if (securitiesTwBtn     != null) securitiesTwBtn    .setSelected(seActive);
-        if (cashTwBtn           != null) cashTwBtn          .setSelected(caActive);
+        boolean collapsed   = bottomCtrl.isCollapsed();
+        String  card        = bottomCtrl.getActiveCard();
+        boolean amActive    = !collapsed && BottomPanelController.ACCOUNT_MAPPING.equals(card);
+        boolean notifActive = !collapsed && BottomPanelController.NOTIFICATIONS.equals(card);
         if (accountMappingTwBtn != null) accountMappingTwBtn.setSelected(amActive);
-        if (menuBookmarks       != null) menuBookmarks      .setSelected(bmActive);
-        if (menuSecurities      != null) menuSecurities     .setSelected(seActive);
-        if (menuCash            != null) menuCash           .setSelected(caActive);
+        if (notificationsTwBtn  != null) notificationsTwBtn .setSelected(notifActive);
         if (menuAccountMapping  != null) menuAccountMapping .setSelected(amActive);
+        if (menuNotifications   != null) menuNotifications  .setSelected(notifActive);
+        if (notifActive && notificationsTwBtn != null) notificationsTwBtn.setBadge(false);
     }
 
     private void populateEditMenu(JMenu menu) {
@@ -440,46 +357,40 @@ public class MtAnalyzeFrame extends JFrame {
             JMenuItem copyItem  = new JMenuItem("Copy",  ToolbarIcons.menuCopy());
             JMenuItem cutItem   = new JMenuItem("Cut");
             JMenuItem pasteItem = new JMenuItem(MENU_PASTE, ToolbarIcons.menuPaste());
-            copyItem .setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_C, menuMask));
-            cutItem  .setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_X, menuMask));
-            pasteItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_V, menuMask));
+            copyItem .setAccelerator(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_C, menuMask));
+            cutItem  .setAccelerator(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_X, menuMask));
+            pasteItem.setAccelerator(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_V, menuMask));
             FrameLayout.wireTextMenuItems(tf, hasSel, copyItem, cutItem, pasteItem, menu::add);
             return;
         }
-        if (tryPopulatePostingPanel(menu)) return;
-        JTable tbl = focusedTable != null ? focusedTable : entryPanel.getTable();
+        if (tryPopulateBottomPanel(menu)) return;
+        Document doc = activeDocument();
+        JTable tbl = doc.focusedTable();
         int viewRow = tbl.getSelectedRow();
         int viewCol = tbl.getSelectedColumn();
 
         int menuMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
-        if (tbl == tagPanel.getTable()) {
-            copyPopupItemsToMenu(tagPanel.buildContextMenu(viewRow, viewCol), menu);
+        if (tbl == doc.tagPanel().getTable()) {
+            copyPopupItemsToMenu(doc.tagPanel().buildContextMenu(viewRow, viewCol), menu);
             menu.addSeparator();
             JMenuItem pasteItem = new JMenuItem(MENU_PASTE, ToolbarIcons.menuPaste());
-            pasteItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_V, menuMask));
-            pasteItem.addActionListener(e -> showAppendTextDialog());
+            pasteItem.setAccelerator(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_V, menuMask));
+            pasteItem.addActionListener(e -> doc.showAppendTextDialog());
             menu.add(pasteItem);
         } else if (tbl.getRowCount() == 0) {
             JMenuItem pasteItem = new JMenuItem(MENU_PASTE, ToolbarIcons.menuPaste());
-            pasteItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_V, menuMask));
-            pasteItem.addActionListener(e -> showAppendTextDialog());
+            pasteItem.setAccelerator(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_V, menuMask));
+            pasteItem.addActionListener(e -> doc.showAppendTextDialog());
             menu.add(pasteItem);
         } else {
-            int modelRow = viewRow >= 0 ? entryPanel.getTable().convertRowIndexToModel(viewRow) : -1;
+            int modelRow = viewRow >= 0 ? doc.entryPanel().getTable().convertRowIndexToModel(viewRow) : -1;
             int safeViewRow = (viewRow >= 0 && viewRow < tbl.getRowCount()) ? viewRow : -1;
             int safeViewCol = Math.max(viewCol, 0);
-            copyPopupItemsToMenu(entryPanel.buildRowContextMenu(modelRow, safeViewRow, safeViewCol), menu);
+            copyPopupItemsToMenu(doc.entryPanel().buildRowContextMenu(modelRow, safeViewRow, safeViewCol), menu);
         }
     }
 
-    private boolean tryPopulatePostingPanel(JMenu menu) {
-        if (!explorerCollapsed && messageSourcePanel != null) {
-            JPopupMenu p = messageSourcePanel.getPopupMenu();
-            if (p.getComponentCount() > 0) {
-                copyPopupItemsToMenu(p, menu);
-                return true;
-            }
-        }
+    private boolean tryPopulateBottomPanel(JMenu menu) {
         if (bottomCtrl == null || bottomCtrl.isCollapsed()) return false;
         EditMenuContributor c = bottomCtrl.getContributor(bottomCtrl.getActiveCard());
         if (c != null) { copyPopupItemsToMenu(c.getPopupMenu(), menu); return true; }
@@ -500,41 +411,6 @@ public class MtAnalyzeFrame extends JFrame {
         }
     }
 
-    private void showAppendTextDialog() {
-        AppendTextDialog.show(
-            this,
-            () -> promptMtType("Select the message type for this content."),
-                importer::appendFromContent,
-            chunks -> importer.appendFromContent(chunks, null, null, MessageOrigin.NAME_VALUE)
-        );
-    }
-
-    /** Registers a focus-tracking listener so the Edit menu knows which table is active. */
-    private void trackFocus(JTable table) {
-        table.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override public void mousePressed(java.awt.event.MouseEvent e) {
-                focusedTable = table;
-            }
-        });
-        table.addFocusListener(new java.awt.event.FocusAdapter() {
-            @Override public void focusGained(java.awt.event.FocusEvent e) {
-                focusedTable = table;
-            }
-        });
-    }
-
-    /** Left arrow in the detail table returns keyboard focus to the TRAN position table. */
-    private void bindLeftToPositionTable() {
-        String actionKey = "focusPositionTable";
-        tagPanel.getTable().getInputMap(JComponent.WHEN_FOCUSED)
-                           .put(KeyStroke.getKeyStroke("LEFT"), actionKey);
-        tagPanel.getTable().getActionMap().put(actionKey, new AbstractAction() {
-            @Override public void actionPerformed(ActionEvent e) {
-                entryPanel.getTable().requestFocusInWindow();
-            }
-        });
-    }
-
     /** Ctrl+F focuses the search field that belongs to the currently active table. */
     private void bindGlobalShortcuts() {
         InputMap  im = getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
@@ -545,254 +421,28 @@ public class MtAnalyzeFrame extends JFrame {
             @Override public void actionPerformed(ActionEvent e) { showSearchPopup(); }
         });
 
-        im.put(KeyStroke.getKeyStroke("ctrl E"), "toggleExplorer");
-        am.put("toggleExplorer", new AbstractAction() {
-            @Override public void actionPerformed(ActionEvent e) { toggleMessageSourcePanel(); }
-        });
-
         im.put(KeyStroke.getKeyStroke("ctrl D"), "toggleDetail");
         am.put("toggleDetail", new AbstractAction() {
-            @Override public void actionPerformed(ActionEvent e) { detailCtrl.toggle(); }
+            @Override public void actionPerformed(ActionEvent e) { activeDocument().detailCtrl().toggle(); }
         });
     }
 
     private void showSearchPopup() {
-        if (focusedTable == tagPanel.getTable()) {
-            SearchPopup.show(menuSearchBtn, tagPanel.getSearchField(),
-                tagPanel.getClearButton(), tagPanel.getMatchLabel());
+        Document doc = activeDocument();
+        if (doc.focusedTable() == doc.tagPanel().getTable()) {
+            SearchPopup.show(menuSearchBtn, doc.tagPanel().getSearchField(),
+                doc.tagPanel().getClearButton(), doc.tagPanel().getMatchLabel());
         } else {
-            SearchPopup.show(menuSearchBtn, entryPanel.getSearchField(),
-                entryPanel.finClearBtn, entryPanel.finPrevBtn,
-                entryPanel.finNextBtn, entryPanel.finMatchLabel);
+            SearchPopup.show(menuSearchBtn, doc.entryPanel().getSearchField(),
+                doc.entryPanel().finClearBtn, doc.entryPanel().finPrevBtn,
+                doc.entryPanel().finNextBtn, doc.entryPanel().finMatchLabel);
         }
     }
-
-    private void toggleMessageSourcePanel() {
-        if (explorerCollapsed) {
-            int saved = PREFS.getInt(PREF_EXPLORER_SPLIT, 200);
-            SwingUtilities.invokeLater(() -> explorerSplit.setDividerLocation(Math.max(saved, 150)));
-            explorerCollapsed = false;
-            syncTwButtons();
-        } else {
-            SwingUtilities.invokeLater(() -> explorerSplit.setDividerLocation(0));
-            explorerCollapsed = true;
-            deselectTwButtons();
-        }
-    }
-
-    private void collapseExplorer() {
-        if (!explorerCollapsed) {
-            SwingUtilities.invokeLater(() -> explorerSplit.setDividerLocation(0));
-            explorerCollapsed = true;
-            deselectTwButtons();
-        }
-    }
-
-    private void deselectTwButtons() {
-        if (explorerTwBtn != null) explorerTwBtn.setSelected(false);
-        if (menuExplorer  != null) menuExplorer .setSelected(false);
-    }
-
-    private void syncTwButtons() {
-        if (explorerTwBtn == null) return;
-        explorerTwBtn.setSelected(!explorerCollapsed);
-        if (menuExplorer != null) menuExplorer.setSelected(!explorerCollapsed);
-    }
-
-    private void switchDetailCard(String card) {
-        deactivateComponents(DetailPanelController.INSPECTOR.equals(card));
-        detailCtrl.showCard(card);
-    }
-
-    private void collapseDetailPanel() { detailCtrl.collapse(); }
-
-    private void syncDetailMenuItems(boolean tagsActive, boolean compActive) {
-        String card = detailCtrl.getActiveCard();
-        if (menuNotifications != null) menuNotifications.setSelected(DetailPanelController.NOTIFICATIONS.equals(card));
-        if (menuTags          != null) menuTags         .setSelected(tagsActive);
-        if (menuCompare       != null) menuCompare      .setSelected(DetailPanelController.COMPARE.equals(card));
-        if (menuSource        != null) menuSource       .setSelected(DetailPanelController.EDITOR.equals(card));
-        if (menuComponents    != null) menuComponents   .setSelected(compActive);
-    }
-
-    private void selectFirstRow() {
-        if (entryPanel.getTable().getRowCount() > 0) {
-            entryPanel.getTable().setRowSelectionInterval(0, 0);
-            entryPanel.getTable().scrollRectToVisible(entryPanel.getTable().getCellRect(0, 0, true));
-        }
-    }
-
-    private void deactivateComponents(boolean rebuildModel) {
-        tagPanel.setComponentsButtonSelected(false);
-        if (menuComponents != null) menuComponents.setSelected(false);
-        detailCtrl.resetTitleToTags();
-        if (!tagPanel.isComponentsMode()) return;
-        if (rebuildModel) tagPanelRebuild(false);
-        detailCtrl.syncButtons();
-    }
-
-    private void switchToComponents() {
-        detailCtrl.showComponentsMode();
-        if (menuNotifications != null) menuNotifications.setSelected(false);
-        if (menuTags          != null) menuTags         .setSelected(false);
-        if (menuCompare       != null) menuCompare      .setSelected(false);
-        if (menuSource        != null) menuSource       .setSelected(false);
-        if (menuComponents    != null) menuComponents   .setSelected(true);
-        tagPanel.setComponentsButtonSelected(true);
-        if (!tagPanel.isComponentsMode()) tagPanelRebuild(true);
-        detailCtrl.expandIfNeeded();
-    }
-
-    private void dispatchSingleEntry(int modelRow) {
-        Entry entry = entryPanel.getEntryForRow(modelRow);
-        SwiftMessage msg = entryPanel.getMessageForRow(modelRow);
-        if (entry == null || msg == null) { dispatchDeselect(); return; }
-        for (EntrySelectionListener l : selectionListeners) l.onSingleEntry(entry, msg);
-    }
-
-    private void dispatchDeselect() {
-        for (EntrySelectionListener l : selectionListeners) l.onDeselect();
-    }
-
-    private void addBookmarkFromRow(int modelRow) {
-        String isin = entryPanel.findValueByTagQualifier(modelRow, "35B", "ISIN");
-        String seme = entryPanel.findValueByTagQualifier(modelRow, "20C", "SEME");
-        String rela = entryPanel.findValueByTagQualifier(modelRow, "20C", "RELA");
-        String rawPath = entryPanel.getRowValue(modelRow, EntryPanelModel.FILE_COL_KEY);
-        String file = rawPath.isEmpty() ? "" : new File(rawPath).getAbsolutePath();
-        JTextField noteField = new JTextField(30);
-        int result = JOptionPane.showConfirmDialog(this,
-            new Object[]{"Note (optional):", noteField},
-            "Add Bookmark", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-        if (result != JOptionPane.OK_OPTION) return;
-        bookmarkManager.add(new Bookmark(isin, seme, rela, file, noteField.getText().trim()));
-        if (bookmarkPanel != null) bookmarkPanel.refresh();
-        statusLabel.setText("Bookmark added.");
-    }
-
-    private void navigateToBookmark(Bookmark b) {
-        if (!b.filePath().isEmpty() && !entryPanel.isFileLoaded(b.filePath())) {
-            int choice = JOptionPane.showConfirmDialog(this,
-                "File not loaded:\n" + b.filePath() + "\n\nLoad it now?",
-                "File Not Loaded", JOptionPane.YES_NO_OPTION);
-            if (choice != JOptionPane.YES_OPTION) return;
-            importer.loadFile(new File(b.filePath()));
-        }
-        int modelRow = findBookmarkRow(b);
-        if (modelRow < 0) {
-            statusLabel.setText("Bookmark entry not found in loaded data.");
-            return;
-        }
-        entryPanel.selectAndScrollToModelRow(modelRow);
-        toFront();
-    }
-
-    private int findBookmarkRow(Bookmark b) {
-        // ISIN + file is the most specific match: one entry per ISIN per file
-        if (!b.isin().isEmpty() && !b.filePath().isEmpty()) {
-            int row = entryPanel.findRowByFileAndIsin(b.filePath(), b.isin());
-            if (row >= 0) return row;
-        }
-        // RELA is entry-level but may be "NONREF" (non-unique); try only if it looks specific
-        if (!b.rela().isEmpty() && !b.rela().equalsIgnoreCase("NONREF")) {
-            int row = entryPanel.findRowByTagValue("RELA", b.rela());
-            if (row >= 0) return row;
-        }
-        // SEME is message-level and shared across all entries of the same message; use as last resort
-        if (!b.seme().isEmpty()) {
-            int row = entryPanel.findRowByTagValue("SEME", b.seme());
-            if (row >= 0) return row;
-        }
-        if (!b.rela().isEmpty()) {
-            int row = entryPanel.findRowByTagValue("RELA", b.rela());
-            if (row >= 0) return row;
-        }
-        return -1;
-    }
-
-    private JMenuItem makeReferenceSearchItem(String value) {
-        String label = value.length() > 30 ? value.substring(0, 27) + "..." : value;
-        JMenuItem item = new JMenuItem("Reference Search: " + label, ToolbarIcons.menuSearch());
-        item.addActionListener(ae -> applyReferenceSearch(value));
-        return item;
-    }
-
-    // -----------------------------------------------------------------------
-    // Copy to clipboard helpers
-    // -----------------------------------------------------------------------
-
-    private JMenuItem makeCopyCellItem(JTable table, int viewRow, int viewCol) {
-        JMenuItem item = new JMenuItem("Copy", ToolbarIcons.menuCopy());
-        item.addActionListener(ae -> copyCellToClipboard(table, viewRow, viewCol));
-        return item;
-    }
-
-    private void copyCellToClipboard(JTable table, int viewRow, int viewCol) {
-        Object value = table.getValueAt(viewRow, viewCol);
-        String text  = value != null ? value.toString() : "";
-        Toolkit.getDefaultToolkit()
-               .getSystemClipboard()
-               .setContents(new StringSelection(text), null);
-        if (statusLabel != null) statusLabel.setText("Cell value copied to clipboard.");
-    }
-
-    private JMenuItem makeCopyTableItem(JTable table) {
-        JMenuItem item = new JMenuItem("Copy Table", ToolbarIcons.menuCopyTable());
-        item.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_T,
-            Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()));
-        item.addActionListener(ae -> copyTableToClipboard(table));
-        return item;
-    }
-
-    private void copyTableToClipboard(JTable table) {
-        String tsv = FilterSupport.buildTableTsv(table);
-        Toolkit.getDefaultToolkit()
-               .getSystemClipboard()
-               .setContents(new StringSelection(tsv), null);
-        if (statusLabel != null) statusLabel.setText("Table copied to clipboard.");
-    }
-
-    private void onDetailValueEdited(DefaultTableModel model, int detailModelRow, String newValue) {
-        int viewRow  = entryPanel.getTable().getSelectedRow();
-        int modelRow = viewRow >= 0 ? entryPanel.getTable().convertRowIndexToModel(viewRow) : -1;
-        if (modelRow < 0 || modelRow >= entryPanel.getRowData().size()) return;
-        String seqLabel  = nvl(model.getValueAt(detailModelRow, 0));
-        String tagName   = nvl(model.getValueAt(detailModelRow, 1));
-        String qualifier = nvl(model.getValueAt(detailModelRow, 2));
-        int occ = 1;
-        for (int r = 0; r < detailModelRow; r++) {
-            if (seqLabel.equals(nvl(model.getValueAt(r, 0)))
-                    && tagName.equals(nvl(model.getValueAt(r, 1)))
-                    && qualifier.equals(nvl(model.getValueAt(r, 2)))) {
-                occ++;
-            }
-        }
-        String key = seqLabel + "\t" + tagName + "\t" + qualifier + "\t" + occ;
-        Map<String, String> rowData = entryPanel.getRowData().get(modelRow);
-        if (!rowData.containsKey(key)) return;
-        rowData.put(key, newValue);
-        int posColIdx = findPositionColumnIndex(key);
-        if (posColIdx >= 0)
-            entryPanel.getTable().getModel().setValueAt(newValue, modelRow, posColIdx);
-    }
-
-    private int findPositionColumnIndex(String key) {
-        int idx = 0;
-        for (ColumnDef cd : entryPanel.getColumnDefs()) {
-            if (!cd.isVisible()) continue;
-            if (cd.key.equals(key)) return idx;
-            idx++;
-        }
-        return -1;
-    }
-
-    private static String nvl(Object o) { return o != null ? o.toString() : ""; }
 
     private void setupStatusBar() {
         statusLabel = new JLabel("Ready. Please open a SWIFT MT file (Ctrl+O).");
         statusLabel.setBorder(new EmptyBorder(2, 8, 2, 8));
     }
-
 
     private void addToggleBottomListener(ToolWindowButton btn, String card) {
         btn.addActionListener(e -> {
@@ -801,41 +451,26 @@ public class MtAnalyzeFrame extends JFrame {
         });
     }
 
-    private void assembleMainLayout(JSplitPane outerSplit) {
+    private void assembleMainLayout(JComponent mainContent, JPanel detailBar) {
         JSplitPane    bottomSplit;
-        explorerTwBtn   = new ToolWindowButton("Explorer",           ToolbarIcons.folderIcon());
-        bookmarksTwBtn  = new ToolWindowButton(BOOKMARKS,            ToolbarIcons.bookmarkRibbon());
-        securitiesTwBtn    = new ToolWindowButton(LABEL_SECURITIES,    ToolbarIcons.securitiesIcon());
-        cashTwBtn          = new ToolWindowButton(LABEL_CASH,          ToolbarIcons.cashIcon());
+        notificationsTwBtn  = new ToolWindowButton(LABEL_NOTIFICATIONS,   ToolbarIcons.notificationIcon());
         accountMappingTwBtn = new ToolWindowButton(LABEL_ACCOUNT_MAPPING, ToolbarIcons.accountMappingIcon());
-        explorerTwBtn.setSelected(true);
-        explorerTwBtn.addActionListener(e -> {
-            if (explorerTwBtn.isSelected()) toggleMessageSourcePanel();
-            else collapseExplorer();
-        });
-        addToggleBottomListener(bookmarksTwBtn,      BottomPanelController.BOOKMARKS);
-        addToggleBottomListener(securitiesTwBtn,     BottomPanelController.SECURITIES);
-        addToggleBottomListener(cashTwBtn,           BottomPanelController.CASH);
+        addToggleBottomListener(notificationsTwBtn,  BottomPanelController.NOTIFICATIONS);
         addToggleBottomListener(accountMappingTwBtn, BottomPanelController.ACCOUNT_MAPPING);
 
-        JPanel twBar      = buildToolWindowBar();
-        JPanel detailBar  = detailCtrl.buildDetailBar();
+        JPanel twBar = buildToolWindowBar();
 
         JPanel statusBar = new JPanel(new BorderLayout());
         statusBar.setBorder(BorderFactory.createEtchedBorder());
-        JPanel statusRight = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        statusRight = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
         statusRight.setOpaque(false);
-        statusRight.add(entryPanel.rowCountLabel);
+        statusRight.add(menuBarEntryPanel.rowCountLabel);
         statusBar.add(statusLabel,  BorderLayout.WEST);
         statusBar.add(statusRight,  BorderLayout.EAST);
 
-        CsvExport.Prefs postingCsvPrefs = new CsvExport.Prefs(PREFS, PREF_CSV_FIELD_SEP, PREF_CSV_DECIMAL_SEP);
-        bottomCtrl = new BottomPanelController(bookmarkPanel, entryPanel::applyFilterForSafe,
-            postingCsvPrefs, PREFS, PREF_ACCOUNT_MAPPING, this::syncBottomTwButtons);
         JPanel bottomWrapper = bottomCtrl.buildPanel();
-        trackFocus(bottomCtrl.accountMappingTable());
         bottomSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
-        bottomSplit.setTopComponent(outerSplit);
+        bottomSplit.setTopComponent(mainContent);
         bottomSplit.setBottomComponent(bottomWrapper);
         bottomSplit.setResizeWeight(1.0);
         bottomSplit.setDividerSize(5);
@@ -856,9 +491,11 @@ public class MtAnalyzeFrame extends JFrame {
         setContentPane(root);
 
         int wx = PREFS.getInt(PREF_WIN_X, Integer.MIN_VALUE);
-        if (wx != Integer.MIN_VALUE)
-            setBounds(wx, PREFS.getInt(PREF_WIN_Y, 0),
-                      PREFS.getInt(PREF_WIN_W, 1280), PREFS.getInt(PREF_WIN_H, 820));
+        if (wx != Integer.MIN_VALUE) {
+            Rectangle saved = new Rectangle(wx, PREFS.getInt(PREF_WIN_Y, 0),
+                PREFS.getInt(PREF_WIN_W, 1280), PREFS.getInt(PREF_WIN_H, 820));
+            if (isOnScreen(saved)) setBounds(saved);
+        }
 
         addComponentListener(new java.awt.event.ComponentAdapter() {
             @Override public void componentResized(java.awt.event.ComponentEvent e) { saveWindowPrefs(); }
@@ -866,80 +503,23 @@ public class MtAnalyzeFrame extends JFrame {
         });
     }
 
-    private JSplitPane buildInnerSplit(JPanel left, JPanel right) {
-        JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, left, right);
-        split.setResizeWeight(0.65);
-        detailCtrl.setSplit(split);
-        return split;
-    }
-
-    private JSplitPane buildOuterSplit(JSplitPane innerSplit) {
-        messageSourcePanel = new MessageSourcePanel(
-            loadExplorerRoots(), this::loadExplorerFiles, importer::importDirectory,
-            this::showFileInEditor, this::saveExplorerRoots, this::collapseExplorer);
-        bookmarkPanel = new BookmarkPanel(bookmarkManager, this::navigateToBookmark, this::collapseBottomPanel);
-
-        navCardLayout = new CardLayout();
-        navPanel = new JPanel(navCardLayout);
-        navPanel.setOpaque(false);
-        navPanel.setMinimumSize(new Dimension(0, 0));
-        navPanel.add(messageSourcePanel, NAV_CARD_EXPLORER);
-
-        explorerSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, navPanel, innerSplit);
-        explorerSplit.setResizeWeight(0.0);
-        int saved = PREFS.getInt(PREF_EXPLORER_SPLIT, 200);
-        SwingUtilities.invokeLater(() -> explorerSplit.setDividerLocation(saved));
-        explorerSplit.addPropertyChangeListener(JSplitPane.DIVIDER_LOCATION_PROPERTY, evt -> {
-            int loc = explorerSplit.getDividerLocation();
-            if (loc > 0) PREFS.putInt(PREF_EXPLORER_SPLIT, loc);
-        });
-        return explorerSplit;
-    }
-
-    private Map<File, String> loadExplorerRoots() {
-        String pref = PREFS.get(PREF_EXPLORER_ROOTS, "");
-        Map<File, String> roots = new LinkedHashMap<>();
-        if (pref.isBlank()) return roots;
-        for (String line : pref.split("\n", -1)) {
-            if (line.isBlank()) continue;
-            int tab = line.indexOf('\t');
-            String path = (tab < 0 ? line : line.substring(0, tab)).trim();
-            String desc = tab < 0 ? "" : line.substring(tab + 1).trim();
-            File f = new File(path);
-            if (f.isDirectory()) roots.put(f, desc);
-        }
-        return roots;
-    }
-
-    private void saveExplorerRoots() {
-        if (messageSourcePanel == null) return;
-        Map<File, String> descs = messageSourcePanel.getRootDescriptions();
-        StringBuilder sb = new StringBuilder();
-        for (File f : messageSourcePanel.getRootDirs()) {
-            if (!sb.isEmpty()) sb.append('\n');
-            sb.append(f.getAbsolutePath());
-            String desc = descs.get(f);
-            if (desc != null && !desc.isBlank()) sb.append('\t').append(desc.trim());
-        }
-        PREFS.put(PREF_EXPLORER_ROOTS, sb.toString());
-    }
-
-    private void loadExplorerFiles(List<File> files) {
-        if (files.isEmpty()) return;
-        if (files.size() == 1) { importer.loadFile(files.get(0)); return; }
-        File[] arr = files.toArray(new File[0]);
-        File dir = files.get(0).getParentFile();
-        importer.importFileBatch(arr, dir != null ? dir : files.get(0));
-    }
-
-    /** Drops onto the entry table append to the current data instead of replacing it. */
-    private void appendDroppedFiles(List<File> files) {
-        for (File f : files) importer.appendFile(f);
-    }
-
     private void saveWindowPrefs() {
         PREFS.putInt(PREF_WIN_X, getX()); PREFS.putInt(PREF_WIN_Y, getY());
         PREFS.putInt(PREF_WIN_W, getWidth()); PREFS.putInt(PREF_WIN_H, getHeight());
+    }
+
+    /**
+     * True if enough of {@code bounds} falls within some currently connected screen
+     * to be draggable back into view. Guards against a saved position from a monitor
+     * that is no longer attached (or a resolution change) leaving the window off-screen.
+     */
+    private static boolean isOnScreen(Rectangle bounds) {
+        final int minVisible = 80;
+        for (GraphicsDevice gd : GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices()) {
+            Rectangle visible = bounds.intersection(gd.getDefaultConfiguration().getBounds());
+            if (visible.width >= minVisible && visible.height >= minVisible) return true;
+        }
+        return false;
     }
 
     // -----------------------------------------------------------------------
@@ -958,41 +538,14 @@ public class MtAnalyzeFrame extends JFrame {
     private void onOpenSession() {
         JFileChooser fc = createSessionFileChooser("Open Session");
         if (fc.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) return;
-        currentSessionFile = fc.getSelectedFile();
-        importer.loadFile(currentSessionFile);
+        addDocumentTab(createDocument()).openSession(fc.getSelectedFile());
     }
 
-    private void onSaveSession() {
-        if (currentSessionFile != null) {
-            doSaveSession(currentSessionFile);
-        } else {
-            File file = pickSessionSaveFile();
-            if (file != null) doSaveSession(file);
-        }
-    }
+    private void onSaveSession() { activeDocument().saveSession(); }
 
-    private void onSaveSelectedMtAs() {
-        JTable table = entryPanel.getTable();
-        int viewRow = table.getSelectedRow();
-        if (viewRow < 0) {
-            statusLabel.setText("Select an entry in MT Entries first.");
-            return;
-        }
-        int modelRow = table.convertRowIndexToModel(viewRow);
-        SwiftMessage msg = entryPanel.getMessageForRow(modelRow);
-        if (msg == null) {
-            statusLabel.setText("No SWIFT message for selected entry.");
-            return;
-        }
-        mtExport.exportSingle(this,
-            msg.raw(),
-            config.getMtExportSender(),
-            config.getMtExportReceiver(),
-            entryPanel.getRowValue(modelRow, EntryPanelModel.FILE_COL_KEY),
-            statusLabel::setText);
-    }
+    private void onSaveSelectedMtAs() { activeDocument().saveSelectedMtAs(); }
 
-    private File pickSessionSaveFile() {
+    File pickSessionSaveFile() {
         JFileChooser fc = createSessionFileChooser("Save Session");
         if (fc.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) return null;
         File file = fc.getSelectedFile();
@@ -1001,17 +554,8 @@ public class MtAnalyzeFrame extends JFrame {
         return file;
     }
 
-    private void doSaveSession(File file) {
-        try {
-            ProjectIO.save(entryPanel.getProject(), file);
-            currentSessionFile = file;
-            PREFS.put(PREF_LAST_SESSION_FILE, file.getAbsolutePath());
-            statusLabel.setText("Session saved: " + file.getAbsolutePath());
-        } catch (IllegalArgumentException ex) {
-            error(ex.getMessage());
-        } catch (IOException ex) {
-            fileError("saving", ex);
-        }
+    void rememberLastSessionFile(File file) {
+        PREFS.put(PREF_LAST_SESSION_FILE, file.getAbsolutePath());
     }
 
     private JFileChooser createSessionFileChooser(String title) {
@@ -1032,137 +576,36 @@ public class MtAnalyzeFrame extends JFrame {
         return fc;
     }
 
-    // -----------------------------------------------------------------------
-    // ImportContext – kept private so package-private types stay unexposed
-    // -----------------------------------------------------------------------
-
-    private ImportContext createImportContext() {
-        return new ImportContext() {
-            @Override public Frame         frame()                          { return MtAnalyzeFrame.this; }
-            @Override public SystemConfig  config()                         { return MtAnalyzeFrame.this.config(); }
-            @Override public ImportService importService()                  { return MtAnalyzeFrame.this.importService(); }
-            @Override public String        promptMtType(String m)           { return MtAnalyzeFrame.this.promptMtType(m); }
-            @Override public java.util.Optional<java.util.Set<String>> promptMtTypeFilter(String f) { return MtAnalyzeFrame.this.promptMtTypeFilter(f); }
-            @Override public void          onNew()                          { MtAnalyzeFrame.this.onNew(); }
-            @Override public void          onFileLoaded(ImportBatch b, File f)              { MtAnalyzeFrame.this.onFileLoaded(b, f); }
-            @Override public void          onDirectoryLoaded(ImportBatch b, File d, int n)  { MtAnalyzeFrame.this.onDirectoryLoaded(b, d, n); }
-            @Override public void          onContentAppended(ImportBatch b)                  { MtAnalyzeFrame.this.onContentAppended(b); }
-            @Override public void          onFileAppended(File f)           { MtAnalyzeFrame.this.onFileAppended(f); }
-            @Override public void          error(String m)                  { MtAnalyzeFrame.this.error(m); }
-            @Override public void          fileError(String v, Exception e) { MtAnalyzeFrame.this.fileError(v, e); }
-        };
-    }
-
     private SystemConfig  config()        { return config; }
-    private ImportService importService() { return importService; }
 
-    private void onFileLoaded(ImportBatch batch, File file) {
-        notifyProwideLog(batch);
-        if (batch.totalParsed == 0) { error("No valid SWIFT messages found."); return; }
-        tagPanel.clear();
-        entryPanel.clearSearch();
-        tagPanel.clearSearch();
-        entryPanel.loadBatch(batch.messages, batch.columnDefs);
-        entryPanel.applyColumnPrefs();
-        entryPanel.rebuildPositionTable();
-        selectFirstRow();
-        int n = batch.totalParsed;
-        statusLabel.setText("Loaded: " + file.getAbsolutePath());
-        detailCtrl.notificationPanel().addNotification(NotificationPanel.Type.INFO, "File loaded",
-            file.getName() + " (" + n + (n == 1 ? MSG_SINGULAR : MSG_PLURAL) + ")");
+    void rememberLastFile(File file) {
         PREFS.put(PREF_LAST_FILE, file.getAbsolutePath());
-        reloadItem.setEnabled(true);
-        saveItem.setEnabled(true);
-        markExplorerFileMtType(file);
-        notifyBatchErrors(batch.errors);
-        if (batch.limitReached) warnLimitReached();
-    }
-
-    private void onDirectoryLoaded(ImportBatch batch, File dir, int fileCount) {
-        entryPanel.clearSearch();
-        tagPanel.clearSearch();
-        entryPanel.mergeBatch(batch.messages, batch.columnDefs);
-        entryPanel.applyColumnPrefs();
-        entryPanel.rebuildPositionTable();
-        selectFirstRow();
-        int n = batch.totalParsed;
-        String msg = "Imported " + n + (n == 1 ? MSG_SINGULAR : MSG_PLURAL)
-            + " from " + fileCount + (fileCount == 1 ? " file" : " files")
-            + " in " + dir.getName();
-        statusLabel.setText(msg);
-        detailCtrl.notificationPanel().addNotification(NotificationPanel.Type.INFO, "Import complete",
-            msg + " (" + entryPanel.getLoadedMessages().size() + " messages total)");
-        notifyBatchErrors(batch.errors);
-        notifyProwideLog(batch);
-        reloadItem.setEnabled(false);
-        saveItem.setEnabled(true);
-        if (batch.limitReached) warnLimitReached();
-    }
-
-    private void onContentAppended(ImportBatch batch) {
-        entryPanel.mergeBatch(batch.messages, batch.columnDefs);
-        entryPanel.applyColumnPrefs();
-        entryPanel.rebuildPositionTable();
-        statusLabel.setText("Appended: " + batch.totalParsed + (batch.totalParsed == 1 ? MSG_SINGULAR : MSG_PLURAL));
-        notifyBatchErrors(batch.errors);
-        notifyProwideLog(batch);
-        if (batch.limitReached) warnLimitReached();
-    }
-
-    private void onFileAppended(File file) {
-        int total = entryPanel.getLoadedMessages().size();
-        statusLabel.setText("Appended: " + file.getAbsolutePath());
-        detailCtrl.notificationPanel().addNotification(NotificationPanel.Type.INFO, "File appended",
-            file.getName() + " (" + total + " messages total)");
-        reloadItem.setEnabled(true);
-        saveItem.setEnabled(true);
     }
 
     // -----------------------------------------------------------------------
 
-    private void onOpenFile() {
+    void onOpenFile() {
         JFileChooser fc = createSwiftFileChooser("Open SWIFT MT File");
         if (fc.showOpenDialog(this) == JFileChooser.APPROVE_OPTION)
-            importer.loadFile(fc.getSelectedFile());
+            addDocumentTab(createDocument()).openFile(fc.getSelectedFile());
     }
 
-    private void onAppendFile() {
+    void onAppendFile() {
         JFileChooser fc = createSwiftFileChooser("Append SWIFT MT File");
         if (fc.showOpenDialog(this) == JFileChooser.APPROVE_OPTION)
-            importer.appendFile(fc.getSelectedFile());
+            activeDocument().appendFile(fc.getSelectedFile());
     }
 
     private void onImportDirectory() {
         JFileChooser fc = createSwiftFileChooser(IMPORT_DIR_TITLE);
         fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
         if (fc.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) return;
-        importer.importDirectory(fc.getSelectedFile());
+        activeDocument().importDirectory(fc.getSelectedFile());
     }
 
-    private void onNew() {
-        detailCtrl.showCard(DetailPanelController.INSPECTOR);
-        entryPanel.clearSearch();
-        tagPanel.clearSearch();
-        entryPanel.clear();
-        entryPanel.rebuildPositionTable();
-        tagPanel.clear();
-        statusLabel.setText("New model created.");
-        reloadItem.setEnabled(false);
-        saveItem.setEnabled(false);
-        currentSessionFile = null;
-    }
+    private void onNew() { addDocumentTab(createDocument()); }
 
-    private void onReloadFile() {
-        String path = PREFS.get(PREF_LAST_FILE, "");
-        if (path.isEmpty()) return;
-        File file = new File(path);
-        if (!file.exists()) {
-            JOptionPane.showMessageDialog(this,
-                "File no longer exists:\n" + path, ERROR_TITLE, JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-        importer.loadFile(file);
-    }
+    private void onReloadFile() { activeDocument().reload(); }
 
     private void onValidateFile() {
         JFileChooser fc = new JFileChooser();
@@ -1191,19 +634,11 @@ public class MtAnalyzeFrame extends JFrame {
             path -> statusLabel.setText("Block 5 attached: " + path));
     }
 
-    private void markExplorerFileMtType(File file) {
-        if (messageSourcePanel == null) return;
-        messageSourcePanel.clearFileMtTypes();
-        String label = FileImporter.detectMtTypesLabel(
-            entryPanel.getLoadedMessages().stream().map(SwiftMessage::raw).toList());
-        if (!label.isEmpty()) messageSourcePanel.markFileMtType(file, label);
-    }
-
     /**
      * Shows a combo-box dialog asking the user to choose a message type.
      * Returns the type number (e.g. "536") or null for Auto-detect / cancelled.
      */
-    private String promptMtType(String message) {
+    String promptMtType(String message) {
         JComboBox<String> combo = new JComboBox<>(MtFileIO.getMtTypeItems());
         int result = JOptionPane.showConfirmDialog(this,
                 new Object[]{message, combo},
@@ -1214,7 +649,7 @@ public class MtAnalyzeFrame extends JFrame {
         return selected.replaceAll("\\D", "");
     }
 
-    private java.util.Optional<java.util.Set<String>> promptMtTypeFilter(String logFileName) {
+    java.util.Optional<java.util.Set<String>> promptMtTypeFilter(String logFileName) {
         String input = JOptionPane.showInputDialog(this,
                 "Filter MT types in " + logFileName + "\n(comma-separated, e.g. 536,548 – empty = all types):",
                 "Import Log Filter", JOptionPane.QUESTION_MESSAGE);
@@ -1227,62 +662,29 @@ public class MtAnalyzeFrame extends JFrame {
         return java.util.Optional.of(types);
     }
 
-    private void showFileInEditor(File file) {
-        String content;
-        try {
-            content = new String(Files.readAllBytes(file.toPath()));
-        } catch (IOException ex) {
-            JOptionPane.showMessageDialog(this, "Cannot read file:\n" + ex.getMessage(),
-                ERROR_TITLE, JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-        JDialog dlg = new JDialog(this, file.getAbsolutePath(), false);
-        dlg.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-
-        SourcePanel sp = new SourcePanel();
-        sp.showMessage(content);
-        sp.setPreferredSize(new Dimension(800, 600));
-
-        JButton closeBtn = new JButton("Close");
-        closeBtn.addActionListener(e -> dlg.dispose());
-        dlg.getRootPane().registerKeyboardAction(e -> dlg.dispose(),
-            KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_ESCAPE, 0),
-            JComponent.WHEN_IN_FOCUSED_WINDOW);
-
-        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 4));
-        btnPanel.add(closeBtn);
-
-        dlg.add(sp, BorderLayout.CENTER);
-        dlg.add(btnPanel, BorderLayout.SOUTH);
-        dlg.pack();
-        dlg.setLocationRelativeTo(this);
-        dlg.setVisible(true);
-    }
-
-    private void fileError(String verb, Exception ex) {
+    void fileError(String verb, Exception ex) {
         error("Error: " + ex.getMessage());
         JOptionPane.showMessageDialog(this, "Error " + verb + " file:\n" + ex.getMessage(),
             ERROR_TITLE, JOptionPane.ERROR_MESSAGE);
     }
 
-    private void notifyBatchErrors(int errors) {
+    void notifyBatchErrors(int errors) {
         if (errors <= 0) return;
-        detailCtrl.notificationPanel().addNotification(NotificationPanel.Type.WARNING, "Parse errors",
+        bottomCtrl.notificationPanel().addNotification(NotificationPanel.Type.WARNING, "Parse errors",
             errors + (errors == 1 ? " item" : " items") + " could not be parsed.");
     }
 
-    private void notifyProwideLog(ImportBatch batch) {
+    void notifyProwideLog(ImportBatch batch) {
         if (batch.prowideLog.isEmpty()) return;
         String body = "<html>" + String.join("<br>", batch.prowideLog) + "</html>";
         NotificationPanel.Type type = batch.prowideLog.stream()
             .anyMatch(s -> s.startsWith("[SEVERE"))
             ? NotificationPanel.Type.ERROR : NotificationPanel.Type.WARNING;
-        detailCtrl.notificationPanel().addNotification(type, "Parser log", body);
-        switchDetailCard(DetailPanelController.NOTIFICATIONS);
-        detailCtrl.expandIfNeeded();
+        bottomCtrl.notificationPanel().addNotification(type, "Parser log", body);
+        bottomCtrl.show(BottomPanelController.NOTIFICATIONS);
     }
 
-    private void warnLimitReached() {
+    void warnLimitReached() {
         int max = config.getMaxEntries();
         JOptionPane.showMessageDialog(this,
                 "Entry limit of " + max + " reached. Some entries were not loaded.\n"
@@ -1407,10 +809,6 @@ public class MtAnalyzeFrame extends JFrame {
         p.add(Box.createVerticalStrut(8));
     }
 
-    private void applyReferenceSearch(String value) {
-        entryPanel.applyReferenceSearch(value);
-    }
-
     // -----------------------------------------------------------------------
     private void applyTheme(String theme) {
         try {
@@ -1429,13 +827,24 @@ public class MtAnalyzeFrame extends JFrame {
         for (Component c : components) if (c != null) c.setVisible(visible);
     }
 
+    /** All documents currently open, one per tab. */
+    private List<Document> allDocuments() {
+        List<Document> docs = new ArrayList<>();
+        for (int i = 0; i < tabs.getTabCount(); i++) {
+            Object doc = ((JComponent) tabs.getComponentAt(i)).getClientProperty(Document.class);
+            if (doc instanceof Document d) docs.add(d);
+        }
+        return docs;
+    }
+
     private void applyPowerUserMode() {
         boolean on = PREFS.getBoolean(PREF_POWER_USER, false);
-        entryPanel.applyPowerUserMode(on);
+        for (Document d : allDocuments()) d.applyPowerUserMode(on);
         setVisible(on,
             exportComponentsItem, validateFileItem, attachBlock5Item, openSessionItem, saveItem,
-            menuExplorer, menuBookmarks, explorerTwBtn, bookmarksTwBtn, viewMenuSeparator,
-            importMenu, exportMenu, importExportLeadingSeparator, importExportMiddleSeparator);
+            viewMenuSeparator,
+            importMenu, exportMenu, importExportLeadingSeparator, importExportMiddleSeparator,
+            importExportTrailingSeparator);
         JMenuBar bar = getJMenuBar();
         if (bar != null) { bar.revalidate(); bar.repaint(); }
     }
@@ -1443,17 +852,12 @@ public class MtAnalyzeFrame extends JFrame {
     private void applyExperimentalMode() {
         boolean on = config.isExperimentalMode();
         setVisible(on,
-            cashTwBtn, securitiesTwBtn, accountMappingTwBtn,
-            menuSecurities, menuCash, menuAccountMapping,
-            importSecuritiesItem, importCashItem, importMappingItem, importPostingsSeparator,
-            exportSecuritiesItem, exportCashItem, exportMappingItem, exportPostingsSeparator);
-        if (!on && bottomCtrl != null && !bottomCtrl.isCollapsed()) {
-            String card = bottomCtrl.getActiveCard();
-            if (BottomPanelController.SECURITIES.equals(card)
-                    || BottomPanelController.CASH.equals(card)
-                    || BottomPanelController.ACCOUNT_MAPPING.equals(card))
-                bottomCtrl.collapse();
-        }
+            accountMappingTwBtn, menuAccountMapping,
+            importMappingItem, importMappingSeparator,
+            exportMappingItem, exportMappingSeparator);
+        if (!on && bottomCtrl != null && !bottomCtrl.isCollapsed()
+                && BottomPanelController.ACCOUNT_MAPPING.equals(bottomCtrl.getActiveCard()))
+            bottomCtrl.collapse();
     }
 
     private static void setupThemeLookAndFeel(String theme) throws UnsupportedLookAndFeelException, ReflectiveOperationException {
@@ -1483,10 +887,10 @@ public class MtAnalyzeFrame extends JFrame {
         };
     }
 
-    private void error(String msg) {
+    void error(String msg) {
         statusLabel.setText(msg);
-        if (detailCtrl != null)
-            detailCtrl.notificationPanel().addNotification(NotificationPanel.Type.ERROR, ERROR_TITLE, msg);
+        if (bottomCtrl != null)
+            bottomCtrl.notificationPanel().addNotification(NotificationPanel.Type.ERROR, ERROR_TITLE, msg);
     }
 
     public static void launch() {
@@ -1514,7 +918,7 @@ public class MtAnalyzeFrame extends JFrame {
 
     private JPanel buildToolWindowBar() {
         return FrameToolbars.buildLeft(FrameToolbars.separatorBorder(false),
-            explorerTwBtn, accountMappingTwBtn, cashTwBtn, securitiesTwBtn, bookmarksTwBtn);
+            accountMappingTwBtn, notificationsTwBtn);
     }
 
 
