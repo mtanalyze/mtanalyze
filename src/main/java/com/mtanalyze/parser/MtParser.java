@@ -69,6 +69,8 @@ public class MtParser {
             parseFlatMode(b4);
         } else if ("61".equals(rowSeqName)) {
             parse61Mode(b4);
+        } else if ("TRANS".equals(rowSeqName)) {
+            parseTransMode(b4);
         } else {
             ParseState state = new ParseState();
             for (Tag t : b4.getTags()) processTag(t, state);
@@ -121,6 +123,72 @@ public class MtParser {
 
     private void commit61Row(Map<String, String> row, List<Tag> rowTags, List<Tag> headerTags) {
         entries.add(new Entry(row, new SwiftTagListBlock(rowTags), new SwiftTagListBlock(new ArrayList<>(headerTags))));
+    }
+
+    /**
+     * Statement mode (MT 537): each :16R:TRANS...:16S:TRANS block is one row.
+     * Unlike MT 535/536 there is no SUBSAFE/FIN wrapper around the row sequence,
+     * so the row is recognised directly at the top level of block4 (right after GENL).
+     * Tags before the first TRANS (i.e. GENL) are header fields inherited by every row;
+     * tags inside a row are labelled by their nearest enclosing 16R (TRANSDET, LINK, SETPRTY, STAT, REAS...).
+     */
+    private void parseTransMode(SwiftTagListBlock b4) {
+        List<Tag>             headerTags     = new ArrayList<>();
+        Map<String, String>   headerData     = new LinkedHashMap<>();
+        Map<String, Integer>  headerCounts   = new LinkedHashMap<>();
+        Deque<String>         headerSeqStack = new ArrayDeque<>();
+
+        Map<String, String>   currentRow   = null;
+        List<Tag>             currentTags  = null;
+        Map<String, Integer>  rowCounts    = null;
+        Deque<String>         rowSeqStack  = new ArrayDeque<>();
+        int rowDepth = 0;
+        int rowNum   = 0;
+
+        for (Tag t : b4.getTags()) {
+            String name = t.getName() != null ? t.getName() : "";
+            if (currentRow == null) {
+                if ("16R".equals(name) && "TRANS".equals(nvl(t.getValue()))) {
+                    rowNum++;
+                    currentRow  = new LinkedHashMap<>(headerData);
+                    rowCounts   = new LinkedHashMap<>();
+                    currentTags = new ArrayList<>();
+                    currentRow.put(SEQ_KEY, "TRANS (" + rowNum + ")");
+                    rowSeqStack.clear();
+                    rowDepth = 1;
+                    currentTags.add(t);
+                } else if ("16R".equals(name)) {
+                    headerSeqStack.push(nvl(t.getValue()));
+                    headerTags.add(t);
+                } else if ("16S".equals(name)) {
+                    if (!headerSeqStack.isEmpty()) headerSeqStack.pop();
+                    headerTags.add(t);
+                } else {
+                    String seq = headerSeqStack.isEmpty() ? "" : headerSeqStack.peek();
+                    registerTag(seq, t, headerData, headerCounts);
+                    headerTags.add(t);
+                }
+            } else {
+                currentTags.add(t);
+                if ("16R".equals(name)) {
+                    rowDepth++;
+                    rowSeqStack.push(nvl(t.getValue()));
+                } else if ("16S".equals(name)) {
+                    rowDepth--;
+                    if (!rowSeqStack.isEmpty()) rowSeqStack.pop();
+                    if (rowDepth == 0) {
+                        entries.add(new Entry(currentRow, new SwiftTagListBlock(currentTags),
+                                new SwiftTagListBlock(new ArrayList<>(headerTags))));
+                        currentRow = null;
+                        currentTags = null;
+                        rowCounts = null;
+                    }
+                } else {
+                    String seq = rowSeqStack.isEmpty() ? "" : rowSeqStack.peek();
+                    registerTag(seq, t, currentRow, rowCounts);
+                }
+            }
+        }
     }
 
     /** Flat mode: entire block4 becomes one row (used for message types with no inner repeat, e.g. MT 54x). */

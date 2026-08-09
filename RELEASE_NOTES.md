@@ -1,3 +1,51 @@
+# MT Analyze v1.0.12
+
+## Download & Run
+
+**Requirements:** Java 17 or higher
+
+```bash
+java -jar MT-Analyze-1.0.12.jar
+```
+
+---
+
+## Changes
+
+### MT 537 Statement of Pending Transactions
+
+MT 537 files now parse with one row per `:16R:TRANS…:16S:TRANS` block, alongside the existing MT 535/536 row modes. Fields inside a row are labelled by their nearest enclosing sequence (TRANSDET, LINK, SETPRTY, STAT, REAS…), and header-level GENL fields are inherited by every row, matching the behaviour already in place for MT 536.
+
+### MT 535 Auto-Detection Fix
+
+Auto-detecting the message type from content (used for pasted text and files without a reliable header) now also recognizes MT 535 via its `:16R:SUBBAL` tag. Previously only MT 536 (`:16R:SUBSAFE`) was recognized this way, so MT 535 messages without a usable header could be mis-detected.
+
+---
+
+# MT Analyze v1.0.11
+
+## Download & Run
+
+**Requirements:** Java 17 or higher
+
+```bash
+java -jar MT-Analyze-1.0.11.jar
+```
+
+---
+
+## Changes
+
+### Hide Empty Columns
+
+The Entries table's column header right-click menu gained a **Hide Empty Columns** item. It hides every currently visible column that has no non-blank value across the rows currently shown (respecting active filters), in one click instead of hiding columns individually.
+
+### Build from Source & Maven Central
+
+The README now documents building from source with Maven (`mvn clean package`) and pulling signed release jars directly from [Maven Central](https://central.sonatype.com/artifact/com.mtanalyze/mtanalyze) instead of a direct download link.
+
+---
+
 # MT Analyze v1.0.9
 
 ## Download & Run

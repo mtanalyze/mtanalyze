@@ -367,6 +367,7 @@ final class EntryPanelModel {
         if (b2 == null) return "TRAN";
         String type = b2.getMessageType();
         if ("535".equals(type)) return "SUBBAL";
+        if ("537".equals(type)) return "TRANS";
         if (type != null && type.matches("54[0-8]")) return null;
         if ("527".equals(type) || "558".equals(type)) return null;
         if ("940".equals(type) || "950".equals(type)) return "61";
