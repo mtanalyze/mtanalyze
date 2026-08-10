@@ -43,7 +43,6 @@ public final class MtFileIO {
     public static final String DEFAULT_LOG_NEWLINE_TOKEN = "\\n";
 
     private static final String DEFAULT_ADDR = "BANKBEBBAXXX";
-    private static final int    NAME_VALUE_MIN_SEPARATORS = 20;
     private static final String NEWLINE_PATTERN = "\r?\n";
 
     /** 0-based index of the first content character in append-text lines (column 31). */
@@ -54,14 +53,17 @@ public final class MtFileIO {
     private static final Pattern APPEND_MT_HDR_PAT = Pattern.compile("^(\\d{3}):");
     private static final Pattern XML_CHAR_REF_PAT = Pattern.compile("&#x([\\dA-Fa-f]+);?|&#(\\d+);?");
 
-    /** Minimum number of field lines required to classify content as multi-line Name-Value. */
-    private static final int MULTI_LINE_NV_MIN_FIELD_LINES = 3;
+    /** Minimum number of genuine SWIFT fields required to classify content as Name-Value. */
+    private static final int NAME_VALUE_MIN_FIELDS = 3;
     /** Detects a SWIFT field line in multi-line name-value format: [PREFIX]_TAG:...=... */
     private static final Pattern MULTI_LINE_NV_FIELD_PAT =
-        Pattern.compile("^(?:[A-Z][A-Z0-9]*|\\d+)?[_ ]\\d{2}[A-Z]+\\s*:[^=]*=[^\\n]*");
+        Pattern.compile("^(?:[A-Z][A-Z0-9]*|\\d+)?[_ ](?:\\d{2}[A-Z]+|5R)\\s*:[^=]*=[^\\n]*");
     /** Parses a field line; groups: (1) tag, (2) qualifier, (3) value. */
     private static final Pattern MULTI_LINE_NV_PARSE_PAT =
-        Pattern.compile("^[A-Z0-9]*[_ ](\\d{2}[A-Z]+)\\s*:\\s*([A-Z0-9]*+)\\s*=\\s*([^\\n]*)");
+        Pattern.compile("^[A-Z0-9]*[_ ]((?:\\d{2}[A-Z]+|5R))\\s*:\\s*([A-Z0-9]*+)\\s*=\\s*([^\\n]*)");
+    /** Detects a SWIFT field segment in single-line name-value format: [PREFIX]_TAG[:QUAL]=VALUE, semicolon-separated. */
+    private static final Pattern SINGLE_LINE_NV_FIELD_PAT =
+        Pattern.compile("^(?:[A-Z][A-Z0-9]*|\\d+)?_(?:\\d{2}[A-Z]+|5R)\\s*:[^=]*=.*$");
 
 
 
@@ -488,7 +490,7 @@ public final class MtFileIO {
         if (!msg.isEmpty()) messages.add(msg);
     }
 
-    /** Returns true if the first non-empty line of content has more than NAME_VALUE_MIN_SEPARATORS semicolons. */
+    /** Returns true if the first non-empty line of content is single-line Name-Value format. */
     public static boolean isNameValueContent(String content) {
         for (String line : content.split(NEWLINE_PATTERN)) {
             String trimmedLine = line.trim();
@@ -500,24 +502,29 @@ public final class MtFileIO {
     /**
      * Returns true when the content uses one name=value pair per line
      * with SWIFT field identifiers (multi-line Name-Value format).
-     * At least {@value #MULTI_LINE_NV_MIN_FIELD_LINES} field lines must be present.
+     * At least {@value #NAME_VALUE_MIN_FIELDS} field lines must be present.
      */
     public static boolean isMultiLineNameValueContent(String content) {
         int fieldLines = 0;
         for (String line : content.split(NEWLINE_PATTERN)) {
             if (MULTI_LINE_NV_FIELD_PAT.matcher(line.trim()).matches()
-                    && ++fieldLines >= MULTI_LINE_NV_MIN_FIELD_LINES) return true;
+                    && ++fieldLines >= NAME_VALUE_MIN_FIELDS) return true;
         }
         return false;
     }
 
-    /** Returns true if the line contains more than NAME_VALUE_MIN_SEPARATORS semicolons. */
+    /**
+     * Returns true when the line contains at least {@value #NAME_VALUE_MIN_FIELDS}
+     * semicolon-separated segments that look like genuine SWIFT Name-Value fields
+     * (e.g. {@code A_20C:SEME=REPO240320059626}).
+     */
     private static boolean isNameValueLine(String line) {
-        int count = 0;
-        for (int i = 0; i < line.length(); i++) {
-            if (line.charAt(i) == ';') count++;
+        int fields = 0;
+        for (String part : line.split(";")) {
+            if (SINGLE_LINE_NV_FIELD_PAT.matcher(part.trim()).matches()
+                    && ++fields >= NAME_VALUE_MIN_FIELDS) return true;
         }
-        return count > NAME_VALUE_MIN_SEPARATORS;
+        return false;
     }
 
     /**
@@ -678,7 +685,7 @@ public final class MtFileIO {
      */
     public static String convertNameValueToBlock4(String content) {
         StringBuilder sb  = new StringBuilder();
-        Pattern       pat = Pattern.compile("^(?:[A-Z][A-Z0-9]*|\\d+)?_(\\d{2}[A-Z]+\\s*:.*)$");
+        Pattern       pat = Pattern.compile("^(?:[A-Z][A-Z0-9]*|\\d+)?_((?:\\d{2}[A-Z]+|5R)\\s*:.*)$");
         String decoded = decodeXmlCharRefs(content.trim());
         for (String part : decoded.split(";")) {
             processNameValuePart(part.trim(), sb, pat);
@@ -713,6 +720,7 @@ public final class MtFileIO {
     }
 
     private static void appendTag(String tag, String sub, String val, StringBuilder sb) {
+        if (tag.startsWith("5R")) tag = "95R";
         if ("16R".equals(tag) || "16S".equals(tag)) {
             sb.append(':').append(tag).append(':').append(sub).append('\n');
         } else if ("35B".equals(tag)) {

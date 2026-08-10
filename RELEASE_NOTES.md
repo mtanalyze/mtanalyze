@@ -1,3 +1,23 @@
+# MT Analyze v1.0.13
+
+## Download & Run
+
+**Requirements:** Java 17 or higher
+
+```bash
+java -jar MT-Analyze-1.0.13.jar
+```
+
+---
+
+## Changes
+
+### 95R (Party Identification) Support in Name-Value Import
+
+Name-Value content — single-line and multi-line — now also recognizes the short tag form `5R`, as used in place of `95R` in some exports, and expands it to the standard `:95R:` field when converted to block 4.
+
+---
+
 # MT Analyze v1.0.12
 
 ## Download & Run

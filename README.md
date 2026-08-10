@@ -21,7 +21,7 @@ MT Analyze is a single self-contained JAR — no installation, no admin rights.
 2. Double-click it, or run:
 
 ```bash
-java -jar MT-Analyze-1.0.9.jar
+java -jar MT-Analyze-1.0.13.jar
 ```
 
 ---
@@ -32,6 +32,16 @@ java -jar MT-Analyze-1.0.9.jar
 - **Tag View** — full tag breakdown with ISO 15022 descriptions; enable **Components** to expand multi-part fields.
 - **Diff View** — compare two or more messages; deviating cells highlighted.
 - **Source View** — raw SWIFT message with colour-coded blocks and tags.
+
+---
+
+## Supported MT Types
+
+- **Settlement Instructions, Confirmations and Advise** — MT 540, MT 541, MT 542, MT 543, MT 544, MT 545, MT 546, MT 547, MT 548
+- **Triparty Agent** — MT 527, MT 558
+- **Statements** — MT 535 (Statement of Holdings), MT 536 (Statement of Transactions), MT 537 (Statement of Pending Transactions), MT 940 (Customer Statement), MT 950 (Statement)
+
+MT type can also be auto-detected from content for pasted text and files without a reliable header.
 
 ---
 
@@ -63,10 +73,10 @@ MT Analyze is published on [Maven Central](https://central.sonatype.com/artifact
 
 ```bash
 mvn org.apache.maven.plugins:maven-dependency-plugin:3.6.1:copy \
-  -Dartifact=com.mtanalyze:mtanalyze:1.0.9:jar:all \
+  -Dartifact=com.mtanalyze:mtanalyze:1.0.13:jar:all \
   -DoutputDirectory=.
 
-java -jar mtanalyze-1.0.9-all.jar
+java -jar mtanalyze-1.0.13-all.jar
 ```
 ---
 
