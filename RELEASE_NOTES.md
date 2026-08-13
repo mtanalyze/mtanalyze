@@ -1,3 +1,27 @@
+# MT Analyze v1.0.14
+
+## Download & Run
+
+**Requirements:** Java 17 or higher
+
+```bash
+java -jar MT-Analyze-1.0.14.jar
+```
+
+---
+
+## Changes
+
+### MT 564 Corporate Action Notification
+
+MT 564 files are now supported, alongside the existing wrapper-less row modes for statements. Each `:16R:CAOPTN…:16S:CAOPTN` block becomes one row, with header-level fields (GENL, USECU, CADETL) inherited by every row and tags inside a row labelled by their nearest enclosing sequence (TRANSDET, LINK, SETPRTY, STAT, REAS, SECMOVE, CASHMOVE…). Auto-detection recognizes MT 564 via its `:16R:CAOPTN` tag, and a notification with no CAOPTN block at all is shown as a single row instead of an empty table.
+
+### Off-Screen Window Position Fix
+
+The main window no longer restores to a saved position left over from a monitor that is no longer connected, or after a resolution change. Previously this could make the application appear not to open at all; the saved position is now only restored if it still overlaps a currently connected screen, falling back to the default centered bounds otherwise.
+
+---
+
 # MT Analyze v1.0.13
 
 ## Download & Run

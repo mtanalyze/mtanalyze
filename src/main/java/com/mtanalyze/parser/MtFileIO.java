@@ -34,7 +34,7 @@ public final class MtFileIO {
         "Auto-detect", "MT 527", "MT 535", "MT 536", "MT 537",
         "MT 540", "MT 541", "MT 542", "MT 543",
         "MT 544", "MT 545", "MT 546", "MT 547", "MT 548",
-        "MT 558", "MT 940", "MT 950"
+        "MT 558", "MT 564", "MT 940", "MT 950"
     };
 
     public static String[] getMtTypeItems() { return MT_TYPE_ITEMS.clone(); }
@@ -115,6 +115,7 @@ public final class MtFileIO {
         if (tagPresent(body, ":16R:SUBBAL"))   return "535";
         if (tagPresent(body, ":16R:SUBSAFE"))  return "536";
         if (tagPresent(body, ":16R:TRANSDET")) return "537";
+        if (tagPresent(body, ":16R:CAOPTN"))    return "564";
         if (tagPresent(body, ":60F:") || tagPresent(body, ":60M:")) return "940";
         if (tagPresent(body, ":16R:DEALTRAN")) return tagPresent(body, ":16R:STAT") ? "558" : "527";
         return null;

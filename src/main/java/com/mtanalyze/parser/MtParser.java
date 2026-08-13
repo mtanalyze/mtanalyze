@@ -69,7 +69,7 @@ public class MtParser {
             parseFlatMode(b4);
         } else if ("61".equals(rowSeqName)) {
             parse61Mode(b4);
-        } else if ("TRANS".equals(rowSeqName)) {
+        } else if ("TRANS".equals(rowSeqName) || "CAOPTN".equals(rowSeqName)) {
             parseTransMode(b4);
         } else {
             ParseState state = new ParseState();
@@ -126,11 +126,12 @@ public class MtParser {
     }
 
     /**
-     * Statement mode (MT 537): each :16R:TRANS...:16S:TRANS block is one row.
-     * Unlike MT 535/536 there is no SUBSAFE/FIN wrapper around the row sequence,
+     * Wrapper-less row mode (MT 537: TRANS, MT 564: CAOPTN): each :16R:{rowSeqName}...:16S:{rowSeqName}
+     * block is one row. Unlike MT 535/536 there is no SUBSAFE/FIN wrapper around the row sequence,
      * so the row is recognised directly at the top level of block4 (right after GENL).
-     * Tags before the first TRANS (i.e. GENL) are header fields inherited by every row;
-     * tags inside a row are labelled by their nearest enclosing 16R (TRANSDET, LINK, SETPRTY, STAT, REAS...).
+     * Tags before the first row sequence (e.g. GENL, USECU, CADETL) are header fields inherited by
+     * every row; tags inside a row are labelled by their nearest enclosing 16R (TRANSDET, LINK,
+     * SETPRTY, STAT, REAS, SECMOVE, CASHMOVE...).
      */
     private void parseTransMode(SwiftTagListBlock b4) {
         List<Tag>             headerTags     = new ArrayList<>();
@@ -148,12 +149,12 @@ public class MtParser {
         for (Tag t : b4.getTags()) {
             String name = t.getName() != null ? t.getName() : "";
             if (currentRow == null) {
-                if ("16R".equals(name) && "TRANS".equals(nvl(t.getValue()))) {
+                if ("16R".equals(name) && rowSeqName.equals(nvl(t.getValue()))) {
                     rowNum++;
                     currentRow  = new LinkedHashMap<>(headerData);
                     rowCounts   = new LinkedHashMap<>();
                     currentTags = new ArrayList<>();
-                    currentRow.put(SEQ_KEY, "TRANS (" + rowNum + ")");
+                    currentRow.put(SEQ_KEY, rowSeqName + " (" + rowNum + ")");
                     rowSeqStack.clear();
                     rowDepth = 1;
                     currentTags.add(t);
@@ -188,6 +189,14 @@ public class MtParser {
                     registerTag(seq, t, currentRow, rowCounts);
                 }
             }
+        }
+
+        // No row sequence occurred at all (e.g. an MT 564 notification with no CAOPTN block):
+        // show the whole message as a single row instead of an empty table.
+        if (rowNum == 0 && !headerData.isEmpty()) {
+            headerData.put(SEQ_KEY, "MSG (1)");
+            entries.add(new Entry(headerData, new SwiftTagListBlock(new ArrayList<>(headerTags)),
+                    new SwiftTagListBlock(new ArrayList<>())));
         }
     }
 

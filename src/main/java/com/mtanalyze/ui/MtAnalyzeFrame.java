@@ -856,9 +856,14 @@ public class MtAnalyzeFrame extends JFrame {
         setContentPane(root);
 
         int wx = PREFS.getInt(PREF_WIN_X, Integer.MIN_VALUE);
-        if (wx != Integer.MIN_VALUE)
-            setBounds(wx, PREFS.getInt(PREF_WIN_Y, 0),
-                      PREFS.getInt(PREF_WIN_W, 1280), PREFS.getInt(PREF_WIN_H, 820));
+        if (wx != Integer.MIN_VALUE) {
+            Rectangle saved = new Rectangle(wx, PREFS.getInt(PREF_WIN_Y, 0),
+                    PREFS.getInt(PREF_WIN_W, 1280), PREFS.getInt(PREF_WIN_H, 820));
+            // Ignore a saved position left over from a monitor that is no longer connected
+            // (or a resolution change) — otherwise the window would restore off-screen and
+            // appear not to open at all. The default centered bounds set above stay in effect.
+            if (isOnScreen(saved)) setBounds(saved);
+        }
 
         addComponentListener(new java.awt.event.ComponentAdapter() {
             @Override public void componentResized(java.awt.event.ComponentEvent e) { saveWindowPrefs(); }
@@ -940,6 +945,13 @@ public class MtAnalyzeFrame extends JFrame {
     private void saveWindowPrefs() {
         PREFS.putInt(PREF_WIN_X, getX()); PREFS.putInt(PREF_WIN_Y, getY());
         PREFS.putInt(PREF_WIN_W, getWidth()); PREFS.putInt(PREF_WIN_H, getHeight());
+    }
+
+    /** True when {@code bounds} overlaps at least one currently connected screen. */
+    private static boolean isOnScreen(Rectangle bounds) {
+        for (GraphicsDevice gd : GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices())
+            if (gd.getDefaultConfiguration().getBounds().intersects(bounds)) return true;
+        return false;
     }
 
     // -----------------------------------------------------------------------
