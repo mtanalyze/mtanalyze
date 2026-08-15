@@ -21,7 +21,7 @@ MT Analyze is a single self-contained JAR — no installation, no admin rights.
 2. Double-click it, or run:
 
 ```bash
-java -jar MT-Analyze-1.0.15.jar
+java -jar MT-Analyze-1.0.16.jar
 ```
 
 ---
@@ -49,8 +49,8 @@ MT type can also be auto-detected from content for pasted text and files without
 ## Dependencies
 
 - **[Prowide Core](https://github.com/prowide/prowide-core)** SRU2025-10.3.14 — SWIFT MT parsing (Apache 2.0)
-- **[FlatLaf](https://github.com/JFormDesigner/FlatLaf)** 3.7.1 — flat look and feel with dark mode (Apache 2.0)
-- **[Apache POI](https://poi.apache.org/)** 5.4.1 — Excel export (Apache 2.0)
+- **[FlatLaf](https://github.com/JFormDesigner/FlatLaf)** 3.7.2 — flat look and feel with dark mode (Apache 2.0)
+- **[Apache POI](https://poi.apache.org/)** 5.5.1 — Excel export (Apache 2.0)
 
 ---
 
@@ -66,6 +66,14 @@ mvn clean package
 
 The self-contained jar is produced at `target/MT-Analyze-<version>.jar`.
 
+A local NVD vulnerability scan of all dependencies can be run with the optional `owasp` profile (requires a free [NVD API key](https://nvd.nist.gov/developers/request-an-api-key)):
+
+```bash
+mvn -P owasp verify -Dnvd.api.key=<your-key>
+```
+
+The report is written to `target/dependency-check-report.html`.
+
 ---
 
 
@@ -75,10 +83,10 @@ MT Analyze is published on [Maven Central](https://central.sonatype.com/artifact
 
 ```bash
 mvn org.apache.maven.plugins:maven-dependency-plugin:3.6.1:copy \
-  -Dartifact=com.mtanalyze:mtanalyze:1.0.15:jar:all \
+  -Dartifact=com.mtanalyze:mtanalyze:1.0.16:jar:all \
   -DoutputDirectory=.
 
-java -jar mtanalyze-1.0.15-all.jar
+java -jar mtanalyze-1.0.16-all.jar
 ```
 ---
 

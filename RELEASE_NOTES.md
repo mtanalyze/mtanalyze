@@ -1,3 +1,29 @@
+# MT Analyze v1.0.16
+
+## Download & Run
+
+**Requirements:** Java 17 or higher
+
+```bash
+java -jar MT-Analyze-1.0.16.jar
+```
+
+---
+
+## Changes
+
+### Local NVD Dependency Scanning
+
+An optional `owasp` Maven profile adds OWASP Dependency-Check, letting dependencies be scanned against the NVD locally with `mvn -P owasp verify -Dnvd.api.key=<your-key>` (report at `target/dependency-check-report.html`). The Sonatype OSS Index analyzer is disabled, since it needs separate credentials unrelated to NVD scanning; six log4j-core-only CVEs that Dependency-Check misattributes to the transitive `log4j-api` dependency are suppressed via `owasp-suppressions.xml`.
+
+### Dependency Updates
+
+- **FlatLaf** 3.7.1 → 3.7.2
+- **Apache POI** 5.4.1 → 5.5.1
+- **log4j-api** (transitive, via Apache POI) pinned to 2.26.1, fixing CVE-2026-49844
+
+---
+
 # MT Analyze v1.0.15
 
 ## Download & Run
