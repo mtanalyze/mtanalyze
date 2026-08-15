@@ -24,6 +24,15 @@ MT Analyze is a single self-contained JAR — no installation, no admin rights.
 java -jar MT-Analyze-1.0.16.jar
 ```
 
+*(Optional)* Each [Releases](https://github.com/mtanalyze/mtanalyze/releases) page shows a SHA256 digest next to the JAR asset, if you'd like to verify the download — compare it against the output of:
+
+```bash
+sha256sum MT-Analyze-<version>.jar
+```
+```powershell
+Get-FileHash MT-Analyze-<version>.jar -Algorithm SHA256
+```
+
 ---
 
 ## Features
@@ -51,6 +60,14 @@ MT type can also be auto-detected from content for pasted text and files without
 - **[Prowide Core](https://github.com/prowide/prowide-core)** SRU2025-10.3.14 — SWIFT MT parsing (Apache 2.0)
 - **[FlatLaf](https://github.com/JFormDesigner/FlatLaf)** 3.7.2 — flat look and feel with dark mode (Apache 2.0)
 - **[Apache POI](https://poi.apache.org/)** 5.5.1 — Excel export (Apache 2.0)
+
+The full transitive dependency graph (SBOM), including versions pulled in indirectly, is visible on GitHub's [Dependency graph](https://github.com/mtanalyze/mtanalyze/network/dependencies). A standalone [CycloneDX](https://cyclonedx.org/) SBOM file can be generated locally with the optional `sbom` profile:
+
+```bash
+mvn -P sbom package
+```
+
+Written to `target/bom.json`.
 
 ---
 
