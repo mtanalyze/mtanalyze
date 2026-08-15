@@ -15,8 +15,10 @@
  */
 package com.mtanalyze.ui;
 
+import com.mtanalyze.config.SystemConfig;
 import com.mtanalyze.export.CsvExport;
 import com.mtanalyze.parser.HintDictionary;
+import com.mtanalyze.parser.MtFileIO;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -36,16 +38,21 @@ final class SettingsDialog {
 
     private SettingsDialog() {}
 
-    record Config(CsvKeys csv, ThemeConfig theme, MtKeys mt, PowerUserConfig powerUser) {
+    record Config(CsvKeys csv, ThemeConfig theme, SystemKeys system, PowerUserConfig powerUser) {
         record CsvKeys(String fieldSep, String decimalSep) {
         }
 
-        record MtKeys(Supplier<String> getSender, Supplier<String> getReceiver, BicSaver save) {
+        record SystemKeys(Supplier<String> getSender, Supplier<String> getReceiver,
+                           Supplier<Integer> getMaxEntries,
+                           Supplier<String> getLogSwiftStart, Supplier<String> getLogNewlineToken,
+                           Supplier<Boolean> getExperimentalMode,
+                           Saver save, Runnable onExperimentalModeChange) {
         }
 
         @FunctionalInterface
-        interface BicSaver {
-            void save(String sender, String receiver) throws IOException;
+        interface Saver {
+            void save(String sender, String receiver, int maxEntries,
+                       String logSwiftStart, String logNewlineToken, boolean experimentalMode);
         }
 
 
@@ -57,7 +64,9 @@ final class SettingsDialog {
 
     }
 
-    private record FormFields(JTextField fieldSep, JTextField decimalSep, JTextField sender, JTextField receiver) {
+    private record FormFields(JTextField fieldSep, JTextField decimalSep, JTextField sender, JTextField receiver,
+                               JTextField maxEntries, JTextField logSwiftStart, JTextField logNewlineToken,
+                               JCheckBox experimentalMode) {
     }
 
     static void show(Frame owner, Preferences prefs, Config cfg, HintDictionary dict) {
@@ -75,14 +84,26 @@ final class SettingsDialog {
         JTextField decimalSepField = new JTextField(
                 prefs.get(cfg.csv.decimalSep, CsvExport.DEFAULT_DECIMAL_SEP), 4);
         JTextField senderField = new JTextField(
-                cfg.mt.getSender.get(), 14);
+                cfg.system.getSender.get(), 14);
         JTextField receiverField = new JTextField(
-                cfg.mt.getReceiver.get(), 14);
+                cfg.system.getReceiver.get(), 14);
+        JTextField maxEntriesField = new JTextField(
+                String.valueOf(cfg.system.getMaxEntries.get()), 6);
+        JTextField logSwiftStartField = new JTextField(
+                cfg.system.getLogSwiftStart.get(), 10);
+        JTextField logNewlineTokenField = new JTextField(
+                cfg.system.getLogNewlineToken.get(), 10);
+        JCheckBox experimentalModeCheck = new JCheckBox(
+                "Enable experimental features (Securities, Cash, Account Mapping)",
+                cfg.system.getExperimentalMode.get());
         FormFields fields = new FormFields(
                 fieldSepField, decimalSepField,
-                senderField, receiverField);
+                senderField, receiverField,
+                maxEntriesField, logSwiftStartField, logNewlineTokenField,
+                experimentalModeCheck);
 
-        JPanel generalPanel = buildGeneralPanel(darkModeCheck, powerUserCheck, fields);
+        JPanel generalPanel  = buildGeneralPanel(darkModeCheck, powerUserCheck, fields);
+        JPanel advancedPanel = buildAdvancedPanel(fields);
 
         // ---- User Dictionary tab ----
         DefaultTableModel dictModel = new DefaultTableModel(
@@ -110,6 +131,7 @@ final class SettingsDialog {
         // ---- Assemble tabs ----
         JTabbedPane tabs = new JTabbedPane();
         tabs.addTab("General",         generalPanel);
+        tabs.addTab("Advanced",        advancedPanel);
         tabs.addTab("User Dictionary", dictPanel);
 
         JButton ok     = new JButton("OK");
@@ -126,6 +148,7 @@ final class SettingsDialog {
             cfg.theme.onChange.accept(newTheme);
             prefs.putBoolean(cfg.powerUser.prefKey, powerUserCheck.isSelected());
             cfg.powerUser.onChange.run();
+            cfg.system.onExperimentalModeChange.run();
             dlg.dispose();
         });
         cancel.addActionListener(e -> dlg.dispose());
@@ -177,6 +200,39 @@ final class SettingsDialog {
         return form;
     }
 
+    // -----------------------------------------------------------------------
+    // Advanced tab
+    // -----------------------------------------------------------------------
+
+    private static JPanel buildAdvancedPanel(FormFields fields) {
+        FormPanel fp = new FormPanel();
+        JPanel form = fp.panel;
+        GridBagConstraints lc = fp.lc;
+        GridBagConstraints fc = fp.fc;
+
+        addSectionSeparator(form, 0, "Import Limits");
+        FormPanel.addRow(form, lc, fc, 1, "Max. entries:", fields.maxEntries);
+
+        addSectionSeparator(form, 2, "Log File Import");
+        FormPanel.addRow(form, lc, fc, 3, "SWIFT start marker:", fields.logSwiftStart);
+        FormPanel.addRow(form, lc, fc, 4, "Newline token:",      fields.logNewlineToken);
+
+        JButton resetLogTokens = new JButton("Reset to defaults");
+        resetLogTokens.addActionListener(e -> {
+            fields.maxEntries.setText(String.valueOf(SystemConfig.DEFAULT_MAX_ENTRIES));
+            fields.logSwiftStart.setText(MtFileIO.DEFAULT_LOG_SWIFT_START);
+            fields.logNewlineToken.setText(MtFileIO.DEFAULT_LOG_NEWLINE_TOKEN);
+        });
+        JPanel resetWrap = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        resetWrap.add(resetLogTokens);
+        FormPanel.addRow(form, lc, fc, 5, "", resetWrap);
+
+        addSectionSeparator(form, 6, "Experimental");
+        FormPanel.addRow(form, lc, fc, 7, "", fields.experimentalMode);
+
+        return form;
+    }
+
     private static final String INVALID_INPUT   = "Invalid Input";
     private static final String LBL_IMPORT      = "Import";
     private static final String CSV_FILE_FILTER = "CSV files (*.csv)";
@@ -187,6 +243,9 @@ final class SettingsDialog {
         String decimalSep = fields.decimalSep.getText();
         String sender     = fields.sender.getText().trim().toUpperCase(Locale.ROOT);
         String receiver   = fields.receiver.getText().trim().toUpperCase(Locale.ROOT);
+        String logSwiftStart   = fields.logSwiftStart.getText();
+        String logNewlineToken = fields.logNewlineToken.getText();
+        boolean experimentalMode = fields.experimentalMode.isSelected();
 
         String sepError = validateSeparators(fieldSep, decimalSep);
         if (sepError != null) {
@@ -198,18 +257,36 @@ final class SettingsDialog {
             JOptionPane.showMessageDialog(dlg, bicError, INVALID_INPUT, JOptionPane.WARNING_MESSAGE);
             return false;
         }
+        Integer maxEntries = parsePositiveInt(fields.maxEntries.getText().trim());
+        if (maxEntries == null) {
+            JOptionPane.showMessageDialog(dlg, "Max. entries must be a positive whole number.",
+                    INVALID_INPUT, JOptionPane.WARNING_MESSAGE);
+            return false;
+        }
+        if (logSwiftStart.isEmpty()) {
+            JOptionPane.showMessageDialog(dlg, "SWIFT start marker must not be empty.",
+                    INVALID_INPUT, JOptionPane.WARNING_MESSAGE);
+            return false;
+        }
+        if (logNewlineToken.isEmpty()) {
+            JOptionPane.showMessageDialog(dlg, "Newline token must not be empty.",
+                    INVALID_INPUT, JOptionPane.WARNING_MESSAGE);
+            return false;
+        }
 
         prefs.put(cfg.csv.fieldSep,     fieldSep);
         prefs.put(cfg.csv.decimalSep,   decimalSep);
-        try {
-            cfg.mt.save.save(sender, receiver);
-        } catch (IOException ex) {
-            JOptionPane.showMessageDialog(dlg,
-                    "Could not save MT export BICs to properties file:\n" + ex.getMessage(),
-                    "Save Error", JOptionPane.ERROR_MESSAGE);
-            return false;
-        }
+        cfg.system.save.save(sender, receiver, maxEntries, logSwiftStart, logNewlineToken, experimentalMode);
         return true;
+    }
+
+    private static Integer parsePositiveInt(String s) {
+        try {
+            int v = Integer.parseInt(s);
+            return v > 0 ? v : null;
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     private static String validateSeparators(String fieldSep, String decimalSep) {

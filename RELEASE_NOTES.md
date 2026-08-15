@@ -1,3 +1,27 @@
+# MT Analyze v1.0.15
+
+## Download & Run
+
+**Requirements:** Java 17 or higher
+
+```bash
+java -jar MT-Analyze-1.0.15.jar
+```
+
+---
+
+## Changes
+
+### Removed mtanalyze.properties, Settings Now Fully in Settings Dialog
+
+**Max. entries**, the log-file import markers (**SWIFT start marker**, **Newline token**), and **Enable experimental features** are now editable on a new **Advanced** tab in the Settings dialog, alongside the Sender/Receiver BIC fields. Support for the external `mtanalyze.properties` file has been removed entirely — all settings are now stored the same way as the rest of the app's preferences and take effect immediately, without restarting. Anyone with an existing `mtanalyze.properties` file should copy its values into the Settings dialog once; the file itself is no longer read.
+
+### Restored Excel Export
+
+The **File → Save Excel…** menu item is back, along with the Apache POI dependency it relies on. It writes a pivoted `.xlsx` workbook of component data, the same shape produced by **File → Export → Export CSV (Components)…**.
+
+---
+
 # MT Analyze v1.0.14
 
 ## Download & Run

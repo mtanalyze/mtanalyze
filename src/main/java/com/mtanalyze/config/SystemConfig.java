@@ -17,98 +17,59 @@ package com.mtanalyze.config;
 
 import com.mtanalyze.parser.MtFileIO;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Properties;
+import java.util.prefs.Preferences;
 
 public final class SystemConfig {
 
-    public static final String FILE_NAME = "mtanalyze.properties";
+    private static final String KEY_MT_EXPORT_SENDER   = "mt_export_sender";
+    private static final String KEY_MT_EXPORT_RECEIVER = "mt_export_receiver";
+    private static final String KEY_MAX_ENTRIES        = "max_entries";
+    private static final String KEY_LOG_SWIFT_START    = "log_swift_start";
+    private static final String KEY_LOG_NEWLINE_TOKEN  = "log_newline_token";
+    private static final String KEY_EXPERIMENTAL_MODE  = "experimental_mode";
 
-    private static final String KEY_MT_EXPORT_SENDER   = "mt.export.sender";
-    private static final String KEY_MT_EXPORT_RECEIVER = "mt.export.receiver";
+    public static final int DEFAULT_MAX_ENTRIES = 1000;
 
-    private static final int DEFAULT_MAX_ENTRIES = 1000;
-
-    private final Properties props;
-    private final Path       configFile;
+    private final Preferences prefs;
 
     public SystemConfig() {
-        this.configFile = resolveConfigFile();
-        this.props      = load(configFile);
-    }
-
-    private static Path resolveConfigFile() {
-        try {
-            Path jar = Path.of(SystemConfig.class.getProtectionDomain()
-                    .getCodeSource().getLocation().toURI());
-            return jar.getParent().resolve(FILE_NAME);
-        } catch (Exception ignored) {
-            return null;
-        }
-    }
-
-    private static Properties load(Path cfg) {
-        Properties p = new Properties();
-        if (cfg == null) return p;
-        try {
-            if (Files.exists(cfg)) {
-                try (InputStream in = Files.newInputStream(cfg)) {
-                    p.load(in);
-                }
-            }
-        } catch (Exception ignored) {
-            // Config file is optional; proceed with empty/default properties
-        }
-        return p;
+        this.prefs = Preferences.userNodeForPackage(SystemConfig.class);
     }
 
     public String getLogSwiftStart() {
-        return props.getProperty("log.swift.start", MtFileIO.DEFAULT_LOG_SWIFT_START);
+        return prefs.get(KEY_LOG_SWIFT_START, MtFileIO.DEFAULT_LOG_SWIFT_START);
     }
 
     public String getLogNewlineToken() {
-        return props.getProperty("log.newline.token", MtFileIO.DEFAULT_LOG_NEWLINE_TOKEN);
+        return prefs.get(KEY_LOG_NEWLINE_TOKEN, MtFileIO.DEFAULT_LOG_NEWLINE_TOKEN);
     }
 
     public boolean isExperimentalMode() {
-        return Boolean.parseBoolean(props.getProperty("experimental.mode", "false"));
+        return prefs.getBoolean(KEY_EXPERIMENTAL_MODE, false);
     }
 
     public int getMaxEntries() {
-        try {
-            int v = Integer.parseInt(props.getProperty("max.entries",
-                    String.valueOf(DEFAULT_MAX_ENTRIES)));
-            return v > 0 ? v : DEFAULT_MAX_ENTRIES;
-        } catch (NumberFormatException e) {
-            return DEFAULT_MAX_ENTRIES;
-        }
+        int v = prefs.getInt(KEY_MAX_ENTRIES, DEFAULT_MAX_ENTRIES);
+        return v > 0 ? v : DEFAULT_MAX_ENTRIES;
     }
 
     public String getMtExportSender() {
-        return props.getProperty(KEY_MT_EXPORT_SENDER, "");
+        return prefs.get(KEY_MT_EXPORT_SENDER, "");
     }
 
     public String getMtExportReceiver() {
-        return props.getProperty(KEY_MT_EXPORT_RECEIVER, "");
+        return prefs.get(KEY_MT_EXPORT_RECEIVER, "");
     }
 
-    public void saveMtExportBic(String sender, String receiver) throws IOException {
-        if (configFile == null)
-            throw new IOException("Cannot resolve location for " + FILE_NAME + ".");
-        setOrRemove(KEY_MT_EXPORT_SENDER,   sender);
-        setOrRemove(KEY_MT_EXPORT_RECEIVER, receiver);
-        Files.createDirectories(configFile.getParent());
-        try (OutputStream out = Files.newOutputStream(configFile)) {
-            props.store(out, "MT Analyze configuration file");
-        }
-    }
-
-    private void setOrRemove(String key, String value) {
-        if (value == null || value.isEmpty()) props.remove(key);
-        else                                  props.setProperty(key, value);
+    /** Persists all Settings-dialog-editable values. */
+    public void saveSettings(String sender, String receiver, int maxEntries,
+                              String logSwiftStart, String logNewlineToken,
+                              boolean experimentalMode) {
+        prefs.put(KEY_MT_EXPORT_SENDER,   sender   == null ? "" : sender);
+        prefs.put(KEY_MT_EXPORT_RECEIVER, receiver == null ? "" : receiver);
+        prefs.putInt(KEY_MAX_ENTRIES, maxEntries);
+        prefs.put(KEY_LOG_SWIFT_START,   logSwiftStart);
+        prefs.put(KEY_LOG_NEWLINE_TOKEN, logNewlineToken);
+        prefs.putBoolean(KEY_EXPERIMENTAL_MODE, experimentalMode);
     }
 }
