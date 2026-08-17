@@ -370,7 +370,7 @@ final class EntryPanelModel {
         if ("537".equals(type)) return "TRANS";
         if ("564".equals(type)) return "CAOPTN";
         if (type != null && type.matches("54[0-8]")) return null;
-        if ("527".equals(type) || "558".equals(type)) return null;
+        if ("527".equals(type) || "558".equals(type) || "578".equals(type)) return null;
         if ("940".equals(type) || "950".equals(type)) return "61";
         SwiftTagListBlock b4 = mt.getSwiftMessage().getBlock4();
         if (b4 != null && b4.getTags().stream().noneMatch(t -> "16R".equals(t.getName()))) return null;

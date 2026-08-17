@@ -46,7 +46,7 @@ Get-FileHash MT-Analyze-<version>.jar -Algorithm SHA256
 
 ## Supported MT Types
 
-- **Settlement Instructions, Confirmations and Advise** — MT 540, MT 541, MT 542, MT 543, MT 544, MT 545, MT 546, MT 547, MT 548
+- **Settlement Instructions, Confirmations and Advise** — MT 540, MT 541, MT 542, MT 543, MT 544, MT 545, MT 546, MT 547, MT 548, MT 578 (Settlement Allegement)
 - **Triparty Agent** — MT 527, MT 558
 - **Statements** — MT 535 (Statement of Holdings), MT 536 (Statement of Transactions), MT 537 (Statement of Pending Transactions), MT 940 (Customer Statement), MT 950 (Statement)
 - **Corporate Actions** — MT 564 (Corporate Action Notification)

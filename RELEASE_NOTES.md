@@ -1,3 +1,23 @@
+# MT Analyze v1.0.17
+
+## Download & Run
+
+**Requirements:** Java 17 or higher
+
+```bash
+java -jar MT-Analyze-1.0.17.jar
+```
+
+---
+
+## Changes
+
+### MT 578 Settlement Allegement
+
+MT 578 files are now supported, using the same flat, single-row layout as the MT 540-548 settlement instructions and confirmations. Auto-detection recognizes MT 578 via its paired `:22H::PAYM//` and `:22H::REDE//` tags in the TRADDET sequence.
+
+---
+
 # MT Analyze v1.0.16
 
 ## Download & Run
