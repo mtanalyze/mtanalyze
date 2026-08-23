@@ -1250,15 +1250,39 @@ public class MtAnalyzeFrame extends JFrame {
 
     private java.util.Optional<java.util.Set<String>> promptMtTypeFilter(String logFileName) {
         String input = JOptionPane.showInputDialog(this,
-                "Filter MT types in " + logFileName + "\n(comma-separated, e.g. 536,548 – empty = all types):",
+                "Filter MT types in " + logFileName
+                    + "\n(comma-separated, ranges allowed, e.g. 527,540-548,558 – empty = all types):",
                 "Import Log Filter", JOptionPane.QUESTION_MESSAGE);
         if (input == null) return java.util.Optional.empty();
         java.util.Set<String> types = new java.util.LinkedHashSet<>();
-        for (String token : input.split("[,;\\s]+")) {
-            String t = token.trim().toUpperCase().replaceFirst("^MT", "");
-            if (!t.isEmpty()) types.add(t);
+        for (String token : input.split("[,;]+")) {
+            addMtTypeFilterToken(token, types);
         }
         return java.util.Optional.of(types);
+    }
+
+    /**
+     * Adds one filter token to {@code types}: a plain MT number (e.g. "548") or an inclusive
+     * numeric range (e.g. "540-548"); an optional "MT" prefix is stripped from each side.
+     * A malformed range (non-numeric or start &gt; end) is kept as a single literal token.
+     */
+    private static void addMtTypeFilterToken(String token, java.util.Set<String> types) {
+        String t = token.trim();
+        if (t.isEmpty()) return;
+        int dash = t.indexOf('-');
+        if (dash > 0) {
+            String start = normalizeMtToken(t.substring(0, dash));
+            String end   = normalizeMtToken(t.substring(dash + 1));
+            if (start.matches("\\d+") && end.matches("\\d+") && Integer.parseInt(start) <= Integer.parseInt(end)) {
+                for (int n = Integer.parseInt(start); n <= Integer.parseInt(end); n++) types.add(String.valueOf(n));
+                return;
+            }
+        }
+        types.add(normalizeMtToken(t));
+    }
+
+    private static String normalizeMtToken(String s) {
+        return s.trim().toUpperCase().replaceFirst("^MT\\s*", "");
     }
 
     private void showFileInEditor(File file) {

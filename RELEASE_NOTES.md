@@ -31,6 +31,12 @@ Auto-detection recognizes each type from its distinguishing sequence qualifier (
 rules and after MT 569's `:16R:SUME` marker (checked before MT 537's `:16R:TRANSDET` rule, since MT 569 also
 carries a nested `TRANSDET` sequence).
 
+### Log Import MT Type Filter — Ranges
+
+The MT type filter prompt shown when importing a log file now accepts numeric ranges in addition to plain
+comma-separated type numbers, e.g. `527,540-548,558`. An optional `MT` prefix on either side of a range
+(and surrounding whitespace) is still tolerated, e.g. `MT527, MT540-MT548, MT558`.
+
 ---
 
 # MT Analyze v1.0.17
