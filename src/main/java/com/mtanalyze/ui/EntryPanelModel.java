@@ -369,12 +369,37 @@ final class EntryPanelModel {
         if ("535".equals(type)) return "SUBBAL";
         if ("537".equals(type)) return "TRANS";
         if ("564".equals(type)) return "CAOPTN";
+        if ("530".equals(type)) return "REQD";
+        if ("567".equals(type)) return "STAT";
+        if ("569".equals(type)) return detect569RowSequence(mt.getSwiftMessage().getBlock4());
         if (type != null && type.matches("54[0-8]")) return null;
-        if ("527".equals(type) || "558".equals(type) || "578".equals(type)) return null;
+        if ("527".equals(type) || "558".equals(type) || "578".equals(type)
+                || "565".equals(type) || "566".equals(type) || "568".equals(type)) return null;
         if ("940".equals(type) || "950".equals(type)) return "61";
         SwiftTagListBlock b4 = mt.getSwiftMessage().getBlock4();
         if (b4 != null && b4.getTags().stream().noneMatch(t -> "16R".equals(t.getName()))) return null;
         return "TRAN";
+    }
+
+    /**
+     * MT 569: VALDET and SECDET are both optional (only TRANSDET is mandatory). SECDET is
+     * always nested inside VALDET (Sequence C1a1A under C1a1), and VALDET itself repeats
+     * (one per valuation within a transaction), so VALDET is the row: any SECDET(s) it
+     * contains fold into that row as nested tags, same as CAOPTN folding in LINK/SETPRTY.
+     * Picking SECDET as the row instead would make VALDET a repeating header wrapper,
+     * whose fields would then wrongly accumulate across VALDET occurrences (see header
+     * folding in {@link MtParser#parse}).
+     */
+    private static String detect569RowSequence(SwiftTagListBlock b4) {
+        if (b4 == null) return "TRANSDET";
+        if (has16R(b4, "VALDET")) return "VALDET";
+        if (has16R(b4, "SECDET")) return "SECDET";
+        return "TRANSDET";
+    }
+
+    private static boolean has16R(SwiftTagListBlock b4, String value) {
+        return b4.getTags().stream().anyMatch(t ->
+                "16R".equals(t.getName()) && value.equals(t.getValue() != null ? t.getValue().trim() : ""));
     }
 
     static String computeEntryType(Map<String, String> row) {

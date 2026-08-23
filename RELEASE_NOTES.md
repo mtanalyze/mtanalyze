@@ -1,3 +1,38 @@
+# MT Analyze v1.0.18
+
+## Download & Run
+
+**Requirements:** Java 17 or higher
+
+```bash
+java -jar MT-Analyze-1.0.18.jar
+```
+
+---
+
+## Changes
+
+### MT 530, MT 564-569 Corporate Actions and Transaction Processing
+
+MT 530 (Transaction Processing Command), MT 565 (Corporate Action Instruction), MT 566 (Corporate Action
+Confirmation), MT 567 (Corporate Action Status and Processing Advice), MT 568 (Corporate Action Narrative)
+and MT 569 (Triparty Collateral and Exposure Statement) are now supported, alongside the existing MT 564.
+
+MT 530, MT 567 and MT 569 use the same wrapper-less row layout as MT 537/MT 564, with one table row per
+`:16R:REQD` (530) or `:16R:STAT` (567) sequence. For MT 569, only the Transaction Details (`TRANSDET`)
+sequence is mandatory — Valuation Details (`VALDET`) and, nested underneath it, Securities Details
+(`SECDET`) are both optional — so the row is `VALDET` when present (with any nested `SECDET` folded into
+that row), falling back to `SECDET` or `TRANSDET` when the message omits it. MT 565, MT 566 and MT 568
+carry a single instruction/confirmation/narrative per message and use the same flat, single-row layout as
+MT 578.
+
+Auto-detection recognizes each type from its distinguishing sequence qualifier (`:16R:REQD`, `:16R:CAINST`,
+`:16R:CACONF`, `:16R:STAT`, `:16R:USECU`), checked after the existing MT 527/535/536/537/558/564/578/940/950
+rules and after MT 569's `:16R:SUME` marker (checked before MT 537's `:16R:TRANSDET` rule, since MT 569 also
+carries a nested `TRANSDET` sequence).
+
+---
+
 # MT Analyze v1.0.17
 
 ## Download & Run

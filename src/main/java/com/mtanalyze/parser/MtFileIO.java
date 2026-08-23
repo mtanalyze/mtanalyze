@@ -31,10 +31,11 @@ public final class MtFileIO {
     private MtFileIO() {}
 
     private static final String[] MT_TYPE_ITEMS = {
-        "Auto-detect", "MT 527", "MT 535", "MT 536", "MT 537",
+        "Auto-detect", "MT 527", "MT 530", "MT 535", "MT 536", "MT 537",
         "MT 540", "MT 541", "MT 542", "MT 543",
         "MT 544", "MT 545", "MT 546", "MT 547", "MT 548",
-        "MT 558", "MT 564", "MT 578", "MT 940", "MT 950"
+        "MT 558", "MT 564", "MT 565", "MT 566", "MT 567", "MT 568", "MT 569",
+        "MT 578", "MT 940", "MT 950"
     };
 
     public static String[] getMtTypeItems() { return MT_TYPE_ITEMS.clone(); }
@@ -114,11 +115,22 @@ public final class MtFileIO {
     private static String matchMtTypeByTags(String body) {
         if (tagPresent(body, ":16R:SUBBAL"))   return "535";
         if (tagPresent(body, ":16R:SUBSAFE"))  return "536";
+        // MT 569 (Triparty Collateral and Exposure Statement) also carries a nested
+        // :16R:TRANSDET sequence, so its more distinctive :16R:SUME marker must be
+        // checked before the plain TRANSDET check below to avoid misclassifying it as 537.
+        if (tagPresent(body, ":16R:SUME"))     return "569";
         if (tagPresent(body, ":16R:TRANSDET")) return "537";
         if (tagPresent(body, ":16R:CAOPTN"))    return "564";
         if (tagPresent(body, ":22H::PAYM//") && tagPresent(body, ":22H::REDE//")) return "578";
         if (tagPresent(body, ":60F:") || tagPresent(body, ":60M:")) return "940";
         if (tagPresent(body, ":16R:DEALTRAN")) return tagPresent(body, ":16R:STAT") ? "558" : "527";
+        // MT 530 (Transaction Processing Command) carries a nested :16R:STAT sequence too,
+        // so its distinctive :16R:REQD marker is checked before the generic STAT check below.
+        if (tagPresent(body, ":16R:REQD"))     return "530";
+        if (tagPresent(body, ":16R:CAINST"))    return "565";
+        if (tagPresent(body, ":16R:CACONF"))    return "566";
+        if (tagPresent(body, ":16R:STAT"))      return "567";
+        if (tagPresent(body, ":16R:USECU"))     return "568";
         return null;
     }
 
