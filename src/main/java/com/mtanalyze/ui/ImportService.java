@@ -18,6 +18,7 @@ package com.mtanalyze.ui;
 import com.mtanalyze.model.MessageOrigin;
 import com.mtanalyze.model.SwiftMessage;
 import com.mtanalyze.parser.MtFileIO;
+import com.mtanalyze.parser.NameValueConverter;
 import com.prowidesoftware.swift.model.mt.AbstractMT;
 
 import java.io.BufferedReader;
@@ -124,8 +125,17 @@ final class ImportService {
      * time Prowide rejects it. A message cut off mid-tag would otherwise fail to
      * parse even after {@link MtFileIO#repairTruncated}, discarding the entire
      * chunk instead of the handful of well-formed tags before the broken one.
+     *
+     * <p>A Name-Value line using bare sequence codes (no explicit {@code :16R:}/
+     * {@code :16S:} markers) is instead built directly via {@link NameValueConverter},
+     * which already produces a typed {@link AbstractMT} - serializing it to text here
+     * only to have Prowide re-parse it back into the same object would be redundant
+     * and risks losing structure that {@link AbstractMT#parse} cannot always recover.
      */
     private static AbstractMT parseWithTruncationRecovery(String chunk, String mtOverride) throws Exception {
+        if (NameValueConverter.isSequenceCodeFormat(chunk)) {
+            return new NameValueConverter().convert(chunk);
+        }
         String candidate = MtFileIO.wrapBlock4IfNeeded(chunk, mtOverride);
         Exception firstFailure = null;
         while (true) {

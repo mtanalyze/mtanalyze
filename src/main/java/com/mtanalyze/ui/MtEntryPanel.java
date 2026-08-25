@@ -1150,13 +1150,37 @@ public class MtEntryPanel extends JPanel {
             order.append(cd.key.replace('\t', '|'));
             vis.append(cd.isVisible() ? '1' : '0');
         }
-        prefs.put(prefKeys.colOrder(), order.toString());
-        prefs.put(prefKeys.colVis(),   vis.toString());
+        putChunked(prefKeys.colOrder(), order.toString());
+        putChunked(prefKeys.colVis(),   vis.toString());
+    }
+
+    /** Splits {@code value} across {@code baseKey}, {@code baseKey.1}, ... to stay under
+     *  {@link Preferences#MAX_VALUE_LENGTH}, which {@link Preferences#put} would otherwise reject. */
+    private void putChunked(String baseKey, String value) {
+        int len = value.length();
+        int chunkCount = 0;
+        for (int start = 0; start < len || chunkCount == 0; start += Preferences.MAX_VALUE_LENGTH, chunkCount++) {
+            String key = chunkCount == 0 ? baseKey : baseKey + "." + chunkCount;
+            prefs.put(key, value.substring(start, Math.min(start + Preferences.MAX_VALUE_LENGTH, len)));
+        }
+        for (int i = chunkCount; prefs.get(baseKey + "." + i, null) != null; i++) {
+            prefs.remove(baseKey + "." + i);
+        }
+    }
+
+    private String getChunked(String baseKey) {
+        StringBuilder sb = new StringBuilder(prefs.get(baseKey, ""));
+        for (int i = 1; ; i++) {
+            String chunk = prefs.get(baseKey + "." + i, null);
+            if (chunk == null) break;
+            sb.append(chunk);
+        }
+        return sb.toString();
     }
 
     public void applyColumnPrefs() {
-        String orderPref = prefs.get(prefKeys.colOrder(), "");
-        String visPref   = prefs.get(prefKeys.colVis(),   "");
+        String orderPref = getChunked(prefKeys.colOrder());
+        String visPref   = getChunked(prefKeys.colVis());
         if (orderPref.isEmpty()) return;
         String[] savedKeys = orderPref.split("\n", -1);
         String[] savedVis  = visPref.split("\n", -1);
