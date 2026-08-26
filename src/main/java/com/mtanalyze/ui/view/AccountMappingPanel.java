@@ -21,6 +21,7 @@ import com.mtanalyze.ui.FilterSupport;
 import com.mtanalyze.ui.ToolbarIcons;
 import com.mtanalyze.ui.filter.ColumnFilterRow;
 import com.mtanalyze.ui.filter.FinFilterRow;
+import com.mtanalyze.util.FileChoosers;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -281,7 +282,7 @@ public class AccountMappingPanel extends RoundedPanel implements EditMenuContrib
 
     private void onImport() {
         if (table.isEditing()) table.getCellEditor().stopCellEditing();
-        JFileChooser fc = new JFileChooser();
+        JFileChooser fc = FileChoosers.create();
         fc.setDialogTitle("Import Account Mapping");
         fc.setFileFilter(new FileNameExtensionFilter("CSV files (*.csv)", "csv"));
         if (fc.showOpenDialog(SwingUtilities.getWindowAncestor(this)) != JFileChooser.APPROVE_OPTION) return;
@@ -308,7 +309,7 @@ public class AccountMappingPanel extends RoundedPanel implements EditMenuContrib
 
     private void onExport() {
         if (table.isEditing()) table.getCellEditor().stopCellEditing();
-        JFileChooser fc = new JFileChooser();
+        JFileChooser fc = FileChoosers.create();
         fc.setDialogTitle("Export Account Mapping");
         fc.setFileFilter(new FileNameExtensionFilter("CSV files (*.csv)", "csv"));
         fc.setSelectedFile(new File("account_mapping.csv"));

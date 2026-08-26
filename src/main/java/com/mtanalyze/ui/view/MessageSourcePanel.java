@@ -18,6 +18,7 @@ package com.mtanalyze.ui.view;
 import com.mtanalyze.ui.EditMenuContributor;
 import com.mtanalyze.ui.FileListTransferHandler;
 import com.mtanalyze.ui.ToolbarIcons;
+import com.mtanalyze.util.FileChoosers;
 
 import javax.swing.*;
 import javax.swing.event.TreeExpansionEvent;
@@ -208,7 +209,7 @@ public class MessageSourcePanel extends RoundedPanel implements EditMenuContribu
     }
 
     private void addRootInteractive() {
-        JFileChooser fc = new JFileChooser();
+        JFileChooser fc = FileChoosers.create();
         fc.setDialogTitle("Add Folder to Explorer");
         fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
         fc.setAcceptAllFileFilterUsed(false);

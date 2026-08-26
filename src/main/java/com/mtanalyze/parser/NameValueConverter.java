@@ -22,6 +22,7 @@ import com.prowidesoftware.swift.model.field.Field;
 import com.prowidesoftware.swift.model.mt.AbstractMT;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
@@ -41,6 +42,15 @@ public final class NameValueConverter {
 
     /** Strips the literal midnight time-of-day suffix appended to date-only values. */
     private static final Pattern MIDNIGHT_SUFFIX = Pattern.compile(" 00:00:00\\.000000");
+
+    /**
+     * Tag order inside a {@code SETPRTY} subsequence (E1 for MT 540-547, B1 for
+     * MT 548). {@code SETPRTY} repeats under the same bare sequence code, so the
+     * boundary between two parties is only visible from the tags: a field whose
+     * tag is not positioned after the previous field's tag starts the next party
+     * and forces a synthesized {@code :16S:}/{@code :16R:} pair.
+     */
+    private static final List<String> SETPRTY_TAG_ORDER = List.of("95", "97", "98", "20", "70");
 
     private final ArrayList<String> sequenceStack = new ArrayList<>();
     private final Logger logger = Logger.getLogger(getClass().getName());
@@ -75,6 +85,104 @@ public final class NameValueConverter {
     /** Maps a Name-Value sequence code (e.g. {@code "A1"}) to the SWIFT block name it opens for {@code mt}. */
     public String translateSequence(int mt, String sequence) {
         switch (mt) {
+            case 530:
+                switch (sequence) {
+                    case "A":
+                        return "GENL";
+                    case "B":
+                        return "REQD";
+                    case "B1":
+                        return "LINK";
+                    case "C":
+                        return "ADDINFO";
+                    case "C1":
+                        return "STAT";
+                    case "C1a":
+                        return "REAS";
+                    default:
+                        logger.warning("Unknown MT %s sequence: %s".formatted(mt, sequence));
+                }
+                break;
+            case 535:
+                switch (sequence) {
+                    case "A":
+                        return "GENL";
+                    case "A1":
+                        return "LINK";
+                    case "B":
+                        return "SUBSAFE";
+                    case "B1":
+                        return "FIN";
+                    case "B1a":
+                        return "FIA";
+                    case "B1b":
+                        return "SUBBAL";
+                    case "B1b1":
+                        return "BREAK";
+                    case "B1c":
+                        return "BREAK";
+                    case "C":
+                        return "ADDINFO";
+                    default:
+                        logger.warning("Unknown MT %s sequence: %s".formatted(mt, sequence));
+                }
+                break;
+            case 537:
+                switch (sequence) {
+                    case "A":
+                        return "GENL";
+                    case "A1":
+                        return "LINK";
+                    case "B":
+                        return "STAT";
+                    case "B1":
+                        return "REAS";
+                    case "B2":
+                        return "TRAN";
+                    case "B2a":
+                        return "LINK";
+                    case "B2b":
+                        return "TRANSDET";
+                    case "B2b1":
+                        return "SETPRTY";
+                    case "C":
+                        return "TRANS";
+                    case "C1":
+                        return "LINK";
+                    case "C2":
+                        return "TRANSDET";
+                    case "C2a":
+                        return "SETPRTY";
+                    case "C3":
+                        return "STAT";
+                    case "C3a":
+                        return "REAS";
+                    case "D":
+                        return "PENA";
+                    case "D1":
+                        return "PENACUR";
+                    case "D1a":
+                        return "PENACOUNT";
+                    case "D1a1":
+                        return "PENDET";
+                    case "D1a1A":
+                        return "CALDET";
+                    case "D1a1A1":
+                        return "FIA";
+                    case "D1a1B":
+                        return "RELTRAN";
+                    case "D1a1B1":
+                        return "TRAN";
+                    case "D1a1B1a":
+                        return "STAT";
+                    case "D1a1B1a1":
+                        return "REAS";
+                    case "E":
+                        return "ADDINFO";
+                    default:
+                        logger.warning("Unknown MT %s sequence: %s".formatted(mt, sequence));
+                }
+                break;
             case 527:
                 switch (sequence) {
                     case "A":
@@ -207,6 +315,150 @@ public final class NameValueConverter {
                     default:
                 }
                 break;
+            case 564:
+                switch (sequence) {
+                    case "A":
+                        return "GENL";
+                    case "A1":
+                        return "LINK";
+                    case "A2":
+                        return "REVR";
+                    case "B":
+                        return "USECU";
+                    case "B1":
+                        return "FIA";
+                    case "B2":
+                        return "ACCTINFO";
+                    case "C":
+                        return "INTSEC";
+                    case "D":
+                        return "CADETL";
+                    case "E":
+                        return "CAOPTN";
+                    case "E1":
+                        return "SECMOVE";
+                    case "E1a":
+                        return "FIA";
+                    case "E2":
+                        return "CASHMOVE";
+                    case "F":
+                        return "ADDINFO";
+                    default:
+                        logger.warning("Unknown MT %s sequence: %s".formatted(mt, sequence));
+                }
+                break;
+            case 565:
+                switch (sequence) {
+                    case "A":
+                        return "GENL";
+                    case "A1":
+                        return "LINK";
+                    case "B":
+                        return "USECU";
+                    case "B1":
+                        return "FIA";
+                    case "B2":
+                        return "ACCTINFO";
+                    case "C":
+                        return "BENODET";
+                    case "D":
+                        return "CAINST";
+                    case "E":
+                        return "ADDINFO";
+                    default:
+                        logger.warning("Unknown MT %s sequence: %s".formatted(mt, sequence));
+                }
+                break;
+            case 567:
+                switch (sequence) {
+                    case "A":
+                        return "GENL";
+                    case "A1":
+                        return "LINK";
+                    case "A2":
+                        return "STAT";
+                    case "A2a":
+                        return "REAS";
+                    case "B":
+                        return "CADETL";
+                    case "C":
+                        return "ADDINFO";
+                    default:
+                        logger.warning("Unknown MT %s sequence: %s".formatted(mt, sequence));
+                }
+                break;
+            case 568:
+                switch (sequence) {
+                    case "A":
+                        return "GENL";
+                    case "A1":
+                        return "LINK";
+                    case "B":
+                        return "USECU";
+                    case "B1":
+                        return "FIA";
+                    case "C":
+                        return "ADDINFO";
+                    default:
+                        logger.warning("Unknown MT %s sequence: %s".formatted(mt, sequence));
+                }
+                break;
+            case 569:
+                switch (sequence) {
+                    case "A":
+                        return "GENL";
+                    case "A1":
+                        return "COLLPRTY";
+                    case "A2":
+                        return "LINK";
+                    case "B":
+                        return "SUMM";
+                    case "C":
+                        return "SUME";
+                    case "C1":
+                        return "SUMC";
+                    case "C1a":
+                        return "TRANSDET";
+                    case "C1a1":
+                        return "VALDET";
+                    case "C1a1A":
+                        return "SECDET";
+                    case "D":
+                        return "ADDINFO";
+                    default:
+                        logger.warning("Unknown MT %s sequence: %s".formatted(mt, sequence));
+                }
+                break;
+            case 578:
+                switch (sequence) {
+                    case "A":
+                        return "GENL";
+                    case "A1":
+                        return "LINK";
+                    case "B":
+                        return "TRADDET";
+                    case "B1":
+                        return "FIA";
+                    case "C":
+                        return "FIAC";
+                    case "C1":
+                        return "BREAK";
+                    case "D":
+                        return "REPO";
+                    case "E":
+                        return "SETDET";
+                    case "E1":
+                        return "SETPRTY";
+                    case "E2":
+                        return "CSHPRTY";
+                    case "E3":
+                        return "AMT";
+                    case "F":
+                        return "ADDINFO";
+                    default:
+                        logger.warning("Unknown MT %s sequence: %s".formatted(mt, sequence));
+                }
+                break;
             default:
                 throw new IllegalArgumentException("Message type %s is not implemented".formatted(mt));
         }
@@ -218,6 +470,7 @@ public final class NameValueConverter {
         AbstractMT swiftMessage = AbstractMT.create(599);
 
         String lastSequence = "";
+        int setPrtyTagIndex = -1;
 
         int mt = 0;
         line = line.replace("&#x0d;", "\n");
@@ -267,6 +520,7 @@ public final class NameValueConverter {
                         if (seqs.length >= 2) {
                             String seq = seqs[0];
                             String tag = seqs[1].replace(" ", "");
+                            String[] tagFields = tag.split(":");
 
                             if (!seq.contains(lastSequence) && !sequenceStack.isEmpty()) {
                                 String last = sequenceStack.get(sequenceStack.size() - 1);
@@ -281,11 +535,28 @@ public final class NameValueConverter {
                                 }
                             }
 
-                            if (!lastSequence.equals(seq)) {
+                            boolean freshSequence = !lastSequence.equals(seq);
+                            if (freshSequence) {
                                 closeSequence("16R", mt, seq, swiftMessage);
                                 sequenceStack.add(seq);
+                                setPrtyTagIndex = -1;
                             }
-                            String[] tagFields = tag.split(":");
+
+                            // A SETPRTY subsequence can occur several times in a row under the same
+                            // bare sequence code. Its fields arrive in the fixed order 95a, 97a,
+                            // 98a, 20C, 70a, so a tag that is not after the previous one belongs to
+                            // the next party: close the running SETPRTY and open a fresh one.
+                            if ("SETPRTY".equals(translateSequence(mt, seq))) {
+                                int tagIndex = setPrtyTagOrder(tagFields[0]);
+                                if (tagIndex >= 0) {
+                                    if (!freshSequence && tagIndex <= setPrtyTagIndex) {
+                                        closeSequence("16S", mt, seq, swiftMessage);
+                                        closeSequence("16R", mt, seq, swiftMessage);
+                                    }
+                                    setPrtyTagIndex = tagIndex;
+                                }
+                            }
+
                             if (tagFields.length >= 2) {
                                 try {
                                     if (tagFields[0].startsWith("98")) {
@@ -314,6 +585,16 @@ public final class NameValueConverter {
             sequenceStack.remove(sequenceStack.size() - 1);
         }
         return swiftMessage;
+    }
+
+    /**
+     * Position of {@code tagName} within {@link #SETPRTY_TAG_ORDER}, matched on the
+     * leading digits ({@code 95P} -&gt; {@code 95}), or {@code -1} when the tag is
+     * not part of the SETPRTY ordering.
+     */
+    private static int setPrtyTagOrder(String tagName) {
+        String prefix = tagName.length() >= 2 ? tagName.substring(0, 2) : tagName;
+        return SETPRTY_TAG_ORDER.indexOf(prefix);
     }
 
     private void closeSequence(String name, int mt, String last, AbstractMT swiftMessage) {

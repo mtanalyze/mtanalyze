@@ -17,6 +17,7 @@ package com.mtanalyze.export;
 
 import com.mtanalyze.profile.DataHelper;
 import com.mtanalyze.profile.DataHelper.CompCell;
+import com.mtanalyze.util.FileChoosers;
 import com.prowidesoftware.swift.model.SwiftTagListBlock;
 
 import org.apache.poi.common.usermodel.HyperlinkType;
@@ -81,7 +82,7 @@ public final class ExcelExport {
     }
 
     private static File pickFile(JFrame owner) {
-        JFileChooser fc = new JFileChooser();
+        JFileChooser fc = FileChoosers.create();
         fc.setDialogTitle("Save Excel File");
         fc.setFileFilter(new FileNameExtensionFilter("Excel Workbook (*.xlsx)", "xlsx"));
         fc.setSelectedFile(new File("SWIFT_Components.xlsx"));

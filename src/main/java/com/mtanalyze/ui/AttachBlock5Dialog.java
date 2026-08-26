@@ -15,6 +15,8 @@
  */
 package com.mtanalyze.ui;
 
+import com.mtanalyze.util.FileChoosers;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -45,12 +47,11 @@ public final class AttachBlock5Dialog {
     public static void show(Frame parent, File initialDir, Consumer<String> onSuccess) {
 
         // ── 1. Source file chooser ─────────────────────────────────────────
-        JFileChooser openFc = new JFileChooser();
+        JFileChooser openFc = FileChoosers.create(initialDir);
         openFc.setDialogTitle("Attach Block 5 – Select SWIFT FIN File");
         openFc.setFileFilter(new FileNameExtensionFilter(
             "SWIFT Files (*.txt, *.swift, *.fin, *.ste)", "txt", "swift", "fin", "ste"));
         openFc.setAcceptAllFileFilterUsed(true);
-        if (initialDir != null && initialDir.isDirectory()) openFc.setCurrentDirectory(initialDir);
         if (openFc.showOpenDialog(parent) != JFileChooser.APPROVE_OPTION) return;
         File sourceFile = openFc.getSelectedFile();
 
@@ -116,9 +117,8 @@ public final class AttachBlock5Dialog {
         }
 
         // ── 6. Output file chooser ─────────────────────────────────────────
-        JFileChooser saveFc = new JFileChooser();
+        JFileChooser saveFc = FileChoosers.create(sourceFile.getParentFile());
         saveFc.setDialogTitle("Save Modified SWIFT File");
-        saveFc.setCurrentDirectory(sourceFile.getParentFile());
         saveFc.setSelectedFile(new File(sourceFile.getParentFile(),
             addSuffix(sourceFile.getName())));
         if (saveFc.showSaveDialog(parent) != JFileChooser.APPROVE_OPTION) return;

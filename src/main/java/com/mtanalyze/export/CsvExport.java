@@ -18,6 +18,7 @@ package com.mtanalyze.export;
 import com.prowidesoftware.swift.model.SwiftTagListBlock;
 import com.mtanalyze.profile.DataHelper;
 import com.mtanalyze.ui.ColumnDef;
+import com.mtanalyze.util.FileChoosers;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -98,7 +99,7 @@ public final class CsvExport {
     }
 
     private static File pickCsvFile(JFrame owner, String defaultName) {
-        JFileChooser fc = new JFileChooser();
+        JFileChooser fc = FileChoosers.create();
         fc.setDialogTitle("Save CSV File");
         fc.setFileFilter(new FileNameExtensionFilter("CSV Files (*.csv)", "csv"));
         fc.setSelectedFile(new File(defaultName));

@@ -15,6 +15,7 @@
  */
 package com.mtanalyze.export;
 
+import com.mtanalyze.util.FileChoosers;
 import com.prowidesoftware.swift.model.SwiftTagListBlock;
 import com.prowidesoftware.swift.model.Tag;
 import com.prowidesoftware.swift.model.mt.AbstractMT;
@@ -86,12 +87,12 @@ public final class MtExport {
     }
 
     private static JFileChooser getJFileChooser(String sourcePath, String mtType) {
-        JFileChooser fc = new JFileChooser();
-        fc.setDialogTitle("Export MT Message");
-        fc.setFileFilter(new FileNameExtensionFilter("SWIFT Message Files (*.txt)", "txt"));
         File sourceFile = sourcePath != null && !sourcePath.isEmpty() ? new File(sourcePath) : null;
         File initialDir = sourceFile != null && sourceFile.getParentFile() != null
                 ? sourceFile.getParentFile() : null;
+        JFileChooser fc = FileChoosers.create(initialDir);
+        fc.setDialogTitle("Export MT Message");
+        fc.setFileFilter(new FileNameExtensionFilter("SWIFT Message Files (*.txt)", "txt"));
         fc.setSelectedFile(new File(initialDir != null ? initialDir : new File("."),
                 "MT" + mtType + ".txt"));
         return fc;
@@ -108,7 +109,7 @@ public final class MtExport {
         String[] bic = showBicDialog(owner, sender, receiver);
         if (bic.length == 0) return;
 
-        JFileChooser fc = new JFileChooser();
+        JFileChooser fc = FileChoosers.create();
         fc.setDialogTitle("Export MT Messages");
         fc.setFileFilter(new FileNameExtensionFilter(
                 "MT Message Files (*.txt, *.fin)", "txt", "fin"));

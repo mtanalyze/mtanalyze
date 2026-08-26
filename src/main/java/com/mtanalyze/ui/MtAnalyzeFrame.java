@@ -35,6 +35,7 @@ import com.mtanalyze.ui.view.MessageSourcePanel;
 import com.mtanalyze.ui.view.NotificationPanel;
 import com.mtanalyze.ui.view.SourcePanel;
 import com.mtanalyze.ui.view.TagView;
+import com.mtanalyze.util.FileChoosers;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -968,7 +969,7 @@ public class MtAnalyzeFrame extends JFrame {
     // Load file
     // -----------------------------------------------------------------------
     private JFileChooser createSwiftFileChooser(String title) {
-        JFileChooser fc = new JFileChooser();
+        JFileChooser fc = FileChoosers.create();
         fc.setDialogTitle(title);
         fc.setFileFilter(new FileNameExtensionFilter(
             "SWIFT Files (*.txt, *.swift, *.mt5xx, *.mt9xx, *.ste, *.log, *.csv)",
@@ -1045,7 +1046,7 @@ public class MtAnalyzeFrame extends JFrame {
     }
 
     private JFileChooser createSessionFileChooser(String title) {
-        JFileChooser fc = new JFileChooser();
+        JFileChooser fc = FileChoosers.create();
         fc.setDialogTitle(title);
         fc.setFileFilter(new FileNameExtensionFilter(
             "MT Session Files (*." + SESSION_EXT + ")", SESSION_EXT));
@@ -1199,7 +1200,7 @@ public class MtAnalyzeFrame extends JFrame {
     }
 
     private void onValidateFile() {
-        JFileChooser fc = new JFileChooser();
+        JFileChooser fc = FileChoosers.create();
         fc.setDialogTitle("Validate SWIFT FIN File");
         fc.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter(
             "SWIFT Files (*.txt, *.swift, *.fin, *.ste, *.log)",

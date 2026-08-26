@@ -19,6 +19,7 @@ import com.mtanalyze.config.SystemConfig;
 import com.mtanalyze.export.CsvExport;
 import com.mtanalyze.parser.HintDictionary;
 import com.mtanalyze.parser.MtFileIO;
+import com.mtanalyze.util.FileChoosers;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -428,7 +429,7 @@ final class SettingsDialog {
     }
 
     private static void onImportDict(JDialog dlg, DefaultTableModel model, String fieldSep) {
-        JFileChooser fc = new JFileChooser();
+        JFileChooser fc = FileChoosers.create();
         fc.setDialogTitle("Import User Dictionary");
         fc.setFileFilter(new FileNameExtensionFilter(CSV_FILE_FILTER, "csv"));
         if (fc.showOpenDialog(dlg) != JFileChooser.APPROVE_OPTION) return;
@@ -468,7 +469,7 @@ final class SettingsDialog {
 
     private static void exportCsvFile(JDialog dlg, JTable table, Consumer<PrintWriter> writeContent) {
         if (table.isEditing()) table.getCellEditor().stopCellEditing();
-        JFileChooser fc = new JFileChooser();
+        JFileChooser fc = FileChoosers.create();
         fc.setDialogTitle("Export User Dictionary");
         fc.setFileFilter(new FileNameExtensionFilter(CSV_FILE_FILTER, "csv"));
         fc.setSelectedFile(new File("user_dictionary.csv"));

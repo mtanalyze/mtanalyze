@@ -22,6 +22,7 @@ import com.mtanalyze.ui.FilterSupport;
 import com.mtanalyze.ui.ToolbarIcons;
 import com.mtanalyze.ui.filter.ColumnFilterRow;
 import com.mtanalyze.ui.filter.FinFilterRow;
+import com.mtanalyze.util.FileChoosers;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -228,7 +229,7 @@ public abstract class PostingPanel extends RoundedPanel implements EditMenuContr
     // -----------------------------------------------------------------------
 
     private void onLoad() {
-        JFileChooser fc = new JFileChooser();
+        JFileChooser fc = FileChoosers.create();
         fc.setDialogTitle(loadDialogTitle);
         fc.setFileFilter(new FileNameExtensionFilter("CSV files (*.csv)", "csv"));
         if (fc.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) return;
@@ -310,7 +311,7 @@ public abstract class PostingPanel extends RoundedPanel implements EditMenuContr
 
     private void onExport() {
         if (tableModel.getRowCount() == 0) return;
-        JFileChooser fc = new JFileChooser();
+        JFileChooser fc = FileChoosers.create();
         fc.setDialogTitle(exportDialogTitle);
         fc.setFileFilter(new FileNameExtensionFilter("CSV files (*.csv)", "csv"));
         fc.setSelectedFile(new File(defaultExportFileName));
