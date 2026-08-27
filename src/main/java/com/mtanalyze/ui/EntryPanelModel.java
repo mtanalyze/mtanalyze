@@ -374,7 +374,9 @@ final class EntryPanelModel {
         if ("569".equals(type)) return detect569RowSequence(mt.getSwiftMessage().getBlock4());
         if (type != null && type.matches("54[0-8]")) return null;
         if ("527".equals(type) || "558".equals(type) || "578".equals(type)
-                || "565".equals(type) || "566".equals(type) || "568".equals(type)) return null;
+                || "565".equals(type) || "566".equals(type) || "568".equals(type)
+                || "509".equals(type) || "514".equals(type) || "515".equals(type)
+                || "517".equals(type) || "518".equals(type)) return null;
         if ("940".equals(type) || "950".equals(type)) return "61";
         SwiftTagListBlock b4 = mt.getSwiftMessage().getBlock4();
         if (b4 != null && b4.getTags().stream().noneMatch(t -> "16R".equals(t.getName()))) return null;

@@ -2,7 +2,12 @@ name: Release Build
 
 on:
   release:
-    types: [created]
+    types: [published, released, created]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release-Tag (z. B. v1.0.22)'
+        required: true
 
 jobs:
   build:
@@ -25,10 +30,11 @@ jobs:
 
       - name: Rename JAR with release tag
         run: |
-          TAG="${{ github.event.release.tag_name }}"
+          TAG="${{ github.event.release.tag_name || inputs.tag }}"
           mv target/MT-Analyze-*.jar "target/MT-Analyze-${TAG}.jar"
 
       - name: Upload JAR to release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ github.event.release.tag_name || inputs.tag }}
           files: target/MT-Analyze-*.jar

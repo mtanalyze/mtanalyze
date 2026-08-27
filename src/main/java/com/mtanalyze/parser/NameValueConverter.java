@@ -22,7 +22,9 @@ import com.prowidesoftware.swift.model.field.Field;
 import com.prowidesoftware.swift.model.mt.AbstractMT;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
@@ -44,22 +46,277 @@ public final class NameValueConverter {
     private static final Pattern MIDNIGHT_SUFFIX = Pattern.compile(" 00:00:00\\.000000");
 
     /**
-     * Tag order inside a {@code SETPRTY} subsequence (E1 for MT 540-547, B1 for
-     * MT 548). {@code SETPRTY} repeats under the same bare sequence code, so the
-     * boundary between two parties is only visible from the tags: a field whose
-     * tag is not positioned after the previous field's tag starts the next party
-     * and forces a synthesized {@code :16S:}/{@code :16R:} pair.
+     * Tag order shared by the repeating party subsequences {@code SETPRTY},
+     * {@code CSHPRTY} and {@code CONFPRTY}. Such a subsequence repeats under the
+     * same bare sequence code, so the boundary between two parties is only visible
+     * from the tags: a field whose tag is not positioned after the previous
+     * field's tag starts the next party and forces a synthesized
+     * {@code :16S:}/{@code :16R:} pair.
      */
     private static final List<String> SETPRTY_TAG_ORDER = List.of("95", "97", "98", "20", "70");
 
+    /**
+     * Name-Value sequence code -&gt; SWIFT block name it opens, keyed by MT type.
+     * MT types that share an identical sequence layout (e.g. 540-543) map to the
+     * same inner map instance.
+     */
+    // SWIFT block names referenced from more than one MT layout below.
+    private static final String ADDINFO = "ADDINFO";
+    private static final String BREAK = "BREAK";
+    private static final String TRANSDET = "TRANSDET";
+    private static final String SETPRTY = "SETPRTY";
+    private static final String CSHPRTY = "CSHPRTY";
+    private static final String CONFPRTY = "CONFPRTY";
+    private static final String SETDET = "SETDET";
+    private static final String COLLPRTY = "COLLPRTY";
+    private static final String SECMOVE = "SECMOVE";
+    private static final String CASHMOVE = "CASHMOVE";
+    private static final String USECU = "USECU";
+
+    private static final Map<Integer, Map<String, String>> SEQUENCE_BLOCKS = buildSequenceBlocks();
+
     private final ArrayList<String> sequenceStack = new ArrayList<>();
     private final Logger logger = Logger.getLogger(getClass().getName());
+
+    private static Map<Integer, Map<String, String>> buildSequenceBlocks() {
+        Map<Integer, Map<String, String>> byMt = new HashMap<>();
+
+        byMt.put(530, Map.ofEntries(
+                Map.entry("A", "GENL"),
+                Map.entry("B", "REQD"),
+                Map.entry("B1", "LINK"),
+                Map.entry("C", ADDINFO),
+                Map.entry("C1", "STAT"),
+                Map.entry("C1a", "REAS")));
+
+        byMt.put(535, Map.ofEntries(
+                Map.entry("A", "GENL"),
+                Map.entry("A1", "LINK"),
+                Map.entry("B", "SUBSAFE"),
+                Map.entry("B1", "FIN"),
+                Map.entry("B1a", "FIA"),
+                Map.entry("B1b", "SUBBAL"),
+                Map.entry("B1b1", BREAK),
+                Map.entry("B1c", BREAK),
+                Map.entry("C", ADDINFO)));
+
+        byMt.put(537, Map.ofEntries(
+                Map.entry("A", "GENL"),
+                Map.entry("A1", "LINK"),
+                Map.entry("B", "STAT"),
+                Map.entry("B1", "REAS"),
+                Map.entry("B2", "TRAN"),
+                Map.entry("B2a", "LINK"),
+                Map.entry("B2b", TRANSDET),
+                Map.entry("B2b1", SETPRTY),
+                Map.entry("C", "TRANS"),
+                Map.entry("C1", "LINK"),
+                Map.entry("C2", TRANSDET),
+                Map.entry("C2a", SETPRTY),
+                Map.entry("C3", "STAT"),
+                Map.entry("C3a", "REAS"),
+                Map.entry("D", "PENA"),
+                Map.entry("D1", "PENACUR"),
+                Map.entry("D1a", "PENACOUNT"),
+                Map.entry("D1a1", "PENDET"),
+                Map.entry("D1a1A", "CALDET"),
+                Map.entry("D1a1A1", "FIA"),
+                Map.entry("D1a1B", "RELTRAN"),
+                Map.entry("D1a1B1", "TRAN"),
+                Map.entry("D1a1B1a", "STAT"),
+                Map.entry("D1a1B1a1", "REAS"),
+                Map.entry("E", ADDINFO)));
+
+        byMt.put(527, Map.ofEntries(
+                Map.entry("A", "GENL"),
+                Map.entry("A1", COLLPRTY),
+                Map.entry("A2", "LINK"),
+                Map.entry("B", "DEALTRAN"),
+                Map.entry("B1", BREAK),
+                Map.entry("C", SECMOVE),
+                Map.entry("D", CASHMOVE),
+                Map.entry("E", ADDINFO)));
+
+        byMt.put(509, Map.ofEntries(
+                Map.entry("A", "GENL"),
+                Map.entry("A1", "LINK"),
+                Map.entry("A2", "STAT"),
+                Map.entry("A2a", "REAS"),
+                Map.entry("B", "TRADE"),
+                Map.entry("B1", "TRADPRTY"),
+                Map.entry("C", ADDINFO)));
+
+        // MT 514 (Trade Allocation Instruction) and MT 518 (Market-Side Securities
+        // Trade Confirmation) share an identical sequence layout.
+        Map<String, String> tradeConfirm = Map.ofEntries(
+                Map.entry("A", "GENL"),
+                Map.entry("A1", "LINK"),
+                Map.entry("B", "CONFDET"),
+                Map.entry("B1", CONFPRTY),
+                Map.entry("B2", "FIA"),
+                Map.entry("C", SETDET),
+                Map.entry("C1", SETPRTY),
+                Map.entry("C2", CSHPRTY),
+                Map.entry("C3", "AMT"),
+                Map.entry("D", "OTHRPRTY"),
+                Map.entry("E", "REPO"));
+        putAll(byMt, tradeConfirm, 514, 518);
+
+        byMt.put(515, Map.ofEntries(
+                Map.entry("A", "GENL"),
+                Map.entry("A1", "LINK"),
+                Map.entry("B", "PAFILL"),
+                Map.entry("C", "CONFDET"),
+                Map.entry("C1", CONFPRTY),
+                Map.entry("C2", "FIA"),
+                Map.entry("D", SETDET),
+                Map.entry("D1", SETPRTY),
+                Map.entry("D2", CSHPRTY),
+                Map.entry("D3", "AMT"),
+                Map.entry("E", "OTHRPRTY"),
+                Map.entry("F", "REPO")));
+
+        byMt.put(517, Map.ofEntries(
+                Map.entry("A", "GENL"),
+                Map.entry("A1", "LINK")));
+
+        Map<String, String> deliverReceive = Map.ofEntries(
+                Map.entry("A", "GENL"),
+                Map.entry("A1", "LINK"),
+                Map.entry("B", "TRADDET"),
+                Map.entry("B1", "FIA"),
+                Map.entry("C", "FIAC"),
+                Map.entry("D", "REPO"),
+                Map.entry("E", SETDET),
+                Map.entry("E1", SETPRTY),
+                Map.entry("E2", CSHPRTY),
+                Map.entry("E3", "AMT"));
+        putAll(byMt, deliverReceive, 540, 541, 542, 543);
+
+        Map<String, String> confirmation = Map.ofEntries(
+                Map.entry("A", "GENL"),
+                Map.entry("A1", "LINK"),
+                Map.entry("B", TRANSDET),
+                Map.entry("B1", "FIA"),
+                Map.entry("C", "FIAC"),
+                Map.entry("E", SETDET),
+                Map.entry("E1", SETPRTY),
+                Map.entry("E2", CSHPRTY),
+                Map.entry("E3", "AMT"));
+        putAll(byMt, confirmation, 544, 545, 546, 547);
+
+        byMt.put(548, Map.ofEntries(
+                Map.entry("A", "GENL"),
+                Map.entry("A1", "LINK"),
+                Map.entry("A2", "STAT"),
+                Map.entry("A2a", "REAS"),
+                Map.entry("B", "SETTRAN"),
+                Map.entry("B1", SETPRTY),
+                Map.entry("C", "PENA"),
+                Map.entry("C1", "PENACUR"),
+                Map.entry("C1a", "PENACOUNT"),
+                Map.entry("C1a1", "PENDET"),
+                Map.entry("C1a1A", "CALDET"),
+                Map.entry("C1a1A1", "FIA"),
+                Map.entry("C1a1B", "RELTRAN"),
+                Map.entry("C1a1B1", "TRAN"),
+                Map.entry("C1a1B1a", "STAT"),
+                Map.entry("C1a1B1a1", "REAS"),
+                Map.entry("D", ADDINFO)));
+
+        byMt.put(558, Map.ofEntries(
+                Map.entry("A", "GENL"),
+                Map.entry("A1", COLLPRTY),
+                Map.entry("A2", "STAT"),
+                Map.entry("A2a", "REAS"),
+                Map.entry("A3", "LINK"),
+                Map.entry("B", "DEALTRAN"),
+                Map.entry("B1", BREAK),
+                Map.entry("C", SECMOVE),
+                Map.entry("D", CASHMOVE),
+                Map.entry("E", ADDINFO)));
+
+        byMt.put(564, Map.ofEntries(
+                Map.entry("A", "GENL"),
+                Map.entry("A1", "LINK"),
+                Map.entry("A2", "REVR"),
+                Map.entry("B", USECU),
+                Map.entry("B1", "FIA"),
+                Map.entry("B2", "ACCTINFO"),
+                Map.entry("C", "INTSEC"),
+                Map.entry("D", "CADETL"),
+                Map.entry("E", "CAOPTN"),
+                Map.entry("E1", SECMOVE),
+                Map.entry("E1a", "FIA"),
+                Map.entry("E2", CASHMOVE),
+                Map.entry("F", ADDINFO)));
+
+        byMt.put(565, Map.ofEntries(
+                Map.entry("A", "GENL"),
+                Map.entry("A1", "LINK"),
+                Map.entry("B", USECU),
+                Map.entry("B1", "FIA"),
+                Map.entry("B2", "ACCTINFO"),
+                Map.entry("C", "BENODET"),
+                Map.entry("D", "CAINST"),
+                Map.entry("E", ADDINFO)));
+
+        byMt.put(567, Map.ofEntries(
+                Map.entry("A", "GENL"),
+                Map.entry("A1", "LINK"),
+                Map.entry("A2", "STAT"),
+                Map.entry("A2a", "REAS"),
+                Map.entry("B", "CADETL"),
+                Map.entry("C", ADDINFO)));
+
+        byMt.put(568, Map.ofEntries(
+                Map.entry("A", "GENL"),
+                Map.entry("A1", "LINK"),
+                Map.entry("B", USECU),
+                Map.entry("B1", "FIA"),
+                Map.entry("C", ADDINFO)));
+
+        byMt.put(569, Map.ofEntries(
+                Map.entry("A", "GENL"),
+                Map.entry("A1", COLLPRTY),
+                Map.entry("A2", "LINK"),
+                Map.entry("B", "SUMM"),
+                Map.entry("C", "SUME"),
+                Map.entry("C1", "SUMC"),
+                Map.entry("C1a", TRANSDET),
+                Map.entry("C1a1", "VALDET"),
+                Map.entry("C1a1A", "SECDET"),
+                Map.entry("D", ADDINFO)));
+
+        byMt.put(578, Map.ofEntries(
+                Map.entry("A", "GENL"),
+                Map.entry("A1", "LINK"),
+                Map.entry("B", "TRADDET"),
+                Map.entry("B1", "FIA"),
+                Map.entry("C", "FIAC"),
+                Map.entry("C1", BREAK),
+                Map.entry("D", "REPO"),
+                Map.entry("E", SETDET),
+                Map.entry("E1", SETPRTY),
+                Map.entry("E2", CSHPRTY),
+                Map.entry("E3", "AMT"),
+                Map.entry("F", ADDINFO)));
+
+        return Map.copyOf(byMt);
+    }
+
+    private static void putAll(Map<Integer, Map<String, String>> target,
+                               Map<String, String> blocks, int... mts) {
+        for (int mt : mts) {
+            target.put(mt, blocks);
+        }
+    }
 
     /**
      * True when {@code content} is a single-line Name-Value message that uses bare
      * sequence codes (e.g. {@code A2_20C:TRRF=...}) instead of explicit
      * {@code :16R:}/{@code :16S:} markers, and therefore needs its sequence boundaries
-     * synthesized by {@link #process} rather than being handled by
+     * synthesized by {@link #convert} rather than being handled by
      * {@link MtFileIO#convertNameValueToBlock4}, which expects those markers to
      * already be present in the source.
      */
@@ -84,385 +341,16 @@ public final class NameValueConverter {
 
     /** Maps a Name-Value sequence code (e.g. {@code "A1"}) to the SWIFT block name it opens for {@code mt}. */
     public String translateSequence(int mt, String sequence) {
-        switch (mt) {
-            case 530:
-                switch (sequence) {
-                    case "A":
-                        return "GENL";
-                    case "B":
-                        return "REQD";
-                    case "B1":
-                        return "LINK";
-                    case "C":
-                        return "ADDINFO";
-                    case "C1":
-                        return "STAT";
-                    case "C1a":
-                        return "REAS";
-                    default:
-                        logger.warning("Unknown MT %s sequence: %s".formatted(mt, sequence));
-                }
-                break;
-            case 535:
-                switch (sequence) {
-                    case "A":
-                        return "GENL";
-                    case "A1":
-                        return "LINK";
-                    case "B":
-                        return "SUBSAFE";
-                    case "B1":
-                        return "FIN";
-                    case "B1a":
-                        return "FIA";
-                    case "B1b":
-                        return "SUBBAL";
-                    case "B1b1":
-                        return "BREAK";
-                    case "B1c":
-                        return "BREAK";
-                    case "C":
-                        return "ADDINFO";
-                    default:
-                        logger.warning("Unknown MT %s sequence: %s".formatted(mt, sequence));
-                }
-                break;
-            case 537:
-                switch (sequence) {
-                    case "A":
-                        return "GENL";
-                    case "A1":
-                        return "LINK";
-                    case "B":
-                        return "STAT";
-                    case "B1":
-                        return "REAS";
-                    case "B2":
-                        return "TRAN";
-                    case "B2a":
-                        return "LINK";
-                    case "B2b":
-                        return "TRANSDET";
-                    case "B2b1":
-                        return "SETPRTY";
-                    case "C":
-                        return "TRANS";
-                    case "C1":
-                        return "LINK";
-                    case "C2":
-                        return "TRANSDET";
-                    case "C2a":
-                        return "SETPRTY";
-                    case "C3":
-                        return "STAT";
-                    case "C3a":
-                        return "REAS";
-                    case "D":
-                        return "PENA";
-                    case "D1":
-                        return "PENACUR";
-                    case "D1a":
-                        return "PENACOUNT";
-                    case "D1a1":
-                        return "PENDET";
-                    case "D1a1A":
-                        return "CALDET";
-                    case "D1a1A1":
-                        return "FIA";
-                    case "D1a1B":
-                        return "RELTRAN";
-                    case "D1a1B1":
-                        return "TRAN";
-                    case "D1a1B1a":
-                        return "STAT";
-                    case "D1a1B1a1":
-                        return "REAS";
-                    case "E":
-                        return "ADDINFO";
-                    default:
-                        logger.warning("Unknown MT %s sequence: %s".formatted(mt, sequence));
-                }
-                break;
-            case 527:
-                switch (sequence) {
-                    case "A":
-                        return "GENL";
-                    case "A1":
-                        return "COLLPRTY";
-                    case "A2":
-                        return "LINK";
-                    case "B":
-                        return "DEALTRAN";
-                    case "B1":
-                        return "BREAK";
-                    case "C":
-                        return "SECMOVE";
-                    case "D":
-                        return "CASHMOVE";
-                    case "E":
-                        return "ADDINFO";
-                    default:
-                }
-                break;
-            case 540, 541, 542, 543:
-                switch (sequence) {
-                    case "A":
-                        return "GENL";
-                    case "A1":
-                        return "LINK";
-                    case "B":
-                        return "TRADDET";
-                    case "B1":
-                        return "FIA";
-                    case "C":
-                        return "FIAC";
-                    case "D":
-                        return "REPO";
-                    case "E":
-                        return "SETDET";
-                    case "E1":
-                        return "SETPRTY";
-                    case "E3":
-                        return "AMT";
-                    default:
-                        logger.warning("Unknown MT %s sequence: %s".formatted(mt, sequence));
-                }
-                break;
-            case 544, 545, 546, 547:
-                switch (sequence) {
-                    case "A":
-                        return "GENL";
-                    case "A1":
-                        return "LINK";
-                    case "B":
-                        return "TRANSDET";
-                    case "B1":
-                        return "FIA";
-                    case "C":
-                        return "FIAC";
-                    case "E":
-                        return "SETDET";
-                    case "E1":
-                        return "SETPRTY";
-                    case "E3":
-                        return "AMT";
-                    default:
-                        logger.warning("Unknown MT %s sequence: %s".formatted(mt, sequence));
-                }
-                break;
-            case 548:
-                switch (sequence) {
-                    case "A":
-                        return "GENL";
-                    case "A1":
-                        return "LINK";
-                    case "A2":
-                        return "STAT";
-                    case "A2a":
-                        return "REAS";
-                    case "B":
-                        return "SETTRAN";
-                    case "B1":
-                        return "SETPRTY";
-                    case "C":
-                        return "PENA";
-                    case "C1":
-                        return "PENACUR";
-                    case "C1a":
-                        return "PENACOUNT";
-                    case "C1a1":
-                        return "PENDET";
-                    case "C1a1A":
-                        return "CALDET";
-                    case "C1a1A1":
-                        return "FIA";
-                    case "C1a1B":
-                        return "RELTRAN";
-                    case "C1a1B1":
-                        return "TRAN";
-                    case "C1a1B1a":
-                        return "STAT";
-                    case "C1a1B1a1":
-                        return "REAS";
-                    case "D":
-                        return "ADDINFO";
-                    default:
-                        logger.warning("Unknown MT %s sequence: %s".formatted(mt, sequence));
-                }
-                break;
-            case 558:
-                switch (sequence) {
-                    case "A":
-                        return "GENL";
-                    case "A1":
-                        return "COLLPRTY";
-                    case "A2":
-                        return "STAT";
-                    case "A2a":
-                        return "REAS";
-                    case "A3":
-                        return "LINK";
-                    case "B":
-                        return "DEALTRAN";
-                    case "B1":
-                        return "BREAK";
-                    case "C":
-                        return "SECMOVE";
-                    case "D":
-                        return "CASHMOVE";
-                    case "E":
-                        return "ADDINFO";
-                    default:
-                }
-                break;
-            case 564:
-                switch (sequence) {
-                    case "A":
-                        return "GENL";
-                    case "A1":
-                        return "LINK";
-                    case "A2":
-                        return "REVR";
-                    case "B":
-                        return "USECU";
-                    case "B1":
-                        return "FIA";
-                    case "B2":
-                        return "ACCTINFO";
-                    case "C":
-                        return "INTSEC";
-                    case "D":
-                        return "CADETL";
-                    case "E":
-                        return "CAOPTN";
-                    case "E1":
-                        return "SECMOVE";
-                    case "E1a":
-                        return "FIA";
-                    case "E2":
-                        return "CASHMOVE";
-                    case "F":
-                        return "ADDINFO";
-                    default:
-                        logger.warning("Unknown MT %s sequence: %s".formatted(mt, sequence));
-                }
-                break;
-            case 565:
-                switch (sequence) {
-                    case "A":
-                        return "GENL";
-                    case "A1":
-                        return "LINK";
-                    case "B":
-                        return "USECU";
-                    case "B1":
-                        return "FIA";
-                    case "B2":
-                        return "ACCTINFO";
-                    case "C":
-                        return "BENODET";
-                    case "D":
-                        return "CAINST";
-                    case "E":
-                        return "ADDINFO";
-                    default:
-                        logger.warning("Unknown MT %s sequence: %s".formatted(mt, sequence));
-                }
-                break;
-            case 567:
-                switch (sequence) {
-                    case "A":
-                        return "GENL";
-                    case "A1":
-                        return "LINK";
-                    case "A2":
-                        return "STAT";
-                    case "A2a":
-                        return "REAS";
-                    case "B":
-                        return "CADETL";
-                    case "C":
-                        return "ADDINFO";
-                    default:
-                        logger.warning("Unknown MT %s sequence: %s".formatted(mt, sequence));
-                }
-                break;
-            case 568:
-                switch (sequence) {
-                    case "A":
-                        return "GENL";
-                    case "A1":
-                        return "LINK";
-                    case "B":
-                        return "USECU";
-                    case "B1":
-                        return "FIA";
-                    case "C":
-                        return "ADDINFO";
-                    default:
-                        logger.warning("Unknown MT %s sequence: %s".formatted(mt, sequence));
-                }
-                break;
-            case 569:
-                switch (sequence) {
-                    case "A":
-                        return "GENL";
-                    case "A1":
-                        return "COLLPRTY";
-                    case "A2":
-                        return "LINK";
-                    case "B":
-                        return "SUMM";
-                    case "C":
-                        return "SUME";
-                    case "C1":
-                        return "SUMC";
-                    case "C1a":
-                        return "TRANSDET";
-                    case "C1a1":
-                        return "VALDET";
-                    case "C1a1A":
-                        return "SECDET";
-                    case "D":
-                        return "ADDINFO";
-                    default:
-                        logger.warning("Unknown MT %s sequence: %s".formatted(mt, sequence));
-                }
-                break;
-            case 578:
-                switch (sequence) {
-                    case "A":
-                        return "GENL";
-                    case "A1":
-                        return "LINK";
-                    case "B":
-                        return "TRADDET";
-                    case "B1":
-                        return "FIA";
-                    case "C":
-                        return "FIAC";
-                    case "C1":
-                        return "BREAK";
-                    case "D":
-                        return "REPO";
-                    case "E":
-                        return "SETDET";
-                    case "E1":
-                        return "SETPRTY";
-                    case "E2":
-                        return "CSHPRTY";
-                    case "E3":
-                        return "AMT";
-                    case "F":
-                        return "ADDINFO";
-                    default:
-                        logger.warning("Unknown MT %s sequence: %s".formatted(mt, sequence));
-                }
-                break;
-            default:
-                throw new IllegalArgumentException("Message type %s is not implemented".formatted(mt));
+        Map<String, String> blocks = SEQUENCE_BLOCKS.get(mt);
+        if (blocks == null) {
+            throw new IllegalArgumentException("Message type %s is not implemented".formatted(mt));
         }
-        return "XXX";
+        String block = blocks.get(sequence);
+        if (block == null) {
+            logger.warning("Unknown MT %s sequence: %s".formatted(mt, sequence));
+            return "XXX";
+        }
+        return block;
     }
 
     /** Converts one Name-Value line into the corresponding SWIFT MT message. */
@@ -542,11 +430,12 @@ public final class NameValueConverter {
                                 setPrtyTagIndex = -1;
                             }
 
-                            // A SETPRTY subsequence can occur several times in a row under the same
-                            // bare sequence code. Its fields arrive in the fixed order 95a, 97a,
-                            // 98a, 20C, 70a, so a tag that is not after the previous one belongs to
-                            // the next party: close the running SETPRTY and open a fresh one.
-                            if ("SETPRTY".equals(translateSequence(mt, seq))) {
+                            // A SETPRTY / CSHPRTY / CONFPRTY subsequence can occur several times in a
+                            // row under the same bare sequence code. Its fields arrive in the fixed
+                            // order 95a, 97a, 98a, 20C, 70a, so a tag that is not after the previous
+                            // one belongs to the next party: close the running party and open a fresh one.
+                            String blockName = translateSequence(mt, seq);
+                            if (SETPRTY.equals(blockName) || CSHPRTY.equals(blockName) || CONFPRTY.equals(blockName)) {
                                 int tagIndex = setPrtyTagOrder(tagFields[0]);
                                 if (tagIndex >= 0) {
                                     if (!freshSequence && tagIndex <= setPrtyTagIndex) {

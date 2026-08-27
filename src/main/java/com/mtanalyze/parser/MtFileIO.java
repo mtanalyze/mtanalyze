@@ -31,7 +31,9 @@ public final class MtFileIO {
     private MtFileIO() {}
 
     private static final String[] MT_TYPE_ITEMS = {
-        "Auto-detect", "MT 527", "MT 530", "MT 535", "MT 536", "MT 537",
+        "Auto-detect",
+        "MT 509", "MT 514", "MT 515", "MT 517", "MT 518",
+        "MT 527", "MT 530", "MT 535", "MT 536", "MT 537",
         "MT 540", "MT 541", "MT 542", "MT 543",
         "MT 544", "MT 545", "MT 546", "MT 547", "MT 548",
         "MT 558", "MT 564", "MT 565", "MT 566", "MT 567", "MT 568", "MT 569",
