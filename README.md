@@ -111,9 +111,9 @@ java -jar mtanalyze-1.0.16-all.jar
 
 ## About the Developer
 
-MT Analyze is built and maintained by **Ralf Schwarz**, an independent banking-IT consultant and business analyst specialising in securities trading and settlement systems for international banks and asset managers.
+MT Analyze is built and maintained by **[Centerscout GmbH](https://www.centerscout.de)**, specialising in securities trading and settlement systems for international banks and asset managers.
 
-Get in touch on **[LinkedIn](https://www.linkedin.com/in/ralfschwarz/)**.
+Get in touch at **[www.centerscout.de](https://www.centerscout.de)**.
 
 ---
 
@@ -125,6 +125,6 @@ Bug reports, feature requests and pull requests are welcome. Please open an [iss
 
 ## License
 
-Copyright 2026 Ralf Schwarz. Licensed under the [Apache License 2.0](LICENSE).
+Copyright 2026 Centerscout GmbH. Licensed under the [Apache License 2.0](LICENSE).
 
 SWIFT is a registered trademark of S.W.I.F.T. SCRL. MT Analyze is an independent open source project and is not affiliated with S.W.I.F.T. SCRL.

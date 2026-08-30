@@ -1,5 +1,5 @@
 /*
- * Copyright 2026 Ralf Schwarz
+ * Copyright 2026 Centerscout GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1387,7 +1387,7 @@ public class MtAnalyzeFrame extends JFrame {
 
         JLabel title   = aboutLabel(APP_NAME,                            22f, Font.BOLD,   BrandTheme.FG);
         JLabel version = aboutLabel("Version " + loadVersion(),          12f, Font.PLAIN,  BrandTheme.SUB);
-        JLabel copy    = aboutLabel("© 2026 Ralf Schwarz",               12f, Font.PLAIN,  BrandTheme.FG);
+        JLabel copy    = aboutLabel("© 2026 Centerscout GmbH",           12f, Font.PLAIN,  BrandTheme.FG);
         JLabel devLink = linkLabel("<html><a href=''>linkedin.com/in/ralfschwarz</a></html>", DEVELOPER_URL);
         JLabel license = aboutLabel("Licensed under the Apache License, Version 2.0",
                                                                          11f, Font.PLAIN,  BrandTheme.SUB);
