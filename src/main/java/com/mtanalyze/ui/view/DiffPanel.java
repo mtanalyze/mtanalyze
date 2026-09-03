@@ -42,6 +42,9 @@ public final class DiffPanel extends JPanel implements EntrySelectionListener {
 
     private static final String PLACEHOLDER_TEXT = "Select 2 or more rows to compare";
 
+    /** Key of the synthetic "MT type" column in {@link Entry#data()}. */
+    private static final String MT_COL_KEY = "\t_MT_\t\t1";
+
     public DiffPanel() {
         super(new BorderLayout());
         showPlaceholder();
@@ -65,7 +68,9 @@ public final class DiffPanel extends JPanel implements EntrySelectionListener {
             Entry e    = entries.get(i);
             String seq = e.getValue(MtParser.SEQ_KEY);
             labels.add("Entry " + (i + 1));
-            rows.add(collectEntryRows(e.fullDisplaySequence(), baseSeq(seq)));
+            List<String[]> entryRows = collectEntryRows(e.fullDisplaySequence(), baseSeq(seq));
+            entryRows.add(0, new String[]{"\t_MT_\t\t", "", "MT", "", e.getValue(MT_COL_KEY)});
+            rows.add(entryRows);
         }
         removeAll();
         add(buildPanel(labels, rows), BorderLayout.CENTER);
