@@ -980,12 +980,13 @@ public class MtAnalyzeFrame extends JFrame {
                 statusLabel.setText("No SWIFT message for selected entry.");
                 return;
             }
-            mtExport.exportSingle(MtAnalyzeFrame.this,
+            File saved = mtExport.exportSingle(MtAnalyzeFrame.this,
                 msg.raw(),
                 config.getMtExportSender(),
                 config.getMtExportReceiver(),
                 entryPanel.getRowValue(modelRow, EntryPanelModel.FILE_COL_KEY),
                 statusLabel::setText);
+            if (saved != null) updateTitle(saved.getName());
         }
 
         void onSaveExcel() {

@@ -19,7 +19,7 @@ MT Analyze is a single self-contained JAR — no installation, no admin rights.
 2. Double-click it, or run:
 
 ```bash
-java -jar MT-Analyze-1.1.0.jar
+java -jar MT-Analyze-1.1.1.jar
 ```
 
 *(Optional)* Each [Releases](https://github.com/mtanalyze/mtanalyze/releases) page shows a SHA256 digest next to the JAR asset, if you'd like to verify the download — compare it against the output of:
@@ -92,10 +92,10 @@ MT Analyze is published on [Maven Central](https://central.sonatype.com/artifact
 
 ```bash
 mvn org.apache.maven.plugins:maven-dependency-plugin:3.6.1:copy \
-  -Dartifact=com.mtanalyze:mtanalyze:1.1.0:jar:all \
+  -Dartifact=com.mtanalyze:mtanalyze:1.1.1:jar:all \
   -DoutputDirectory=.
 
-java -jar mtanalyze-1.1.0-all.jar
+java -jar mtanalyze-1.1.1-all.jar
 ```
 ---
 

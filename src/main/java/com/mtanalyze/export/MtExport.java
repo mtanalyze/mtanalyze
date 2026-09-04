@@ -59,17 +59,18 @@ public final class MtExport {
         return new String[]{ senderField.getText().trim(), receiverField.getText().trim() };
     }
 
-    public void exportSingle(Frame owner, AbstractMT message, String sender, String receiver,
+    /** Returns the saved file, or {@code null} if the user cancelled or the save failed. */
+    public File exportSingle(Frame owner, AbstractMT message, String sender, String receiver,
                              String sourcePath, Consumer<String> status) {
         String[] bic = showBicDialog(owner, sender, receiver);
-        if (bic.length == 0) return;
+        if (bic.length == 0) return null;
         String mtType = getMtType(message);
         String snd = padBic(bic[0]);
         String rcv = padBic(bic[1]);
         String msgText = buildMessage(message, snd, rcv);
 
         JFileChooser fc = getJFileChooser(sourcePath, mtType);
-        if (fc.showSaveDialog(owner) != JFileChooser.APPROVE_OPTION) return;
+        if (fc.showSaveDialog(owner) != JFileChooser.APPROVE_OPTION) return null;
 
         File file = fc.getSelectedFile();
         if (!file.getName().toLowerCase(Locale.ROOT).endsWith(".txt"))
@@ -80,10 +81,11 @@ public final class MtExport {
         } catch (IOException ex) {
             JOptionPane.showMessageDialog(owner, "Error during export:\n" + ex.getMessage(),
                     "Error", JOptionPane.ERROR_MESSAGE);
-            return;
+            return null;
         }
         status.accept("Exported to: " + file.getAbsolutePath());
         CsvExport.offerOpenFile(owner, file);
+        return file;
     }
 
     private static JFileChooser getJFileChooser(String sourcePath, String mtType) {

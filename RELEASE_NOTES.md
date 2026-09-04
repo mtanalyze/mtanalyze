@@ -1,29 +1,26 @@
-# MT Analyze v1.1.0
+# MT Analyze v1.1.1
 
 ## Download & Run
 
 **Requirements:** Java 17 or higher
 
 ```bash
-java -jar MT-Analyze-1.1.0.jar
+java -jar MT-Analyze-1.1.1.jar
 ```
 
 ---
 
 ## Changes
 
-### Multiple Documents as Tabs
-
-MT Analyze can now show several documents at once, each in its own tab. Every tab is a fully independent
-workspace with its own Entries table, filters, column layout and Detail panel. Click **+** on the tab strip
-or press **Ctrl+N** for a new empty tab; **File → Open…** loads a file into a new tab, while actions like
-**Append**, **Reload**, **Save** and Export apply to the active tab. Close a tab with the **×** on the tab
-itself; closing the last tab opens a fresh empty one.
+- The **MT** column is now pinned as the leftmost column in the MT Entries table, both on first load and after appending more files into a tab.
+- **Save...** now renames the tab to match the file name of the saved SWIFT message.
+- Fixed a potential crash (NullPointerException) while parsing certain SWIFT messages.
 
 ---
 
 # Older Releases
 
+- **v1.1.0** — Multiple documents as tabs: each tab is an independent workspace with its own Entries table, filters, column layout and Detail panel.
 - **v1.0.18** — MT 530, MT 564-569 corporate actions and transaction processing support; log import MT type filter now accepts numeric ranges.
 - **v1.0.17** — MT 578 Settlement Allegement support.
 - **v1.0.16** — Optional OWASP dependency-check Maven profile; FlatLaf, Apache POI and log4j-api dependency updates.
