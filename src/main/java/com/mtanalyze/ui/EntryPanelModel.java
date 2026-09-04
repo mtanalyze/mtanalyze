@@ -42,6 +42,9 @@ final class EntryPanelModel {
     static final String SECMOVE_INOU_KEY_1 = "SECMOVE\t22H\tINOU\t1";
     static final String SECMOVE_INOU_KEY_2 = "SECMOVE\t22H\tINOU\t2";
 
+    /** Metadata columns pinned to the front of the table, in display order (MT leftmost). */
+    private static final List<String> PINNED_FRONT_KEYS = List.of(MT_COL_KEY, TYPE_COL_KEY);
+
     // ── State ──────────────────────────────────────────────────────────────
     private final Project        project            = new Project();
     private final List<Entry>    allEntries         = new ArrayList<>();
@@ -100,10 +103,10 @@ final class EntryPanelModel {
 
         String mtType = msg.mtType();
         if (!mtType.isEmpty()) {
-            if (knownKeys.add(MT_COL_KEY)) outCols.add(new ColumnDef("", "_MT_", "", 1, MT_COL_LABEL));
+            if (knownKeys.add(MT_COL_KEY)) insertPinned(outCols, new ColumnDef("", "_MT_", "", 1, MT_COL_LABEL));
             newEntries.forEach(e -> e.data().put(MT_COL_KEY, mtType));
         }
-        if (knownKeys.add(TYPE_COL_KEY)) outCols.add(0, new ColumnDef("", "_TYPE_", "", 1, "Typ"));
+        if (knownKeys.add(TYPE_COL_KEY)) insertPinned(outCols, new ColumnDef("", "_TYPE_", "", 1, "Typ"));
         newEntries.forEach(e -> e.data().put(TYPE_COL_KEY, computeEntryType(e.data())));
         String fileLabel = fileLabel(msg);
         if (fileLabel != null) {
@@ -186,9 +189,21 @@ final class EntryPanelModel {
         allColumnDefs.forEach(cd -> knownKeys.add(cd.key));
         for (ColumnDef cd : incoming) {
             if (!knownKeys.add(cd.key)) continue;
-            if (TYPE_COL_KEY.equals(cd.key)) allColumnDefs.add(0, cd);
+            if (PINNED_FRONT_KEYS.contains(cd.key)) insertPinned(allColumnDefs, cd);
             else allColumnDefs.add(cd);
         }
+    }
+
+    /** Inserts {@code cd} among the leading pinned columns, keeping {@link #PINNED_FRONT_KEYS} order. */
+    private static void insertPinned(List<ColumnDef> cols, ColumnDef cd) {
+        int priority = PINNED_FRONT_KEYS.indexOf(cd.key);
+        int insertAt = 0;
+        while (insertAt < cols.size()) {
+            int existingPriority = PINNED_FRONT_KEYS.indexOf(cols.get(insertAt).key);
+            if (existingPriority < 0 || existingPriority > priority) break;
+            insertAt++;
+        }
+        cols.add(insertAt, cd);
     }
 
 

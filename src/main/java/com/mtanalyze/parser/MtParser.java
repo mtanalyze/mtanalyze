@@ -475,8 +475,9 @@ public class MtParser {
 
     private void registerTag(String seqLabel, Tag t,
                              Map<String, String> rowDataMap, Map<String, Integer> occCounts) {
+        if (t == null) return;
         String qualifier = lookups.extractQualifier(t);
-        String tagName   = t.getName();
+        String tagName   = t.getName() != null ? t.getName() : "";
         String baseKey   = seqLabel + "\t" + tagName + "\t" + qualifier;
 
         int n = occCounts.merge(baseKey, 1, Integer::sum);
