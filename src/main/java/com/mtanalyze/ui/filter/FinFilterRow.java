@@ -62,7 +62,6 @@ public class FinFilterRow extends AbstractFilterRow {
                     + "Press <b>Tab</b> or <b>Enter</b> to apply.</html>";
 
     private final transient Runnable onFilterChanged;
-    private final transient Runnable onSaveRequested;
     /**
      * fields.get(modelIdx) is the filter field for model column modelIdx.
      */
@@ -70,9 +69,8 @@ public class FinFilterRow extends AbstractFilterRow {
     private transient List<ColumnDef> visibleCols = new ArrayList<>();
     private boolean orMode = false;
 
-    public FinFilterRow(Runnable onFilterChanged, Runnable onSaveRequested) {
+    public FinFilterRow(Runnable onFilterChanged) {
         this.onFilterChanged  = onFilterChanged;
-        this.onSaveRequested  = onSaveRequested;
         setLayout(null);
         setPreferredSize(new Dimension(0, ROW_H));
     }
@@ -203,17 +201,6 @@ public class FinFilterRow extends AbstractFilterRow {
         onFilterChanged.run();
     }
 
-    /** Clears all fields, then sets each field whose column qualifier is a key in {@code qualifierToExpr}
-     *  to the corresponding expression, and triggers the filter. */
-    public void setFilterByQualifierMap(Map<String, String> qualifierToExpr) {
-        fields.forEach(f -> f.setText(""));
-        for (int i = 0; i < fields.size() && i < visibleCols.size(); i++) {
-            String expr = qualifierToExpr.get(visibleCols.get(i).qualifier);
-            if (expr != null) fields.get(i).setText(expr);
-        }
-        onFilterChanged.run();
-    }
-
     /** Sets filter fields from a storageKey → expression map and triggers the filter. */
     public void applyFiltersByKey(Map<String, String> filters) {
         for (int i = 0; i < fields.size(); i++) {
@@ -311,12 +298,6 @@ public class FinFilterRow extends AbstractFilterRow {
         FrameLayout.wireTextMenuItems(src, hasSelection, copyItem, cutItem, pasteItem, popup::add);
         popup.addSeparator();
 
-        if (onSaveRequested != null) {
-            JMenuItem saveItem = new JMenuItem("Save Quick Filter…");
-            saveItem.addActionListener(ae -> onSaveRequested.run());
-            popup.add(saveItem);
-            popup.addSeparator();
-        }
         JMenuItem clearItem = new JMenuItem("Clear Quick Filter");
         clearItem.addActionListener(ae -> clearAll());
         popup.add(clearItem);

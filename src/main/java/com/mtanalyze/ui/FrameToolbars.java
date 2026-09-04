@@ -55,20 +55,6 @@ public final class FrameToolbars {
     }
 
     /**
-     * Left sidebar: {@code top} floats at the top; {@code bottom} buttons group at the bottom
-     * separated by a vertical glue.
-     */
-    public static JPanel buildLeft(Border border, AbstractButton top, AbstractButton... bottom) {
-        JPanel bar = new JPanel();
-        bar.setLayout(new BoxLayout(bar, BoxLayout.Y_AXIS));
-        bar.setBorder(border);
-        bar.add(top);
-        bar.add(Box.createVerticalGlue());
-        for (AbstractButton b : bottom) bar.add(b);
-        return bar;
-    }
-
-    /**
      * Right detail sidebar: all {@code buttons} group at the top; vertical glue fills the rest.
      */
     public static JPanel buildDetailRight(Border border, AbstractButton... buttons) {

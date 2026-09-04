@@ -7,8 +7,6 @@
 
 An open-source desktop tool for analyzing SWIFT MT messages. Load instructions, statements and confirmations of any MT type into one table, see the ISO 15022 meaning of every field, and compare messages side by side.
 
-![MT Analyze GUI](doc/images/gui.gif)
-
 ---
 
 ## Getting Started
@@ -21,7 +19,7 @@ MT Analyze is a single self-contained JAR — no installation, no admin rights.
 2. Double-click it, or run:
 
 ```bash
-java -jar MT-Analyze-1.0.16.jar
+java -jar MT-Analyze-1.1.0.jar
 ```
 
 *(Optional)* Each [Releases](https://github.com/mtanalyze/mtanalyze/releases) page shows a SHA256 digest next to the JAR asset, if you'd like to verify the download — compare it against the output of:
@@ -33,26 +31,20 @@ sha256sum MT-Analyze-<version>.jar
 Get-FileHash MT-Analyze-<version>.jar -Algorithm SHA256
 ```
 
----
-
-## Features
-
-- **Entries Table** — any mix of MT types and files in one sortable, filterable table.
-- **Tag View** — full tag breakdown with ISO 15022 descriptions; enable **Components** to expand multi-part fields.
-- **Diff View** — compare two or more messages; deviating cells highlighted.
-- **Source View** — raw SWIFT message with colour-coded blocks and tags.
-
----
-
 ## Supported MT Types
 
-- **Settlement Instructions, Confirmations and Advise** — MT 540, MT 541, MT 542, MT 543, MT 544, MT 545, MT 546, MT 547, MT 548, MT 578 (Settlement Allegement)
-- **Transaction Processing** — MT 530 (Transaction Processing Command)
-- **Triparty Agent** — MT 527, MT 558, MT 569 (Triparty Collateral and Exposure Statement)
-- **Statements** — MT 535 (Statement of Holdings), MT 536 (Statement of Transactions), MT 537 (Statement of Pending Transactions), MT 940 (Customer Statement), MT 950 (Statement)
-- **Corporate Actions** — MT 564 (Corporate Action Notification), MT 565 (Corporate Action Instruction), MT 566 (Corporate Action Confirmation), MT 567 (Corporate Action Status and Processing Advice), MT 568 (Corporate Action Narrative)
-
-MT type can also be auto-detected from content for pasted text and files without a reliable header.
+| Group                              | MT Types                   |
+|------------------------------------|-----------------------------|
+| Trade Confirmation and Allegement  | MT 509, 514, 515, 517, 518 |
+| Transaction Processing             | MT 530                     |
+| Securities Statements              | MT 535, 536, 537           |
+| Settlement Instructions            | MT 540, 541, 542, 543      |
+| Settlement Confirmations           | MT 544, 545, 546, 547      |
+| Settlement Advise                  | MT 548                     |
+| Triparty Agent                     | MT 527, 558, 569           |
+| Corporate Actions                  | MT 564, 565, 566, 567, 568 |
+| Settlement Allegement              | MT 578                     |
+| Cash Statements                    | MT 940, 950                |
 
 ---
 
@@ -94,27 +86,17 @@ The report is written to `target/dependency-check-report.html`.
 
 ---
 
-
 ## Use it from Maven Central
 
 MT Analyze is published on [Maven Central](https://central.sonatype.com/artifact/com.mtanalyze/mtanalyze) — every release is GPG-signed and passes Sonatype's Central Publisher validation before it goes live, so you can pull the jar straight from Central instead of trusting a random download link.
 
 ```bash
 mvn org.apache.maven.plugins:maven-dependency-plugin:3.6.1:copy \
-  -Dartifact=com.mtanalyze:mtanalyze:1.0.16:jar:all \
+  -Dartifact=com.mtanalyze:mtanalyze:1.1.0:jar:all \
   -DoutputDirectory=.
 
-java -jar mtanalyze-1.0.16-all.jar
+java -jar mtanalyze-1.1.0-all.jar
 ```
----
-
-
-## About the Developer
-
-MT Analyze is built and maintained by **[Centerscout GmbH](https://www.centerscout.de)**, specialising in securities trading and settlement systems for international banks and asset managers.
-
-Get in touch at **[www.centerscout.de](https://www.centerscout.de)**.
-
 ---
 
 ## Contributing

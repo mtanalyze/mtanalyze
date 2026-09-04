@@ -46,14 +46,13 @@ final class SettingsDialog {
         record SystemKeys(Supplier<String> getSender, Supplier<String> getReceiver,
                            Supplier<Integer> getMaxEntries,
                            Supplier<String> getLogSwiftStart, Supplier<String> getLogNewlineToken,
-                           Supplier<Boolean> getExperimentalMode,
-                           Saver save, Runnable onExperimentalModeChange) {
+                           Saver save) {
         }
 
         @FunctionalInterface
         interface Saver {
             void save(String sender, String receiver, int maxEntries,
-                       String logSwiftStart, String logNewlineToken, boolean experimentalMode);
+                       String logSwiftStart, String logNewlineToken);
         }
 
 
@@ -66,8 +65,7 @@ final class SettingsDialog {
     }
 
     private record FormFields(JTextField fieldSep, JTextField decimalSep, JTextField sender, JTextField receiver,
-                               JTextField maxEntries, JTextField logSwiftStart, JTextField logNewlineToken,
-                               JCheckBox experimentalMode) {
+                               JTextField maxEntries, JTextField logSwiftStart, JTextField logNewlineToken) {
     }
 
     static void show(Frame owner, Preferences prefs, Config cfg, HintDictionary dict) {
@@ -94,14 +92,10 @@ final class SettingsDialog {
                 cfg.system.getLogSwiftStart.get(), 10);
         JTextField logNewlineTokenField = new JTextField(
                 cfg.system.getLogNewlineToken.get(), 10);
-        JCheckBox experimentalModeCheck = new JCheckBox(
-                "Enable experimental features (Securities, Cash, Account Mapping)",
-                cfg.system.getExperimentalMode.get());
         FormFields fields = new FormFields(
                 fieldSepField, decimalSepField,
                 senderField, receiverField,
-                maxEntriesField, logSwiftStartField, logNewlineTokenField,
-                experimentalModeCheck);
+                maxEntriesField, logSwiftStartField, logNewlineTokenField);
 
         JPanel generalPanel  = buildGeneralPanel(darkModeCheck, powerUserCheck, fields);
         JPanel advancedPanel = buildAdvancedPanel(fields);
@@ -149,7 +143,6 @@ final class SettingsDialog {
             cfg.theme.onChange.accept(newTheme);
             prefs.putBoolean(cfg.powerUser.prefKey, powerUserCheck.isSelected());
             cfg.powerUser.onChange.run();
-            cfg.system.onExperimentalModeChange.run();
             dlg.dispose();
         });
         cancel.addActionListener(e -> dlg.dispose());
@@ -228,9 +221,6 @@ final class SettingsDialog {
         resetWrap.add(resetLogTokens);
         FormPanel.addRow(form, lc, fc, 5, "", resetWrap);
 
-        addSectionSeparator(form, 6, "Experimental");
-        FormPanel.addRow(form, lc, fc, 7, "", fields.experimentalMode);
-
         return form;
     }
 
@@ -246,7 +236,6 @@ final class SettingsDialog {
         String receiver   = fields.receiver.getText().trim().toUpperCase(Locale.ROOT);
         String logSwiftStart   = fields.logSwiftStart.getText();
         String logNewlineToken = fields.logNewlineToken.getText();
-        boolean experimentalMode = fields.experimentalMode.isSelected();
 
         String sepError = validateSeparators(fieldSep, decimalSep);
         if (sepError != null) {
@@ -277,7 +266,7 @@ final class SettingsDialog {
 
         prefs.put(cfg.csv.fieldSep,     fieldSep);
         prefs.put(cfg.csv.decimalSep,   decimalSep);
-        cfg.system.save.save(sender, receiver, maxEntries, logSwiftStart, logNewlineToken, experimentalMode);
+        cfg.system.save.save(sender, receiver, maxEntries, logSwiftStart, logNewlineToken);
         return true;
     }
 

@@ -21,7 +21,6 @@ import java.util.List;
 
 /**
  * The central domain object.  Holds all loaded SWIFT messages for the current working session.
- * Corresponds to the .mtd session file on disk.
  */
 public class Project {
 
@@ -31,5 +30,4 @@ public class Project {
     public void addMessage(SwiftMessage m)         { messages.add(m); }
     public void removeMessage(int index)           { messages.remove(index); }
     public void clear()                            { messages.clear(); }
-    public boolean isEmpty()                       { return messages.isEmpty(); }
 }

@@ -16,14 +16,11 @@
 package com.mtanalyze.ui;
 
 import com.mtanalyze.model.Entry;
-import com.mtanalyze.model.Project;
 import com.mtanalyze.model.SwiftMessage;
 import com.prowidesoftware.swift.model.SwiftTagListBlock;
 
 import com.mtanalyze.parser.HintDictionary;
-import com.mtanalyze.profile.SavedColumnLayouts;
-import com.mtanalyze.profile.SavedQuickFilters;
-import com.mtanalyze.ui.view.MessageSourcePanel;
+import com.mtanalyze.ui.view.PanelDecor;
 import com.mtanalyze.ui.view.RoundedPanel;
 import com.mtanalyze.ui.filter.ColumnFilterRow;
 import com.mtanalyze.ui.filter.FinFilterRow;
@@ -41,7 +38,6 @@ import javax.swing.table.*;
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.io.File;
 import java.net.URI;
@@ -51,7 +47,7 @@ import java.util.prefs.Preferences;
 
 /**
  * Panel that shows the parsed MT entries in a filterable, sortable table.
- * All interactions with the rest of the application (detail panel, bookmarks,
+ * All interactions with the rest of the application (detail panel,
  * file loading) are routed through the {@link Host} callback interface.
  */
 public class MtEntryPanel extends JPanel {
@@ -65,13 +61,8 @@ public class MtEntryPanel extends JPanel {
         void onRowDeselected();
         void onFilesDropped(List<File> files);
         boolean isPowerUser();
-        boolean isExperimentalMode();
-        JTable getDetailTable();
         void focusDetailTag(ColumnDef cd);
         void switchDetailCard(String card);
-        void onAddNote(int modelRow);
-        void onSetNote(int modelRow, String note);
-        void addBookmarkForRow(int modelRow);
         void exportMessageForRow(int modelRow);
         void showAppendTextDialog();
         void setStatus(String message);
@@ -80,19 +71,14 @@ public class MtEntryPanel extends JPanel {
     // -----------------------------------------------------------------------
     // Preference-key bundle
     // -----------------------------------------------------------------------
-    public record PrefKeys(String colOrder, String colVis, String quickFilterProfiles, String colLayoutProfiles) {}
+    public record PrefKeys(String colOrder, String colVis) {}
 
 
-    private static final String TOOLTIP_FILTER_AND  = "Quick Filter columns: AND – Click to switch to OR";
-    private static final String TOOLTIP_FILTER_OR   = "Quick Filter columns: OR – Click to switch to AND";
     private static final String TOOLTIP_WRAP_MULTI  = "Entries: multi-line – Click to switch to single-line";
     private static final String TOOLTIP_WRAP_SINGLE = "Entries: single-line – Click to switch to multi-line";
-    private static final String TOOLTIP_SEQ_ON      = "Columns include sequence prefix (e.g. GENL/95P) – click to show flat";
-    private static final String TOOLTIP_SEQ_OFF     = "Columns without sequence prefix (flat view) – click to show with sequence";
 
 
     private static final List<String> REF_SEARCH_QUALIFIERS = List.of("SEME", "RELA", "TRCI", "PREV");
-    private static final List<String> SOFT_MATCH_QUALIFIERS = List.of("ISIN", "PSTA", "SETPRTY", "SETT", "ESET");
 
     private static final String DETAIL_CARD_EDITOR = "editor";
 
@@ -124,37 +110,9 @@ public class MtEntryPanel extends JPanel {
     JButton    finClearBtn;
     private String     finSearchText = "";
 
-    // Filter / wrap / seq buttons (package-visible – main app may show/hide them)
-    JButton  filterModeBtn;
-    JButton  wrapBtn;
-    JButton  seqModeBtn;
-    private boolean filterCombineOr = false;
+    // Wrap button – lives in this panel's own toolbar row
+    private JButton  wrapBtn;
     private boolean singleLineMode  = false;
-
-    // Quick-filter combo (also placed in the menu bar by the main app)
-    JComboBox<String>  quickFilterCombo;
-    private final transient SavedQuickFilters  quickFilterCodec   = new SavedQuickFilters();
-    private final transient SavedColumnLayouts columnLayoutCodec  = new SavedColumnLayouts();
-
-    private final LinkedHashMap<String, Map<String, String>> savedQuickFilters = new LinkedHashMap<>();
-    private transient ActionListener quickFilterComboListener;
-
-    // Column-layout combo (also placed in the menu bar by the main app)
-    JComboBox<String>  columnLayoutCombo;
-    private final LinkedHashMap<String, LinkedHashMap<String, String>> savedColumnLayouts = new LinkedHashMap<>();
-    private transient ActionListener columnLayoutComboListener;
-
-    // Menu-bar decorations – created here so applyPowerUserMode() can toggle them
-    JLabel     colLayoutIconLabel;
-    Component  colLayoutGap1;
-    Component  colLayoutGapAfter;
-    JLabel     quickFilterIconLabel;
-    Component  quickFilterGap1;
-    Component  quickFilterGapAfter;
-
-    // Status-bar labels (placed in the main app's status bar)
-    JLabel filterModeLabel;
-    JLabel rowCountLabel;
 
     // -----------------------------------------------------------------------
     // Data model
@@ -178,12 +136,8 @@ public class MtEntryPanel extends JPanel {
 
     /** Must be called once before {@link #buildContentPanel()}. */
     public void init() {
-        quickFilterCombo  = buildQuickFilterCombo();
         buildFilterButtons();
-        columnLayoutCombo = buildColumnLayoutCombo();
-        buildMenuBarDecorations();
         setupPositionTable();
-        buildStatusLabels();
     }
 
     /** Returns the scrollable entries panel to be embedded in the main layout. */
@@ -217,17 +171,6 @@ public class MtEntryPanel extends JPanel {
     }
 
     private void buildFilterButtons() {
-        filterModeBtn = new JButton(ToolbarIcons.filterAnd());
-        filterModeBtn.setFocusable(false);
-        filterModeBtn.setToolTipText(TOOLTIP_FILTER_AND);
-        filterModeBtn.addActionListener(e -> {
-            filterCombineOr = !filterCombineOr;
-            filterModeBtn.setIcon(filterCombineOr ? ToolbarIcons.filterOr() : ToolbarIcons.filterAnd());
-            filterModeBtn.setToolTipText(filterCombineOr ? TOOLTIP_FILTER_OR : TOOLTIP_FILTER_AND);
-            if (finFilterRow != null) finFilterRow.setOrMode(filterCombineOr);
-            applyFinFilters();
-        });
-
         wrapBtn = new JButton(ToolbarIcons.wrapMulti());
         wrapBtn.setFocusable(false);
         wrapBtn.setToolTipText(TOOLTIP_WRAP_MULTI);
@@ -238,37 +181,6 @@ public class MtEntryPanel extends JPanel {
             rebuildPositionTable();
             repackPositionRows();
         });
-
-        seqModeBtn = new JButton(ToolbarIcons.seqOn());
-        seqModeBtn.setFocusable(false);
-        seqModeBtn.setToolTipText(TOOLTIP_SEQ_ON);
-        seqModeBtn.addActionListener(e -> {
-            model.setSeqMode(!model.isSeqMode());
-            seqModeBtn.setIcon(model.isSeqMode() ? ToolbarIcons.seqOn() : ToolbarIcons.seqOff());
-            seqModeBtn.setToolTipText(model.isSeqMode() ? TOOLTIP_SEQ_ON : TOOLTIP_SEQ_OFF);
-            rebuildPositionTable();
-        });
-    }
-
-    private void buildMenuBarDecorations() {
-        colLayoutIconLabel  = makeIconLabel(ToolbarIcons.colFilter(), "Column Layout");
-        colLayoutGap1       = Box.createRigidArea(new Dimension(4, 0));
-        colLayoutGapAfter   = Box.createRigidArea(new Dimension(8, 0));
-        quickFilterIconLabel = makeIconLabel(ToolbarIcons.quickFilter(), "Quick Filter");
-        quickFilterGap1      = Box.createRigidArea(new Dimension(4, 0));
-        quickFilterGapAfter  = Box.createRigidArea(new Dimension(8, 0));
-    }
-
-    private void buildStatusLabels() {
-        filterModeLabel = new JLabel("AND");
-        filterModeLabel.setBorder(new EmptyBorder(2, 8, 2, 8));
-        filterModeLabel.setToolTipText("Quick filter mode");
-        filterModeLabel.setVisible(false);
-
-        rowCountLabel = new JLabel();
-        rowCountLabel.setBorder(new EmptyBorder(2, 8, 2, 4));
-        rowCountLabel.setToolTipText("Visible rows / total rows");
-        rowCountLabel.setVisible(false);
     }
 
     // -----------------------------------------------------------------------
@@ -278,7 +190,7 @@ public class MtEntryPanel extends JPanel {
     private void setupPositionTable() {
         entryTableModel = new EntryTableModel(model.allEntries());
         columnFilterRow = new ColumnFilterRow(this::applyFinFilters, this::convertDropToQuickFilter);
-        finFilterRow    = new FinFilterRow(this::applyFinFilters, this::onSaveQuickFilter);
+        finFilterRow    = new FinFilterRow(this::applyFinFilters);
 
         mtEntryTable = createMtEntryTable();
         mtEntryTable.setRowHeight(22);
@@ -288,7 +200,6 @@ public class MtEntryPanel extends JPanel {
         mtEntryTable.getTableHeader().setReorderingAllowed(true);
 
         setupPositionTableMouseListeners();
-        bindSpaceToDetailTable();
         bindDeleteKeyToPositionTable();
 
         mtEntryScrollPane = new JScrollPane();
@@ -297,7 +208,7 @@ public class MtEntryPanel extends JPanel {
 
         rowSorter = new TableRowSorter<>(entryTableModel);
         mtEntryTable.setRowSorter(rowSorter);
-        rowSorter.addRowSorterListener(e -> { repackPositionRows(); updateRowCountLabel(); });
+        rowSorter.addRowSorterListener(e -> repackPositionRows());
         repackDebounceTimer = new Timer(120, e -> repackPositionRows());
         repackDebounceTimer.setRepeats(false);
         mtEntryTable.getColumnModel().addColumnModelListener(columnMarginListener(() -> repackDebounceTimer.restart()));
@@ -345,7 +256,7 @@ public class MtEntryPanel extends JPanel {
             @Override protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
                 if (!model.allEntries().isEmpty()) return;
-                MessageSourcePanel.paintHintLines(g, this,
+                PanelDecor.paintHintLines(g, this,
                     "Drop a SWIFT MT file here", "to load it into the Entries view");
             }
         };
@@ -384,21 +295,6 @@ public class MtEntryPanel extends JPanel {
                 return true;
             }
         };
-    }
-
-    private void bindSpaceToDetailTable() {
-        String actionKey = "focusDetailTable";
-        mtEntryTable.getInputMap(JComponent.WHEN_FOCUSED)
-                     .put(KeyStroke.getKeyStroke("SPACE"), actionKey);
-        mtEntryTable.getActionMap().put(actionKey, new AbstractAction() {
-            @Override public void actionPerformed(ActionEvent e) {
-                JTable dt = host.getDetailTable();
-                if (dt == null || dt.getRowCount() == 0) return;
-                dt.requestFocusInWindow();
-                dt.setRowSelectionInterval(0, 0);
-                dt.scrollRectToVisible(dt.getCellRect(0, 0, true));
-            }
-        });
     }
 
     private void bindDeleteKeyToPositionTable() {
@@ -478,15 +374,9 @@ public class MtEntryPanel extends JPanel {
         popup.add(hideEmpty);
         JMenuItem colChooserItem = new JMenuItem("Show/Hide Columns…", ToolbarIcons.menuShowColumns());
         colChooserItem.addActionListener(ae -> ColumnChooser.show(
-            SwingUtilities.getWindowAncestor(this), model.activeColumnDefs(),
-            model.isSeqMode() ? this::saveColumnPrefs : () -> {}, this::rebuildPositionTable, dict));
+            SwingUtilities.getWindowAncestor(this), model.columnDefs(),
+            this::saveColumnPrefs, this::rebuildPositionTable, dict));
         popup.add(colChooserItem);
-        if (host.isPowerUser()) {
-            popup.addSeparator();
-            JMenuItem saveLayout = new JMenuItem("Save Column Layout…", ToolbarIcons.menuSaveLayout());
-            saveLayout.addActionListener(ae -> onSaveColumnLayout());
-            popup.add(saveLayout);
-        }
         popup.show(e.getComponent(), e.getX(), e.getY());
     }
 
@@ -525,19 +415,16 @@ public class MtEntryPanel extends JPanel {
         // ── Search & Filter ───────────────────────────────────────────────
         popup.addSeparator();
         addReferenceSearchMenuItem(popup, viewRow, viewCol);
-        addSoftMatchSearchMenuItem(popup, modelRow);
         addAppendToFilterMenuItem(popup, viewRow, viewCol);
         JMenuItem clearFiltersItem = new JMenuItem("Clear All Filters", ToolbarIcons.menuFilterClear());
         clearFiltersItem.addActionListener(ae -> clearAllFilters());
         popup.add(clearFiltersItem);
-        addFilterModeMenuItem(popup);
 
-        // ── Bookmarks, Notes & Export ─────────────────────────────────────
-        popup.addSeparator();
-        popup.add(makeAddNoteMenuItem(modelRow));
-        popup.add(buildAvailableNotesMenu(modelRow));
-        if (host.isPowerUser()) popup.add(makeBookmarkMenuItem(modelRow));
-        if (host.isPowerUser()) popup.add(makeExportMessageMenuItem(modelRow));
+        // ── Export ───────────────────────────────────────────────────────
+        if (host.isPowerUser()) {
+            popup.addSeparator();
+            popup.add(makeExportMessageMenuItem(modelRow));
+        }
 
         // ── Destructive ───────────────────────────────────────────────────
         if (host.isPowerUser()) {
@@ -560,18 +447,6 @@ public class MtEntryPanel extends JPanel {
             repackPositionRows();
         });
         return item;
-    }
-
-    private void addFilterModeMenuItem(JPopupMenu popup) {
-        boolean or = finFilterRow != null && finFilterRow.isOrMode();
-        JMenuItem filterModeItem = new JMenuItem(
-                or ? "Quick Filter: OR" : "Quick Filter: AND",
-                or ? ToolbarIcons.filterOr() : ToolbarIcons.filterAnd());
-        filterModeItem.addActionListener(ae -> {
-            setOrMode(finFilterRow == null || !finFilterRow.isOrMode());
-            applyFinFilters();
-        });
-        popup.add(filterModeItem);
     }
 
     private void addShowInEditorMenuItem(JPopupMenu popup, int modelRow) {
@@ -646,58 +521,6 @@ public class MtEntryPanel extends JPanel {
         dialog.setVisible(true);
     }
 
-    private JMenuItem makeAddNoteMenuItem(int modelRow) {
-        Entry entry = model.getEntryForRow(modelRow);
-        boolean hasNote = entry != null && entry.data().containsKey(Entry.NOTE_COL_KEY);
-        JMenuItem item = new JMenuItem(hasNote ? "Edit Note" : "Add Note", ToolbarIcons.menuNote());
-        item.addActionListener(ae -> host.onAddNote(modelRow));
-        return item;
-    }
-
-    private JMenu buildAvailableNotesMenu(int modelRow) {
-        JMenu menu = new JMenu("Available Notes");
-        menu.setIcon(ToolbarIcons.menuNote());
-        menu.addMenuListener(new javax.swing.event.MenuListener() {
-            @Override
-            public void menuSelected(javax.swing.event.MenuEvent e) { populateNotesMenu(menu, modelRow); }
-            @Override public void menuDeselected(javax.swing.event.MenuEvent e) { /* NOP */ }
-            @Override public void menuCanceled(javax.swing.event.MenuEvent e)   { /* NOP */ }
-        });
-        return menu;
-    }
-
-    private void populateNotesMenu(JMenu menu, int modelRow) {
-        menu.removeAll();
-        LinkedHashSet<String> seen = new LinkedHashSet<>();
-        for (Entry entry : model.allEntries()) {
-            String note = entry.data().get(Entry.NOTE_COL_KEY);
-            if (note != null && !note.isBlank()) seen.add(note);
-        }
-        if (seen.isEmpty()) {
-            JMenuItem empty = new JMenuItem("(no notes)");
-            empty.setEnabled(false);
-            menu.add(empty);
-            return;
-        }
-        for (String note : seen) {
-            menu.add(makeNoteItem(note, modelRow));
-        }
-    }
-
-    private JMenuItem makeNoteItem(String note, int modelRow) {
-        boolean truncated = note.length() > 50;
-        JMenuItem item = new JMenuItem(truncated ? note.substring(0, 47) + "…" : note);
-        item.setToolTipText(truncated ? note : null);
-        item.addActionListener(ae -> host.onSetNote(modelRow, note));
-        return item;
-    }
-
-    private JMenuItem makeBookmarkMenuItem(int modelRow) {
-        JMenuItem item = new JMenuItem("Add Bookmark", ToolbarIcons.menuBookmark());
-        item.addActionListener(ae -> host.addBookmarkForRow(modelRow));
-        return item;
-    }
-
     private JMenuItem makeExportMessageMenuItem(int modelRow) {
         JMenuItem item = new JMenuItem("Export Message…", ToolbarIcons.menuExport());
         item.addActionListener(ae -> host.exportMessageForRow(modelRow));
@@ -734,74 +557,6 @@ public class MtEntryPanel extends JPanel {
             if (finFilterRow != null) finFilterRow.appendToFilter(modelCol, value);
         });
         popup.add(item);
-    }
-
-    private void addSoftMatchSearchMenuItem(JPopupMenu popup, int modelRow) {
-        if (!host.isExperimentalMode()) return;
-        Map<String, String> values = collectSoftMatchValues(modelRow);
-        if (values.isEmpty()) return;
-        JMenuItem item = new JMenuItem("Soft Match Search…", ToolbarIcons.menuSoftMatch());
-        item.addActionListener(ae -> showSoftMatchDialog(values));
-        popup.add(item);
-    }
-
-    private Map<String, String> collectSoftMatchValues(int modelRow) {
-        List<Entry> entries = model.allEntries();
-        if (modelRow < 0 || modelRow >= entries.size()) return Collections.emptyMap();
-        Map<String, String> row = entries.get(modelRow).data();
-        Map<String, String> result = new LinkedHashMap<>();
-        for (String qualifier : SOFT_MATCH_QUALIFIERS) {
-            String val = findFirstValueByQualifier(row, qualifier);
-            if (!val.isEmpty()) result.put(qualifier, val);
-        }
-        return result;
-    }
-
-    private String findFirstValueByQualifier(Map<String, String> row, String qualifier) {
-        for (ColumnDef cd : model.columnDefs()) {
-            if (cd.qualifier.equals(qualifier)) {
-                String raw = row.get(cd.key);
-                if (raw != null && !raw.isEmpty()) {
-                    String val = EntryPanelModel.cleanTagValue(raw, qualifier);
-                    if (!val.isEmpty()) return val;
-                }
-            }
-        }
-        return "";
-    }
-
-    private void showSoftMatchDialog(Map<String, String> values) {
-        JPanel panel = new JPanel(new GridBagLayout());
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(2, 4, 2, 4);
-        gbc.anchor = GridBagConstraints.WEST;
-        Map<String, JCheckBox> checkBoxes = new LinkedHashMap<>();
-        Map<String, JTextField> textFields = new LinkedHashMap<>();
-        int row = 0;
-        for (Map.Entry<String, String> entry : values.entrySet()) {
-            JCheckBox cb = new JCheckBox(entry.getKey(), true);
-            JTextField tf = new JTextField(entry.getValue(), 22);
-            checkBoxes.put(entry.getKey(), cb);
-            textFields.put(entry.getKey(), tf);
-            gbc.gridx = 0; gbc.gridy = row; gbc.fill = GridBagConstraints.NONE; gbc.weightx = 0;
-            panel.add(cb, gbc);
-            gbc.gridx = 1; gbc.fill = GridBagConstraints.HORIZONTAL; gbc.weightx = 1.0;
-            panel.add(tf, gbc);
-            row++;
-        }
-        Window parent = SwingUtilities.getWindowAncestor(this);
-        int result = JOptionPane.showConfirmDialog(parent, panel,
-                "Soft Match Search", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-        if (result != JOptionPane.OK_OPTION) return;
-        Map<String, String> qualifierToExpr = new LinkedHashMap<>();
-        for (Map.Entry<String, JCheckBox> e : checkBoxes.entrySet()) {
-            if (!e.getValue().isSelected()) continue;
-            String val = textFields.get(e.getKey()).getText().trim();
-            if (!val.isEmpty()) qualifierToExpr.put(e.getKey(), val);
-        }
-        if (qualifierToExpr.isEmpty()) return;
-        setOrMode(false);
-        if (finFilterRow != null) finFilterRow.setFilterByQualifierMap(qualifierToExpr);
     }
 
     // -----------------------------------------------------------------------
@@ -883,23 +638,11 @@ public class MtEntryPanel extends JPanel {
             applyActiveFinFilter(lq, dropFilters, quickFilters);
         }
         mtEntryTable.repaint();
-        updateRowCountLabel();
-    }
-
-    private void syncFilterModeButton(boolean orMode) {
-        if (filterModeBtn != null) {
-            filterModeBtn.setIcon(orMode ? ToolbarIcons.filterOr() : ToolbarIcons.filterAnd());
-            filterModeBtn.setToolTipText(orMode ? TOOLTIP_FILTER_OR : TOOLTIP_FILTER_AND);
-        }
     }
 
     private void applyActiveFinFilter(String lq,
             Map<Integer, Set<String>> dropFilters, Map<Integer, String> quickFilters) {
-        final boolean orMode = finFilterRow != null ? finFilterRow.isOrMode() : filterCombineOr;
-        if (orMode != filterCombineOr) {
-            filterCombineOr = orMode;
-            syncFilterModeButton(orMode);
-        }
+        final boolean orMode = finFilterRow != null && finFilterRow.isOrMode();
         rowSorter.setRowFilter(new RowFilter<>() {
             @Override
             public boolean include(Entry<? extends EntryTableModel, ? extends Integer> e) {
@@ -936,10 +679,10 @@ public class MtEntryPanel extends JPanel {
         FilterSupport.convertDropToQuickFilter(columnFilterRow, finFilterRow);
     }
 
-    public void setOrMode(boolean orMode) {
-        if (filterCombineOr == orMode) return;
-        filterCombineOr = orMode;
-        syncFilterModeButton(orMode);
+    /** Used internally by {@link #applyReferenceSearch} — Reference Search needs OR
+     *  semantics across its qualifier columns since a row only ever carries the searched
+     *  value in one of them. There is no user-facing AND/OR toggle any more. */
+    private void setOrMode(boolean orMode) {
         if (finFilterRow != null) finFilterRow.setOrMode(orMode);
     }
 
@@ -951,165 +694,11 @@ public class MtEntryPanel extends JPanel {
     public void clearAllFilters() {
         if (columnFilterRow  != null) columnFilterRow.clearAll();
         if (finFilterRow     != null) finFilterRow.clearAll();
-        if (quickFilterCombo != null) quickFilterCombo.setSelectedIndex(0);
+        setOrMode(false);
     }
 
     public void appendToEntryFilterByQualifier(String qualifier, String value) {
         if (finFilterRow != null) finFilterRow.appendToFilterByQualifier(qualifier, value);
-    }
-
-    public void applyFilterForSafe(String safeValue) {
-        setOrMode(true);
-        if (finFilterRow != null) finFilterRow.setFilterByQualifiers(List.of("SAFE"), safeValue);
-    }
-
-    // -----------------------------------------------------------------------
-    // Quick-filter profiles
-    // -----------------------------------------------------------------------
-
-    private static JComboBox<String> createProfileCombo(Set<String> keys) {
-        JComboBox<String> combo = new JComboBox<>();
-        combo.addItem("");
-        keys.forEach(combo::addItem);
-        combo.setPreferredSize(new Dimension(150, 24));
-        combo.setMaximumSize(new Dimension(150, 24));
-        return combo;
-    }
-
-    private JComboBox<String> buildQuickFilterCombo() {
-        savedQuickFilters.putAll(quickFilterCodec.deserialize(
-                prefs.get(prefKeys.quickFilterProfiles(), "")));
-        JComboBox<String> combo = createProfileCombo(savedQuickFilters.keySet());
-        combo.setToolTipText("Load a saved quick filter profile (right-click to delete)");
-        quickFilterComboListener = e -> onQuickFilterComboSelected();
-        combo.addActionListener(quickFilterComboListener);
-        combo.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override public void mousePressed (java.awt.event.MouseEvent e) { maybeShowQuickFilterComboPopup(e); }
-            @Override public void mouseReleased(java.awt.event.MouseEvent e) { maybeShowQuickFilterComboPopup(e); }
-        });
-        return combo;
-    }
-
-    private void maybeShowQuickFilterComboPopup(java.awt.event.MouseEvent e) {
-        FilterSupport.showComboDeletePopup(e, quickFilterCombo, this::deleteQuickFilterProfile);
-    }
-
-    private void deleteQuickFilterProfile(String name) {
-        savedQuickFilters.remove(name);
-        prefs.put(prefKeys.quickFilterProfiles(), quickFilterCodec.serialize(savedQuickFilters));
-        refreshQuickFilterCombo(null);
-    }
-
-    private void onSaveQuickFilter() {
-        if (finFilterRow == null) return;
-        Map<String, String> current = finFilterRow.getActiveFiltersByKey();
-        if (current.isEmpty()) {
-            JOptionPane.showMessageDialog(SwingUtilities.getWindowAncestor(this),
-                "No active quick filters to save.", "Save Quick Filter", JOptionPane.INFORMATION_MESSAGE);
-            return;
-        }
-        String name = JOptionPane.showInputDialog(
-                SwingUtilities.getWindowAncestor(this),
-                "Name for this filter:", "Save Quick Filter", JOptionPane.PLAIN_MESSAGE);
-        if (name == null || name.isBlank()) return;
-        name = name.trim();
-        savedQuickFilters.put(name, current);
-        prefs.put(prefKeys.quickFilterProfiles(), quickFilterCodec.serialize(savedQuickFilters));
-        refreshQuickFilterCombo(name);
-    }
-
-    private void onQuickFilterComboSelected() {
-        String name = (String) quickFilterCombo.getSelectedItem();
-        if (name == null || name.isEmpty()) return;
-        Map<String, String> filters = savedQuickFilters.get(name);
-        if (filters != null && finFilterRow != null)
-            finFilterRow.applyFiltersByKey(filters);
-    }
-
-    private void refreshQuickFilterCombo(String selectName) {
-        quickFilterCombo.removeActionListener(quickFilterComboListener);
-        quickFilterCombo.removeAllItems();
-        quickFilterCombo.addItem("");
-        savedQuickFilters.keySet().forEach(quickFilterCombo::addItem);
-        if (selectName != null) quickFilterCombo.setSelectedItem(selectName);
-        quickFilterCombo.addActionListener(quickFilterComboListener);
-    }
-
-    // -----------------------------------------------------------------------
-    // Column-layout profiles
-    // -----------------------------------------------------------------------
-
-    private JComboBox<String> buildColumnLayoutCombo() {
-        savedColumnLayouts.putAll(columnLayoutCodec.deserialize(
-                prefs.get(prefKeys.colLayoutProfiles(), "")));
-        JComboBox<String> combo = createProfileCombo(savedColumnLayouts.keySet());
-        combo.setToolTipText("Load a saved column layout (right-click to delete)");
-        columnLayoutComboListener = e -> onColumnLayoutComboSelected();
-        combo.addActionListener(columnLayoutComboListener);
-        combo.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override public void mousePressed (java.awt.event.MouseEvent e) { maybeShowLayoutComboPopup(e); }
-            @Override public void mouseReleased(java.awt.event.MouseEvent e) { maybeShowLayoutComboPopup(e); }
-        });
-        return combo;
-    }
-
-    private void maybeShowLayoutComboPopup(java.awt.event.MouseEvent e) {
-        FilterSupport.showComboDeletePopup(e, columnLayoutCombo, this::deleteColumnLayout);
-    }
-
-    private void deleteColumnLayout(String name) {
-        savedColumnLayouts.remove(name);
-        prefs.put(prefKeys.colLayoutProfiles(), columnLayoutCodec.serialize(savedColumnLayouts));
-        refreshColumnLayoutCombo(null);
-    }
-
-    private void onSaveColumnLayout() {
-        syncColumnOrder();
-        String name = JOptionPane.showInputDialog(
-                SwingUtilities.getWindowAncestor(this),
-                "Name for this layout:", "Save Column Layout", JOptionPane.PLAIN_MESSAGE);
-        if (name == null || name.isBlank()) return;
-        name = name.trim();
-        LinkedHashMap<String, String> layout = new LinkedHashMap<>();
-        for (ColumnDef cd : model.columnDefs())
-            layout.put(cd.key.replace('\t', '|'), cd.isVisible() ? "1" : "0");
-        savedColumnLayouts.put(name, layout);
-        prefs.put(prefKeys.colLayoutProfiles(), columnLayoutCodec.serialize(savedColumnLayouts));
-        refreshColumnLayoutCombo(name);
-    }
-
-    private void onColumnLayoutComboSelected() {
-        String name = (String) columnLayoutCombo.getSelectedItem();
-        if (name == null || name.isEmpty()) return;
-        LinkedHashMap<String, String> layout = savedColumnLayouts.get(name);
-        if (layout != null) applyColumnLayout(layout);
-    }
-
-    private void applyColumnLayout(LinkedHashMap<String, String> layout) {
-        List<ColumnDef> cols = new ArrayList<>(model.columnDefs());
-        Map<String, ColumnDef> byKey = new LinkedHashMap<>();
-        for (ColumnDef cd : cols) byKey.put(cd.key.replace('\t', '|'), cd);
-        List<ColumnDef> ordered = new ArrayList<>(cols.size());
-        for (Map.Entry<String, String> entry : layout.entrySet()) {
-            ColumnDef cd = byKey.remove(entry.getKey());
-            if (cd == null) continue;
-            cd.setVisible("1".equals(entry.getValue()));
-            ordered.add(cd);
-        }
-        ordered.addAll(byKey.values());
-        cols.clear();
-        cols.addAll(ordered);
-        saveColumnPrefs();
-        rebuildPositionTable();
-    }
-
-    private void refreshColumnLayoutCombo(String selectName) {
-        columnLayoutCombo.removeActionListener(columnLayoutComboListener);
-        columnLayoutCombo.removeAllItems();
-        columnLayoutCombo.addItem("");
-        savedColumnLayouts.keySet().forEach(columnLayoutCombo::addItem);
-        if (selectName != null) columnLayoutCombo.setSelectedItem(selectName);
-        columnLayoutCombo.addActionListener(columnLayoutComboListener);
     }
 
     // -----------------------------------------------------------------------
@@ -1119,7 +708,7 @@ public class MtEntryPanel extends JPanel {
     private void syncColumnOrder() {
         int n = mtEntryTable.getColumnModel().getColumnCount();
         if (n == 0) return;
-        List<ColumnDef> active = model.activeColumnDefs();
+        List<ColumnDef> active = model.columnDefs();
         List<ColumnDef> reordered = new ArrayList<>(n);
         for (int i = 0; i < n; i++) {
             String lbl = String.valueOf(mtEntryTable.getColumnModel().getColumn(i).getHeaderValue());
@@ -1128,12 +717,12 @@ public class MtEntryPanel extends JPanel {
         }
         for (ColumnDef cd : active) if (!cd.isVisible()) reordered.add(cd);
         active.clear(); active.addAll(reordered);
-        if (model.isSeqMode()) saveColumnPrefs();
+        saveColumnPrefs();
     }
 
     public ColumnDef visibleColumnDefAt(int viewIndex) {
         int count = 0;
-        for (ColumnDef cd : model.activeColumnDefs()) {
+        for (ColumnDef cd : model.columnDefs()) {
             if (cd.isVisible()) {
                 if (count == viewIndex) return cd;
                 count++;
@@ -1203,7 +792,7 @@ public class MtEntryPanel extends JPanel {
         int rowCount = mtEntryTable.getRowCount();
         if (rowCount == 0) return;
         List<ColumnDef> visibleDefs = new ArrayList<>();
-        for (ColumnDef cd : model.activeColumnDefs()) if (cd.isVisible()) visibleDefs.add(cd);
+        for (ColumnDef cd : model.columnDefs()) if (cd.isVisible()) visibleDefs.add(cd);
         boolean changed = false;
         for (int modelCol = 0; modelCol < visibleDefs.size(); modelCol++) {
             boolean hasValue = false;
@@ -1216,16 +805,15 @@ public class MtEntryPanel extends JPanel {
         }
         if (!changed) return;
         rebuildPositionTable();
-        if (model.isSeqMode()) saveColumnPrefs();
+        saveColumnPrefs();
     }
 
     public void rebuildPositionTable() {
-        List<ColumnDef> activeDefs = model.activeColumnDefs();
-        List<Map<String, String>> activeRows = model.activeRowData();
+        List<ColumnDef> activeDefs = model.columnDefs();
+        List<Map<String, String>> activeRows = model.getRowData();
         List<ColumnDef> visible = new ArrayList<>();
         for (ColumnDef cd : activeDefs) if (cd.isVisible()) visible.add(cd);
-        entryTableModel.update(visible, model.isSeqMode());
-        updateRowCountLabel();
+        entryTableModel.update(visible);
         configureTableColumns(visible);
         TableColumnModel tcm = mtEntryTable.getColumnModel();
         Map<String, Set<String>> savedDropFilters = columnFilterRow != null
@@ -1297,19 +885,6 @@ public class MtEntryPanel extends JPanel {
     }
 
     // -----------------------------------------------------------------------
-    // Status-bar label updates
-    // -----------------------------------------------------------------------
-
-    private void updateRowCountLabel() {
-        if (rowCountLabel == null || rowSorter == null || entryTableModel == null) return;
-        int total   = entryTableModel.getRowCount();
-        int visible = rowSorter.getViewRowCount();
-        boolean hasData = total > 0;
-        rowCountLabel.setVisible(hasData);
-        rowCountLabel.setText(visible + " / " + total);
-    }
-
-    // -----------------------------------------------------------------------
     // Data model – delegates to EntryPanelModel
     // -----------------------------------------------------------------------
 
@@ -1335,7 +910,6 @@ public class MtEntryPanel extends JPanel {
 
     public JTable                    getTable()                              { return mtEntryTable; }
     public JTextField                getSearchField()                        { return finSearchField; }
-    public Project                   getProject()                           { return model.getProject(); }
     public List<SwiftMessage>        getLoadedMessages()                    { return model.getLoadedMessages(); }
     public List<SwiftMessage>        getVisibleMessages()                   {
         LinkedHashSet<SwiftMessage> visible = new LinkedHashSet<>();
@@ -1349,34 +923,6 @@ public class MtEntryPanel extends JPanel {
     public SwiftMessage              getMessageForRow(int r)                { return model.getMessageForRow(r); }
     public com.mtanalyze.model.Entry getEntryForRow(int r)                 { return model.getEntryForRow(r); }
     public String                    getRowValue(int r, String key)         { return model.getRowValue(r, key); }
-    public boolean                   isFileLoaded(String path)              { return model.isFileLoaded(path); }
-    public int                       findRowByTagValue(String q, String v)  { return model.findRowByTagValue(q, v); }
-    public int                       findRowByFileAndIsin(String f, String i){ return model.findRowByFileAndIsin(f, i); }
-    public String                    findValueByTagQualifier(int r, String t, String q) { return model.findValueByTagQualifier(r, t, q); }
-
-    public void selectAndScrollToModelRow(int modelRow) {
-        int viewRow = mtEntryTable.convertRowIndexToView(modelRow);
-        if (viewRow < 0) {
-            host.setStatus("Bookmark entry is currently filtered out.");
-            return;
-        }
-        mtEntryTable.setRowSelectionInterval(viewRow, viewRow);
-        mtEntryTable.scrollRectToVisible(mtEntryTable.getCellRect(viewRow, 0, true));
-        mtEntryTable.requestFocusInWindow();
-    }
-
-    /** Shows/hides power-user toolbar components. */
-    public void applyPowerUserMode(boolean on) {
-        colLayoutIconLabel.setVisible(on);
-        colLayoutGap1.setVisible(on);
-        columnLayoutCombo.setVisible(on);
-        colLayoutGapAfter.setVisible(on);
-        quickFilterIconLabel.setVisible(on);
-        quickFilterGap1.setVisible(on);
-        quickFilterCombo.setVisible(on);
-        quickFilterGapAfter.setVisible(on);
-        if (seqModeBtn != null) seqModeBtn.setVisible(on);
-    }
 
     // -----------------------------------------------------------------------
     // Static helpers
@@ -1400,12 +946,6 @@ public class MtEntryPanel extends JPanel {
             @Override public void removeUpdate(DocumentEvent e)  { onSearch.accept(field.getText()); }
             @Override public void changedUpdate(DocumentEvent e) { /* NOP */ }
         });
-    }
-
-    private static JLabel makeIconLabel(Icon icon, String tooltip) {
-        JLabel lbl = new JLabel(icon);
-        lbl.setToolTipText(tooltip);
-        return lbl;
     }
 
     // -----------------------------------------------------------------------

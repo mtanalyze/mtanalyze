@@ -15,7 +15,7 @@
  */
 package com.mtanalyze.ui;
 
-import com.mtanalyze.ui.view.MessageSourcePanel;
+import com.mtanalyze.ui.view.PanelDecor;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -133,7 +133,7 @@ public final class FrameLayout {
         btns.add(closeBtn);
 
         JPanel wrapper = new JPanel(new BorderLayout(0, 0));
-        wrapper.add(MessageSourcePanel.buildSectionHeader(titleLabel, btns), BorderLayout.NORTH);
+        wrapper.add(PanelDecor.buildSectionHeader(titleLabel, btns), BorderLayout.NORTH);
         wrapper.add(content, BorderLayout.CENTER);
         return wrapper;
     }

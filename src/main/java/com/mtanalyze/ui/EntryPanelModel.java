@@ -36,7 +36,6 @@ final class EntryPanelModel {
     static final String MT_COL_KEY         = "\t_MT_\t\t1";
     static final String MT_COL_LABEL       = "MT";
     static final String TYPE_COL_KEY       = "\t_TYPE_\t\t1";
-    static final String NOTE_COL_KEY       = Entry.NOTE_COL_KEY;
     static final String GENL_23G_KEY       = "GENL\t23G\t\t1";
     static final String GENL_25D_IPRC_KEY  = "GENL\t25D\tIPRC\t1";
     static final String TRAN_REDE_KEY      = "TRANSDET\t22H\tREDE\t1";
@@ -47,38 +46,21 @@ final class EntryPanelModel {
     private final Project        project            = new Project();
     private final List<Entry>    allEntries         = new ArrayList<>();
     private final List<ColumnDef> allColumnDefs     = new ArrayList<>();
-    private final List<ColumnDef> allNoSeqColumnDefs = new ArrayList<>();
-    private boolean              seqMode            = true;
 
     // ── Package-private accessors (EntryTableModel + column-pref methods) ─
     List<Entry>     allEntries() { return Collections.unmodifiableList(allEntries); }
-    List<ColumnDef> columnDefs() { return Collections.unmodifiableList(allColumnDefs); }
+    /** Mutable — {@code MtEntryPanel.syncColumnOrder()} reorders this list in place. */
+    List<ColumnDef> columnDefs() { return allColumnDefs; }
 
     // ── Public accessors ───────────────────────────────────────────────────
-    public Project            getProject()        { return project; }
     public List<SwiftMessage> getLoadedMessages() { return project.messages(); }
     public List<ColumnDef>    getColumnDefs()     { return Collections.unmodifiableList(allColumnDefs); }
-    public boolean            isSeqMode()         { return seqMode; }
-    public void               setSeqMode(boolean s) { seqMode = s; }
-
-    public List<ColumnDef> activeColumnDefs() {
-        return seqMode ? allColumnDefs : allNoSeqColumnDefs;
-    }
-
-    public List<Map<String, String>> activeRowData() {
-        if (!seqMode) return new AbstractList<>() {
-            @Override public Map<String, String> get(int i) { return toNoSeqRow(allEntries.get(i).data()); }
-            @Override public int size()                      { return allEntries.size(); }
-        };
-        return allEntries.stream().map(Entry::data).toList();
-    }
 
     // ── Bulk load ──────────────────────────────────────────────────────────
     public void clear() {
         project.clear();
         allEntries.clear();
         allColumnDefs.clear();
-        allNoSeqColumnDefs.clear();
     }
 
     public void loadBatch(List<SwiftMessage> messages, List<ColumnDef> columnDefs) {
@@ -86,7 +68,6 @@ final class EntryPanelModel {
         for (SwiftMessage msg : messages) {
             project.addMessage(msg);
             allEntries.addAll(msg.entries());
-            accumulateNoSeqColumnDefs(msg.entries().stream().map(Entry::data).toList());
         }
         mergeColumnDefs(columnDefs);
     }
@@ -95,7 +76,6 @@ final class EntryPanelModel {
         for (SwiftMessage msg : messages) {
             project.addMessage(msg);
             allEntries.addAll(msg.entries());
-            accumulateNoSeqColumnDefs(msg.entries().stream().map(Entry::data).toList());
         }
         mergeColumnDefs(columnDefs);
     }
@@ -110,10 +90,7 @@ final class EntryPanelModel {
         SwiftTagListBlock b4 = msg.raw().getSwiftMessage().getBlock4();
         if (b4 == null || b4.getTags().isEmpty()) return List.of();
 
-        // Extract persisted notes BEFORE MtParser runs so the parser never sees NOTE pseudo-tags.
         String rowSeq = detectRowSequence(msg.raw());
-        Map<Integer, String> persistedNotes = extractAndRemoveNotes(b4, rowSeq);
-
         MtParser parser = new MtParser(rowSeq);
         parser.parse(msg.raw());
         List<Entry> newEntries = parser.getEntries();
@@ -133,67 +110,8 @@ final class EntryPanelModel {
             if (knownKeys.add(FILE_COL_KEY)) outCols.add(new ColumnDef("", "_FILE_", "", 1, "File"));
             newEntries.forEach(e -> e.data().put(FILE_COL_KEY, fileLabel));
         }
-        if (knownKeys.add(NOTE_COL_KEY)) outCols.add(new ColumnDef("", "Note", "", 1, "Note"));
-        applyPersistedNotes(newEntries, persistedNotes);
         newEntries.forEach(msg::addEntry);
         return newEntries;
-    }
-
-    /**
-     * Scans {@code b4} for {@code :70E::NOTE//} note fields, maps each one to the
-     * zero-based entry index it belongs to, removes all matching tags from
-     * the list, and returns the index→note map.
-     *
-     * <p>Entry boundaries are detected via {@code 16R}/{@code 16S} pairs whose
-     * value matches {@code rowSequence}. For flat messages ({@code rowSequence}
-     * is {@code null} or {@code "61"}) index 0 is always used.
-     */
-    private static Map<Integer, String> extractAndRemoveNotes(SwiftTagListBlock b4, String rowSeq) {
-        Map<Integer, String> notes = new HashMap<>();
-        List<com.prowidesoftware.swift.model.Tag> tags = b4.getTags();
-
-        if (rowSeq == null || "61".equals(rowSeq)) {
-            // Flat / MT940-style: single (or few) entries, no 16R/16S to track
-            for (com.prowidesoftware.swift.model.Tag t : tags) {
-                if (com.mtanalyze.export.ProjectIO.isNoteTag(t)) {
-                    notes.put(0, noteValue(t));
-                    break;
-                }
-            }
-        } else {
-            collectSequencedNotes(tags, rowSeq, notes);
-        }
-        tags.removeIf(com.mtanalyze.export.ProjectIO::isNoteTag);
-        return notes;
-    }
-
-    private static void collectSequencedNotes(List<com.prowidesoftware.swift.model.Tag> tags,
-                                               String rowSeq, Map<Integer, String> notes) {
-        int entryIdx = -1;
-        String pending = null;
-        for (com.prowidesoftware.swift.model.Tag t : tags) {
-            if ("16R".equals(t.getName()) && rowSeq.equals(t.getValue())) {
-                entryIdx++;
-                pending = null;
-            } else if (com.mtanalyze.export.ProjectIO.isNoteTag(t)) {
-                pending = noteValue(t);
-            } else if ("16S".equals(t.getName()) && rowSeq.equals(t.getValue())) {
-                if (pending != null && entryIdx >= 0) notes.put(entryIdx, pending);
-                pending = null;
-            }
-        }
-    }
-
-    private static void applyPersistedNotes(List<Entry> entries, Map<Integer, String> notes) {
-        for (int i = 0; i < entries.size(); i++) {
-            String note = notes.get(i);
-            if (note != null) entries.get(i).data().put(NOTE_COL_KEY, note);
-        }
-    }
-
-    private static String noteValue(com.prowidesoftware.swift.model.Tag t) {
-        String val = t.getValue();
-        return val != null ? val.substring(com.mtanalyze.export.ProjectIO.NOTE_TAG_VALUE_PREFIX.length()) : "";
     }
 
     private static String fileLabel(SwiftMessage msg) {
@@ -261,56 +179,6 @@ final class EntryPanelModel {
         };
     }
 
-    public boolean isFileLoaded(String filePath) {
-        return allEntries.stream().anyMatch(e -> filePath.equals(e.getValue(FILE_COL_KEY)));
-    }
-
-    public int findRowByTagValue(String qualifier, String value) {
-        for (ColumnDef cd : allColumnDefs) {
-            if ("20C".equals(cd.tagName)) {
-                for (int i = 0; i < allEntries.size(); i++) {
-                    String val = allEntries.get(i).data().get(cd.key);
-                    if (val != null && !val.isEmpty()
-                            && (cd.qualifier.equals(qualifier) || hasQualifierPrefix(val, qualifier))
-                            && value.equals(cleanTagValue(val, qualifier)))
-                        return i;
-                }
-            }
-        }
-        return -1;
-    }
-
-    public int findRowByFileAndIsin(String filePath, String isin) {
-        for (ColumnDef cd : allColumnDefs) {
-            if ("35B".equals(cd.tagName)) {
-                for (int i = 0; i < allEntries.size(); i++) {
-                    Entry e   = allEntries.get(i);
-                    String val = e.data().get(cd.key);
-                    if (val != null && !val.isEmpty()
-                            && (cd.qualifier.equals("ISIN") || hasQualifierPrefix(val, "ISIN"))
-                            && isin.equals(cleanTagValue(val, "ISIN"))
-                            && filePath.equals(e.getValue(FILE_COL_KEY)))
-                        return i;
-                }
-            }
-        }
-        return -1;
-    }
-
-    public String findValueByTagQualifier(int modelRow, String tagName, String qualifier) {
-        if (modelRow < 0 || modelRow >= allEntries.size()) return "";
-        Map<String, String> row = allEntries.get(modelRow).data();
-        for (ColumnDef cd : allColumnDefs) {
-            if (cd.tagName.equals(tagName)) {
-                String val = row.get(cd.key);
-                if (val != null && !val.isEmpty()
-                        && (cd.qualifier.equals(qualifier) || hasQualifierPrefix(val, qualifier)))
-                    return cleanTagValue(val, qualifier);
-            }
-        }
-        return "";
-    }
-
     // ── Column management (package-private, used by panel's prefs methods) ─
 
     private void mergeColumnDefs(List<ColumnDef> incoming) {
@@ -323,42 +191,6 @@ final class EntryPanelModel {
         }
     }
 
-    private void accumulateNoSeqColumnDefs(List<Map<String, String>> newSeqRows) {
-        Set<String> knownKeys = new HashSet<>();
-        for (ColumnDef cd : allNoSeqColumnDefs) knownKeys.add(cd.key);
-        addSystemNoSeqColumnDefs(knownKeys);
-        addDataNoSeqColumnDefs(newSeqRows, knownKeys);
-    }
-
-    private void addSystemNoSeqColumnDefs(Set<String> knownKeys) {
-        for (ColumnDef cd : allColumnDefs) {
-            if (cd.tagName.startsWith("_") && knownKeys.add(cd.key)) {
-                if (TYPE_COL_KEY.equals(cd.key)) allNoSeqColumnDefs.add(0, cd);
-                else allNoSeqColumnDefs.add(cd);
-            }
-        }
-    }
-
-    private void addDataNoSeqColumnDefs(List<Map<String, String>> newSeqRows, Set<String> knownKeys) {
-        for (Map<String, String> seqRow : newSeqRows) {
-            Map<String, Integer> localOcc = new LinkedHashMap<>();
-            for (String seqKey : seqRow.keySet()) {
-                String noSeqKey = toNoSeqKey(seqKey, localOcc);
-                if (knownKeys.add(noSeqKey)) {
-                    ColumnDef cd = buildNoSeqColDef(noSeqKey);
-                    if (cd != null) allNoSeqColumnDefs.add(cd);
-                }
-            }
-        }
-    }
-
-    static Map<String, String> toNoSeqRow(Map<String, String> seqRow) {
-        Map<String, Integer> localOcc = new LinkedHashMap<>();
-        Map<String, String>  result   = new LinkedHashMap<>();
-        for (Map.Entry<String, String> e : seqRow.entrySet())
-            result.put(toNoSeqKey(e.getKey(), localOcc), e.getValue());
-        return result;
-    }
 
     // ── Static helpers ─────────────────────────────────────────────────────
 
@@ -417,53 +249,4 @@ final class EntryPanelModel {
         return "";
     }
 
-    static boolean hasQualifierPrefix(String val, String qualifier) {
-        return val.startsWith(":" + qualifier + "//")
-            || val.startsWith(":" + qualifier + "/")
-            || val.startsWith(qualifier + " ")
-            || val.startsWith(qualifier + "\t");
-    }
-
-    static String cleanTagValue(String val, String qualifier) {
-        if (val == null || val.isEmpty()) return "";
-        String s   = val.trim();
-        String colonQ = ":" + qualifier;
-        if (s.startsWith(colonQ + "//")) {
-            s = s.substring(colonQ.length() + 2).trim();
-        } else if (s.startsWith(colonQ + "/")) {
-            // :QUALIFIER/subqualifier/ — strip up to and including closing slash
-            int slash = s.indexOf('/', colonQ.length() + 1);
-            if (slash >= 0) s = s.substring(slash + 1).trim();
-        } else if (s.length() > qualifier.length() && s.startsWith(qualifier)) {
-            char next = s.charAt(qualifier.length());
-            if (next == ' ' || next == '\t') s = s.substring(qualifier.length()).trim();
-        }
-        int nl = s.indexOf('\n');
-        return nl >= 0 ? s.substring(0, nl).trim() : s;
-    }
-
-    private static String toNoSeqKey(String seqKey, Map<String, Integer> localOcc) {
-        if (countTabs(seqKey) != 3) return seqKey;
-        int t1      = seqKey.indexOf('\t');
-        String rest = seqKey.substring(t1);
-        int lastT   = rest.lastIndexOf('\t');
-        String base = rest.substring(0, lastT);
-        int n = localOcc.merge(base, 1, Integer::sum);
-        return base + "\t" + n;
-    }
-
-    private static int countTabs(String s) {
-        int n = 0;
-        for (int i = 0; i < s.length(); i++) if (s.charAt(i) == '\t') n++;
-        return n;
-    }
-
-    private static ColumnDef buildNoSeqColDef(String noSeqKey) {
-        String[] p = noSeqKey.split("\t", -1);
-        if (p.length != 4 || p[1].startsWith("_")) return null;
-        int occ;
-        try { occ = Integer.parseInt(p[3]); } catch (NumberFormatException e) { return null; }
-        String label = p[1] + (p[2].isEmpty() ? "" : " / " + p[2]) + (occ > 1 ? " (" + occ + ")" : "");
-        return new ColumnDef("", p[1], p[2], occ, label);
-    }
 }

@@ -53,7 +53,6 @@ public class TagView extends RoundedPanel implements EntrySelectionListener {
         JMenuItem makeCopyTableItem(JTable table);
         void showAddToDictionaryDialog(String qualifier, String value);
         void appendToEntryFilterByQualifier(String qualifier, String value);
-        void onDetailValueEdited(DefaultTableModel model, int detailModelRow, String newValue);
     }
 
     // -----------------------------------------------------------------------
@@ -62,9 +61,7 @@ public class TagView extends RoundedPanel implements EntrySelectionListener {
     private static final int    DETAIL_MIN_WIDTH            = 380;
     private static final String MT_COL_KEY   = "\t_MT_\t\t1";
     private static final String FILE_COL_KEY = "\t_FILE_\t\t1";
-    private static final String NOTE_COL_KEY = Entry.NOTE_COL_KEY;
     private static final String MT_COL_LABEL = "MT";
-    private static final String NOTE_LABEL   = "Note";
     private static final String COL_SEQUENCE  = "Sequence";
     private static final String COL_TAG       = "Tag";
     private static final String COL_QUALIFIER = "Qualifier";
@@ -110,17 +107,13 @@ public class TagView extends RoundedPanel implements EntrySelectionListener {
     private transient Entry              currentEntry;
     private transient Consumer<Boolean>  onComponentsToggled;
     protected boolean                    showComponents;
-    private String              detailSearchText = "";
     private boolean[]           detailColVisible;
     private final Set<String>   detailHiddenTags = new LinkedHashSet<>();
     private final Set<String>   detailHiddenSeqs = new LinkedHashSet<>();
 
     // -----------------------------------------------------------------------
-    // Search / toolbar controls (exposed to the host for the search popup)
+    // Toolbar controls
     // -----------------------------------------------------------------------
-    private JTextField     detailSearchField;
-    private JLabel         detailMatchLabel;
-    private JButton        detailClearBtn;
     private ToolWindowButton btnComp;
 
     // -----------------------------------------------------------------------
@@ -136,7 +129,7 @@ public class TagView extends RoundedPanel implements EntrySelectionListener {
         setMinimumSize(new Dimension(DETAIL_MIN_WIDTH, 0));
 
         setupTable();
-        setupSearchControls();
+        setupComponentsToggle();
         buildFilterCombo();
 
         detailScrollPane = new JScrollPane();
@@ -155,9 +148,6 @@ public class TagView extends RoundedPanel implements EntrySelectionListener {
     // -----------------------------------------------------------------------
     public JTable            getTable()              { return tranDetailTable; }
     public ToolWindowButton  componentsToggle()      { return btnComp; }
-    public JTextField        getSearchField()        { return detailSearchField; }
-    public JButton           getClearButton()        { return detailClearBtn; }
-    public JLabel            getMatchLabel()         { return detailMatchLabel; }
     public boolean           isComponentsMode()      { return showComponents; }
 
     public void setOnComponentsToggled(Consumer<Boolean> callback) { this.onComponentsToggled = callback; }
@@ -168,17 +158,12 @@ public class TagView extends RoundedPanel implements EntrySelectionListener {
         dataHelper.refreshDetailTable(tranDetailModel, displaySeqs, rowData,
                 showComponents, seqKey, modelRow, detailHeaders);
         updateFilterValues();
-        applyDetailSearch(detailSearchField.getText());
+        applyDetailFilters();
     }
 
     public void clear() {
         currentEntry = null;
         tranDetailModel.setRowCount(0);
-    }
-
-    /** Clears the detail Find/search field; the document listener resets the filter. */
-    public void clearSearch() {
-        if (detailSearchField != null) detailSearchField.setText("");
     }
 
     public void rebuildModel(boolean withComponents) {
@@ -189,7 +174,7 @@ public class TagView extends RoundedPanel implements EntrySelectionListener {
         applyDetailColVisibility();
         setupDetailSorterAndRenderer();
         if (currentEntry != null) refreshFromCurrentEntry();
-        else applyDetailSearch(detailSearchField.getText());
+        else applyDetailFilters();
     }
 
     // -----------------------------------------------------------------------
@@ -219,8 +204,6 @@ public class TagView extends RoundedPanel implements EntrySelectionListener {
         String fn = entry.getValue(FILE_COL_KEY);
         if (!mt.isEmpty()) h.add(new String[]{MT_COL_LABEL, mt});
         if (!fn.isEmpty()) h.add(new String[]{"File", fn});
-        if (entry.data().containsKey(NOTE_COL_KEY))
-            h.add(new String[]{NOTE_LABEL, entry.getValue(NOTE_COL_KEY), "1"});
         return h;
     }
 
@@ -232,21 +215,6 @@ public class TagView extends RoundedPanel implements EntrySelectionListener {
     public JPopupMenu buildContextMenu(int viewRow, int viewCol) {
         int modelRow = viewRow >= 0 ? tranDetailTable.convertRowIndexToModel(viewRow) : -1;
         return buildDetailContextMenu(tranDetailTable, modelRow, viewRow, viewCol);
-    }
-
-    public void activateNoteEditing() {
-        int valueCol = findDetailValueColumn();
-        if (valueCol < 0) return;
-        for (int r = 0; r < tranDetailModel.getRowCount(); r++) {
-            Object tag = tranDetailModel.getValueAt(r, 1);
-            if (!NOTE_LABEL.equals(tag != null ? tag.toString() : "")) continue;
-            int viewRow = detailRowSorter != null ? detailRowSorter.convertRowIndexToView(r) : r;
-            if (viewRow < 0) return;
-            tranDetailTable.scrollRectToVisible(tranDetailTable.getCellRect(viewRow, valueCol, true));
-            tranDetailTable.editCellAt(viewRow, valueCol);
-            tranDetailTable.requestFocusInWindow();
-            return;
-        }
     }
 
     public void focusTag(ColumnDef cd) {
@@ -282,7 +250,7 @@ public class TagView extends RoundedPanel implements EntrySelectionListener {
     private void setupTable() {
         tranDetailModel       = buildDetailTableModel(showComponents);
         detailColumnFilterRow = new ColumnFilterRow(this::applyDetailFilters, this::convertDetailDropToQuickFilter);
-        detailFinFilterRow    = new FinFilterRow(this::applyDetailFilters, null);
+        detailFinFilterRow    = new FinFilterRow(this::applyDetailFilters);
 
         tranDetailTable = new JTable(tranDetailModel) {
             @Override
@@ -301,14 +269,7 @@ public class TagView extends RoundedPanel implements EntrySelectionListener {
         setupDetailSorterAndRenderer();
     }
 
-    private void setupSearchControls() {
-        detailSearchField = new JTextField(14);
-        detailSearchField.setToolTipText("Search all fields (min. 3 characters)");
-        detailMatchLabel = FilterSupport.makeMatchLabel();
-        detailClearBtn   = FilterSupport.makeClearButton(detailSearchField);
-
-        MtEntryPanel.addSearchListener(detailSearchField, this::applyDetailSearch);
-
+    private void setupComponentsToggle() {
         btnComp = new ToolWindowButton(LABEL_COMPONENTS, ToolbarIcons.splitValues());
         btnComp.addActionListener(e -> {
             if (onComponentsToggled != null) onComponentsToggled.accept(btnComp.isSelected());
@@ -340,18 +301,7 @@ public class TagView extends RoundedPanel implements EntrySelectionListener {
             ? new String[]{COL_SEQUENCE, COL_TAG, COL_QUALIFIER, COL_COMPONENT, COL_VALUE}
             : new String[]{COL_SEQUENCE, COL_TAG, COL_QUALIFIER, COL_VALUE};
         return new DefaultTableModel(cols, 0) {
-            @Override public boolean isCellEditable(int r, int c) {
-                if (withComponents || c != getColumnCount() - 1) return false;
-                Object seq = getValueAt(r, 0);
-                if (seq != null && !seq.toString().isEmpty()) return false;
-                Object tag = getValueAt(r, 1);
-                return NOTE_LABEL.equals(tag != null ? tag.toString() : "");
-            }
-            @Override public void setValueAt(Object aValue, int row, int column) {
-                super.setValueAt(aValue, row, column);
-                if (withComponents || column != getColumnCount() - 1) return;
-                host.onDetailValueEdited(this, row, aValue != null ? aValue.toString() : "");
-            }
+            @Override public boolean isCellEditable(int r, int c) { return false; }
         };
     }
 
@@ -367,11 +317,11 @@ public class TagView extends RoundedPanel implements EntrySelectionListener {
             @Override public void mouseReleased(java.awt.event.MouseEvent e) { maybeShowDetailHeaderPopup(e); }
         });
 
-        DictionaryTooltipRenderer hlr = new DictionaryTooltipRenderer(() -> detailSearchText);
+        DictionaryTooltipRenderer hlr = new DictionaryTooltipRenderer();
         int last = tranDetailTable.getColumnCount() - 1;
         for (int i = 0; i < last; i++)
             tranDetailTable.getColumnModel().getColumn(i).setCellRenderer(hlr);
-        detailWrapRenderer = new WrapValueRenderer(() -> detailSearchText, dict);
+        detailWrapRenderer = new WrapValueRenderer(dict);
         tranDetailTable.getColumnModel().getColumn(last).setCellRenderer(detailWrapRenderer);
 
         tranDetailTable.getColumnModel().addColumnModelListener(
@@ -497,11 +447,6 @@ public class TagView extends RoundedPanel implements EntrySelectionListener {
     // -----------------------------------------------------------------------
     // Filtering
     // -----------------------------------------------------------------------
-    private void applyDetailSearch(String query) {
-        detailSearchText = query.length() >= 3 ? query.toLowerCase(Locale.ROOT) : "";
-        applyDetailFilters();
-    }
-
     private void rebuildDetailFilterRows() {
         if (detailColumnFilterRow == null || detailFinFilterRow == null || tranDetailModel == null) return;
         TableColumnModel tcm = tranDetailTable.getColumnModel();
@@ -527,13 +472,11 @@ public class TagView extends RoundedPanel implements EntrySelectionListener {
     private void applyDetailFilters() {
         if (detailRowSorter == null) return;
         List<RowFilter<DefaultTableModel, Integer>> filters = new ArrayList<>();
-        buildSearchFilter(filters);
         buildTagFilter(filters);
         buildSeqFilter(filters);
         buildDetailDropFilter(filters);
         buildDetailQuickFilter(filters);
         applyDetailRowFilter(filters);
-        updateDetailMatchLabel();
         tranDetailTable.repaint();
     }
 
@@ -557,21 +500,6 @@ public class TagView extends RoundedPanel implements EntrySelectionListener {
             @Override
             public boolean include(Entry<? extends DefaultTableModel, ? extends Integer> e) {
                 return FilterSupport.passesQuickFilter(e, quickFilters);
-            }
-        });
-    }
-
-    private void buildSearchFilter(List<RowFilter<DefaultTableModel, Integer>> filters) {
-        if (detailSearchText.isEmpty()) return;
-        final String lq = detailSearchText;
-        filters.add(new RowFilter<>() {
-            @Override
-            public boolean include(Entry<? extends DefaultTableModel, ? extends Integer> e) {
-                for (int i = 0; i < e.getValueCount(); i++) {
-                    Object v = e.getValue(i);
-                    if (v != null && v.toString().toLowerCase(Locale.ROOT).contains(lq)) return true;
-                }
-                return false;
             }
         });
     }
@@ -606,22 +534,6 @@ public class TagView extends RoundedPanel implements EntrySelectionListener {
         } else {
             detailRowSorter.setRowFilter(RowFilter.andFilter(filters));
         }
-    }
-
-    private void updateDetailMatchLabel() {
-        boolean anyFilter = !detailSearchText.isEmpty()
-                         || !detailHiddenTags.isEmpty()
-                         || !detailHiddenSeqs.isEmpty()
-                         || (detailColumnFilterRow != null && !detailColumnFilterRow.getActiveFilters().isEmpty())
-                         || (detailFinFilterRow    != null && !detailFinFilterRow.getActiveFilters().isEmpty());
-        if (!anyFilter) {
-            detailMatchLabel.setText("  ");
-            return;
-        }
-        int n = detailRowSorter.getViewRowCount();
-        detailMatchLabel.setText(n == 0
-            ? "<html><font color='red'>No matches</font></html>"
-            : n + " rows");
     }
 
     // -----------------------------------------------------------------------
@@ -705,15 +617,10 @@ public class TagView extends RoundedPanel implements EntrySelectionListener {
 
     private static class WrapValueRenderer implements TableCellRenderer {
 
-        private static final javax.swing.text.Highlighter.HighlightPainter HIGHLIGHT_PAINTER =
-            new javax.swing.text.DefaultHighlighter.DefaultHighlightPainter(new Color(0xFF, 0xD7, 0x00));
-
         private final JTextArea area = new JTextArea();
-        private final java.util.function.Supplier<String> searchText;
         private final HintDictionary dict;
 
-        WrapValueRenderer(java.util.function.Supplier<String> searchText, HintDictionary dict) {
-            this.searchText = searchText;
+        WrapValueRenderer(HintDictionary dict) {
             this.dict       = dict;
             area.setLineWrap(true);
             area.setWrapStyleWord(true);
@@ -739,31 +646,14 @@ public class TagView extends RoundedPanel implements EntrySelectionListener {
                 area.setForeground(table.getForeground());
             }
             area.setToolTipText(MtEntryPanel.HighlightCellRenderer.resolveValueTooltip(table, text, row, dict));
-            applyHighlight(text);
             return area;
-        }
-
-        private void applyHighlight(String text) {
-            area.getHighlighter().removeAllHighlights();
-            String st = searchText.get();
-            if (st.isEmpty()) return;
-            String lower = text.toLowerCase(Locale.ROOT);
-            int idx = lower.indexOf(st);
-            while (idx >= 0) {
-                try {
-                    area.getHighlighter().addHighlight(idx, idx + st.length(), HIGHLIGHT_PAINTER);
-                } catch (javax.swing.text.BadLocationException ex) {
-                    throw new AssertionError("Highlight position out of range – idx derived from same text", ex);
-                }
-                idx = lower.indexOf(st, idx + 1);
-            }
         }
     }
 
     private class DictionaryTooltipRenderer extends MtEntryPanel.HighlightCellRenderer {
 
-        DictionaryTooltipRenderer(java.util.function.Supplier<String> searchText) {
-            super(searchText);
+        DictionaryTooltipRenderer() {
+            super(() -> "");
         }
 
         @Override

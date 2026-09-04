@@ -26,7 +26,6 @@ public final class SystemConfig {
     private static final String KEY_MAX_ENTRIES        = "max_entries";
     private static final String KEY_LOG_SWIFT_START    = "log_swift_start";
     private static final String KEY_LOG_NEWLINE_TOKEN  = "log_newline_token";
-    private static final String KEY_EXPERIMENTAL_MODE  = "experimental_mode";
 
     public static final int DEFAULT_MAX_ENTRIES = 1000;
 
@@ -44,10 +43,6 @@ public final class SystemConfig {
         return prefs.get(KEY_LOG_NEWLINE_TOKEN, MtFileIO.DEFAULT_LOG_NEWLINE_TOKEN);
     }
 
-    public boolean isExperimentalMode() {
-        return prefs.getBoolean(KEY_EXPERIMENTAL_MODE, false);
-    }
-
     public int getMaxEntries() {
         int v = prefs.getInt(KEY_MAX_ENTRIES, DEFAULT_MAX_ENTRIES);
         return v > 0 ? v : DEFAULT_MAX_ENTRIES;
@@ -63,13 +58,11 @@ public final class SystemConfig {
 
     /** Persists all Settings-dialog-editable values. */
     public void saveSettings(String sender, String receiver, int maxEntries,
-                              String logSwiftStart, String logNewlineToken,
-                              boolean experimentalMode) {
+                              String logSwiftStart, String logNewlineToken) {
         prefs.put(KEY_MT_EXPORT_SENDER,   sender   == null ? "" : sender);
         prefs.put(KEY_MT_EXPORT_RECEIVER, receiver == null ? "" : receiver);
         prefs.putInt(KEY_MAX_ENTRIES, maxEntries);
         prefs.put(KEY_LOG_SWIFT_START,   logSwiftStart);
         prefs.put(KEY_LOG_NEWLINE_TOKEN, logNewlineToken);
-        prefs.putBoolean(KEY_EXPERIMENTAL_MODE, experimentalMode);
     }
 }

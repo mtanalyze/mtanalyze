@@ -17,7 +17,6 @@ package com.mtanalyze.ui;
 
 import com.mtanalyze.model.MessageOrigin;
 import com.mtanalyze.parser.MtFileIO;
-import com.prowidesoftware.swift.model.mt.AbstractMT;
 
 import javax.swing.*;
 import java.io.File;
@@ -200,22 +199,6 @@ final class FileImporter {
     int appendFromContent(String content, String mtTypeOverride) {
         return appendFromContent(
             MtFileIO.splitIntoMessages(content), mtTypeOverride, null, MessageOrigin.CLIPBOARD);
-    }
-
-    // -----------------------------------------------------------------------
-    // Package-private static (used by frame's onFileLoaded)
-    // -----------------------------------------------------------------------
-
-    static String detectMtTypesLabel(List<AbstractMT> messages) {
-        Set<String> types = new LinkedHashSet<>();
-        for (AbstractMT mt : messages) {
-            com.prowidesoftware.swift.model.SwiftBlock2 b2 = mt.getSwiftMessage().getBlock2();
-            if (b2 != null) {
-                String t = b2.getMessageType();
-                if (t != null) types.add("MT" + t);
-            }
-        }
-        return String.join("/", types);
     }
 
     // -----------------------------------------------------------------------

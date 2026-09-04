@@ -37,38 +37,12 @@ public final class ToolbarIcons {
     private static final int S = 20;
     private static final int M = 16;
 
-    // ------------------------------------------------------------------
-    // Filter-mode icons – AND / OR toggle
-    // ------------------------------------------------------------------
-    private static final Color AND_COLOR = new Color(74, 144, 194);
-    private static final Color OR_COLOR  = new Color(89, 155, 89);
-
     // Semantic palette – fixed colours that convey action meaning independent of theme
     private static final Color COLOR_DESTRUCTIVE = new Color(220,  53,  69);  // delete / remove
     private static final Color COLOR_FILTER      = new Color(251, 140,   0);  // filter actions
     private static final Color COLOR_EXPORT      = new Color(  0, 150, 136);  // export / import arrows
-    public static final Color COLOR_BOOKMARK    = new Color(210, 158,  55);  // bookmarks
-    private static final Color COLOR_RELOAD      = new Color( 21, 128, 196);  // reload / refresh
     private static final Color COLOR_PLUS        = new Color( 52, 168,  83);  // add / create actions
     private static final Color COLOR_COLUMN      = new Color(100,  96, 205);  // column / layout actions
-
-    public static Icon filterAnd() { return filterLabel("AND",  AND_COLOR); }
-    public static Icon filterOr()  { return filterLabel("OR",   OR_COLOR); }
-    public static Icon seqOn()     { return filterLabel("SEQ",  COLOR_COLUMN); }
-    public static Icon seqOff()    { return filterLabel("FLAT", new Color(120, 120, 120)); }
-
-    private static Icon filterLabel(String label, Color accent) {
-        return makeIcon((g, c) -> {
-            g.setColor(accent);
-            g.fill(new RoundRectangle2D.Float(1.5f, 3.5f, 17f, 13f, 6f, 6f));
-            g.setFont(new Font(SANS_SERIF, Font.BOLD, 7));
-            FontMetrics fm = g.getFontMetrics();
-            int tx = (S - fm.stringWidth(label)) / 2;
-            int ty = (S + fm.getAscent() - fm.getDescent()) / 2;
-            g.setColor(Color.WHITE);
-            g.drawString(label, tx, ty);
-        });
-    }
 
     // ------------------------------------------------------------------
     // Wrap-mode icons – multi-line / single-line toggle
@@ -89,37 +63,6 @@ public final class ToolbarIcons {
                 g.fillOval(14, 9, 2, 2);
                 g.fillOval(17, 9, 2, 2);
             }
-        });
-    }
-
-    // ------------------------------------------------------------------
-    // Quick Filter – symmetric funnel
-    // ------------------------------------------------------------------
-    public static Icon quickFilter() {
-        return makeIcon((g, c) -> {
-            Path2D.Float funnel = new Path2D.Float();
-            funnel.moveTo(2, 3);
-            funnel.lineTo(18, 3);
-            funnel.lineTo(13, 9);
-            funnel.lineTo(13, 17);
-            funnel.lineTo(7, 17);
-            funnel.lineTo(7, 9);
-            funnel.closePath();
-            g.setColor(COLOR_FILTER);
-            g.fill(funnel);
-        });
-    }
-
-    // ------------------------------------------------------------------
-    // Cols – column bars (two active, one muted)
-    // ------------------------------------------------------------------
-    public static Icon colFilter() {
-        return makeIcon((g, c) -> {
-            g.setColor(COLOR_COLUMN);
-            g.fill(new RoundRectangle2D.Float(2f,    3f, 4.5f, 14f, 1.5f, 1.5f));
-            g.fill(new RoundRectangle2D.Float(7.75f, 3f, 4.5f, 14f, 1.5f, 1.5f));
-            g.setColor(muted());
-            g.fill(new RoundRectangle2D.Float(13.5f, 3f, 4.5f, 14f, 1.5f, 1.5f));
         });
     }
 
@@ -366,22 +309,6 @@ public final class ToolbarIcons {
         });
     }
 
-    public static Icon menuSaveLayout() {
-        return makeMenuIcon((g, c) -> drawSaveIcon(g, COLOR_COLUMN));
-    }
-
-    public static Icon menuSaveSession() {
-        return makeMenuIcon(ToolbarIcons::drawSaveIcon);
-    }
-
-    private static void drawSaveIcon(Graphics2D g, Color color) {
-        g.setColor(color);
-        g.setStroke(new BasicStroke(1.3f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-        g.drawRoundRect(1, 1, 14, 14, 1, 1);
-        g.drawRoundRect(3, 8, 10, 6, 1, 1);
-        g.fillRoundRect(4, 1, 7, 5, 1, 1);
-    }
-
     // ── Search & Filter ───────────────────────────────────────────────
 
     public static Icon menuSearch() {
@@ -390,21 +317,6 @@ public final class ToolbarIcons {
             g.setStroke(new BasicStroke(1.8f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
             g.drawOval(1, 1, 9, 9);
             g.drawLine(9, 9, 14, 14);
-        });
-    }
-
-    public static Icon menuSoftMatch() {
-        return makeMenuIcon((g, c) -> {
-            g.setColor(c);
-            g.setStroke(new BasicStroke(1.5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-            g.drawOval(1, 1, 9, 9);
-            g.drawLine(9, 9, 14, 14);
-            g.setStroke(new BasicStroke(1.2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-            Path2D.Float wave = new Path2D.Float();
-            wave.moveTo(2.5f, 6f);
-            wave.curveTo(3f, 4f, 4.5f, 8f, 6f, 6f);
-            wave.curveTo(7.5f, 4f, 8f, 7f, 8f, 6f);
-            g.draw(wave);
         });
     }
 
@@ -430,37 +342,7 @@ public final class ToolbarIcons {
         });
     }
 
-    // ── Bookmark / Export / Delete ────────────────────────────────────
-
-    public static Icon menuNote() {
-        return makeMenuIcon((g, c) -> {
-            g.setColor(c);
-            g.setStroke(new BasicStroke(1.3f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-            // Page outline with folded top-right corner
-            g.drawLine(3, 1, 11, 1);
-            g.drawLine(11, 1, 14, 4);
-            g.drawLine(14, 4, 14, 15);
-            g.drawLine(3, 15, 14, 15);
-            g.drawLine(3, 1, 3, 15);
-            g.drawLine(11, 1, 11, 4);
-            g.drawLine(11, 4, 14, 4);
-            // Text lines
-            g.drawLine(5, 6, 12, 6);
-            g.drawLine(5, 9, 12, 9);
-            g.drawLine(5, 12, 9, 12);
-        });
-    }
-
-    public static Icon menuBookmark() {
-        return makeMenuIcon((g, c) -> {
-            g.setColor(COLOR_BOOKMARK);
-            Path2D.Float ribbon = new Path2D.Float();
-            ribbon.moveTo(3, 1);  ribbon.lineTo(13, 1);
-            ribbon.lineTo(13, 15); ribbon.lineTo(8, 11);
-            ribbon.lineTo(3, 15); ribbon.closePath();
-            g.fill(ribbon);
-        });
-    }
+    // ── Export / Delete ───────────────────────────────────────────────
 
     public static Icon menuExport() {
         return makeMenuIcon((g, c) -> {
@@ -486,27 +368,7 @@ public final class ToolbarIcons {
         });
     }
 
-    // ── Explorer ──────────────────────────────────────────────────────
-
-    public static Icon menuOpen() {
-        return makeMenuIcon((g, c) -> {
-            g.setColor(c);
-            g.setStroke(new BasicStroke(1.3f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-            g.drawRoundRect(1, 6, 14, 9, 1, 1);
-            Path2D.Float tab = new Path2D.Float();
-            tab.moveTo(1, 6); tab.lineTo(1, 4); tab.lineTo(5, 4); tab.lineTo(7, 6);
-            g.draw(tab);
-        });
-    }
-
-    public static Icon menuViewInEditor() {
-        return makeMenuIcon((g, c) -> {
-            setupDocIcon(g, c);
-            g.drawLine(4, 7, 8, 7);
-            g.drawLine(4, 9, 11, 9);
-            g.drawLine(4, 11, 9, 11);
-        });
-    }
+    // ── Context menus ──────────────────────────────────────────────────────
 
     public static Icon menuImportDir() {
         return makeMenuIcon((g, c) -> {
@@ -519,15 +381,6 @@ public final class ToolbarIcons {
             g.setColor(COLOR_EXPORT);
             g.drawLine(13, 2, 13, 11);
             g.fillPolygon(new int[]{10, 13, 15}, new int[]{8, 12, 8}, 3);
-        });
-    }
-
-    public static Icon menuRemove() {
-        return makeMenuIcon((g, c) -> {
-            g.setColor(COLOR_DESTRUCTIVE);
-            g.setStroke(new BasicStroke(1.5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-            g.drawOval(1, 1, 14, 14);
-            g.drawLine(4, 8, 12, 8);
         });
     }
 
@@ -545,8 +398,14 @@ public final class ToolbarIcons {
 
     // ── File actions ──────────────────────────────────────────────────
 
-    public static Icon menuNew() {
-        return makeMenuIcon(ToolbarIcons::setupDocIcon);
+    public static Icon menuNewTab() {
+        return makeMenuIcon((g, c) -> {
+            setupDocIcon(g, c);
+            g.setColor(COLOR_PLUS);
+            g.setStroke(new BasicStroke(1.8f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            g.drawLine(11, 9, 15, 9);
+            g.drawLine(13, 7, 13, 11);
+        });
     }
 
     public static Icon menuImportFile() {
@@ -572,15 +431,6 @@ public final class ToolbarIcons {
             g.setStroke(new BasicStroke(1.8f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
             g.drawLine(4, 9, 10, 9);
             g.drawLine(7, 6, 7, 12);
-        });
-    }
-
-    public static Icon menuReload() {
-        return makeMenuIcon((g, c) -> {
-            g.setColor(COLOR_RELOAD);
-            g.setStroke(new BasicStroke(1.7f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-            g.drawArc(2, 2, 12, 12, 30, -280);
-            g.fillPolygon(new int[]{14, 14, 10}, new int[]{3, 7, 4}, 3);
         });
     }
 
@@ -649,11 +499,6 @@ public final class ToolbarIcons {
         });
     }
 
-    /** Muted colour for de-emphasised elements – ~40 % opacity. */
-    private static Color muted() {
-        return new Color(COLOR_COLUMN.getRed(), COLOR_COLUMN.getGreen(), COLOR_COLUMN.getBlue(), 100);
-    }
-
     // ------------------------------------------------------------------
     // Tool-window / view-switcher icons (variable size, x/y-offset aware)
     // ------------------------------------------------------------------
@@ -674,49 +519,6 @@ public final class ToolbarIcons {
         };
     }
 
-    public static Icon folderIcon() {
-        return makeThemedIcon(20, 18, (g2, c, x, y) -> {
-            g2.setStroke(new BasicStroke(1.5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-            g2.drawLine(x + 1,  y + 6, x + 1,  y + 4);
-            g2.drawLine(x + 1,  y + 4, x + 8,  y + 4);
-            g2.drawLine(x + 8,  y + 4, x + 10, y + 6);
-            g2.drawRoundRect(x + 1, y + 6, 18, 11, 2, 2);
-        });
-    }
-
-    public static Icon bookmarkRibbon() {
-        return makeThemedIcon(14, 20, (g2, c, x, y) -> {
-            g2.setColor(COLOR_BOOKMARK);
-            int[] px = {x + 1, x + 13, x + 13, x + 7, x + 1};
-            int[] py = {y,     y,       y + 20,  y + 14, y + 20};
-            g2.fillPolygon(px, py, 5);
-        });
-    }
-
-    public static Icon securitiesIcon() {
-        return makeThemedIcon(20, 20, (g2, c, x, y) -> {
-            g2.setStroke(new BasicStroke(1.4f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-            g2.drawRect(x + 2, y + 1, 14, 18);
-            g2.drawLine(x + 5, y + 6,  x + 13, y + 6);
-            g2.drawLine(x + 5, y + 10, x + 13, y + 10);
-            g2.drawLine(x + 5, y + 14, x + 13, y + 14);
-        });
-    }
-
-    public static Icon cashIcon() {
-        return makeThemedIcon(20, 20, (g2, c, x, y) -> {
-            g2.setStroke(new BasicStroke(1.4f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-            g2.drawRect(x + 2, y + 1, 14, 18);
-            g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-            g2.setFont(g2.getFont().deriveFont(Font.BOLD, 12f));
-            FontMetrics fm = g2.getFontMetrics();
-            String euro = "€";
-            int tx = x + 2 + (14 - fm.stringWidth(euro)) / 2;
-            int ty = y + 1 + (18 + fm.getAscent() - fm.getDescent()) / 2;
-            g2.drawString(euro, tx, ty);
-        });
-    }
-
     public static Icon clipboardIcon() {
         return makeThemedIcon(16, 18, (g2, c, x, y) -> {
             g2.setStroke(new BasicStroke(1.4f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
@@ -724,22 +526,6 @@ public final class ToolbarIcons {
             g2.drawRoundRect(x + 4, y + 1, 7, 4, 2, 2);
             g2.drawLine(x + 4, y + 8,  x + 10, y + 8);
             g2.drawLine(x + 4, y + 12, x + 10, y + 12);
-        });
-    }
-
-    public static Icon accountMappingIcon() {
-        return makeThemedIcon(20, 20, (g2, c, x, y) -> {
-            g2.setStroke(new BasicStroke(1.3f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-            g2.drawRect(x + 1, y + 4,  7, 4);
-            g2.drawRect(x + 1, y + 12, 7, 4);
-            g2.drawRect(x + 11, y + 4,  7, 4);
-            g2.drawRect(x + 11, y + 12, 7, 4);
-            g2.drawLine(x + 8, y + 6,  x + 11, y + 6);
-            g2.drawLine(x + 8, y + 14, x + 11, y + 14);
-            g2.drawLine(x + 9, y + 5,  x + 11, y + 6);
-            g2.drawLine(x + 9, y + 7,  x + 11, y + 6);
-            g2.drawLine(x + 9, y + 13, x + 11, y + 14);
-            g2.drawLine(x + 9, y + 15, x + 11, y + 14);
         });
     }
 

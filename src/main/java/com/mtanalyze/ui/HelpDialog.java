@@ -78,8 +78,7 @@ public final class HelpDialog {
 
         return "<html><head>" /* + buildCss(fgHex, bgHex, codeBg, divider, ff, fs) */ + "</head><body>"
             + buildShortcutsSection()
-            + buildExplorerSection()
-            + buildSequenceModeSection()
+            + buildTabsSection()
             + buildFilterRowSection()
             + buildQuickFilterSection()
             + buildContextMenuSection()
@@ -90,43 +89,38 @@ public final class HelpDialog {
         return "<h2>Keyboard Shortcuts</h2>"
             + "<table>"
             + "<tr><th>Key</th><th>Action</th></tr>"
-            + "<tr><td><code>Ctrl+N</code></td><td>New — clear all entries and start a fresh session</td></tr>"
-            + "<tr><td><code>Ctrl+O</code></td><td>Open session file (.mtd)</td></tr>"
-            + "<tr><td><code>Ctrl+S</code></td><td>Save session — write all loaded messages to a .mtd file</td></tr>"
-            + "<tr><td><code>Ctrl+Shift+O</code></td><td>Append MT file — add to the current view</td></tr>"
-            + "<tr><td><code>Ctrl+R</code></td><td>Reload current file from disk</td></tr>"
-            + "<tr><td><code>Ctrl+F</code></td><td>Focus the search field of the active panel</td></tr>"
-            + "<tr><td><code>Ctrl+E</code></td><td>Show / hide the Explorer panel</td></tr>"
-            + "<tr><td><code>Ctrl+D</code></td><td>Show / hide the Detail panel</td></tr>"
+            + "<tr><td><code>Ctrl+N</code></td><td>New Tab — open an empty MT Entries tab</td></tr>"
+            + "<tr><td><code>Ctrl+O</code></td><td>Open... — load a SWIFT MT file into a new tab</td></tr>"
+            + "<tr><td><code>Ctrl+S</code></td><td>Save... — export the active tab's view as an MT file</td></tr>"
+            + "<tr><td><code>Ctrl+E</code></td><td>Save Excel... — export the active tab's view as an Excel file</td></tr>"
+            + "<tr><td><code>Ctrl+Q</code></td><td>Exit the application</td></tr>"
+            + "<tr><td><code>Ctrl+F</code></td><td>Focus the MT Entries search field (search only applies to that view)</td></tr>"
+            + "<tr><td><code>Ctrl+D</code></td><td>Show / hide the active tab's Detail panel</td></tr>"
+            + "<tr><td><code>Ctrl+3</code></td><td>Show Notifications in the Detail panel</td></tr>"
+            + "<tr><td><code>Ctrl+4</code></td><td>Show Tags in the Detail panel</td></tr>"
+            + "<tr><td><code>Ctrl+5</code></td><td>Show Diff in the Detail panel</td></tr>"
+            + "<tr><td><code>Ctrl+6</code></td><td>Show Source in the Detail panel</td></tr>"
+            + "<tr><td><code>Ctrl+7</code></td><td>Show Components in the Detail panel</td></tr>"
             + "<tr><td><code>Ctrl+C</code></td><td>Copy selected cell value to clipboard</td></tr>"
-            + "<tr><td><code>Space</code></td><td>Move focus to detail panel and select first row</td></tr>"
-            + "<tr><td><code>←</code></td><td>Move focus back to entries table</td></tr>"
+            + "<tr><td><code>Ctrl+X</code></td><td>Cut selected text (text fields only)</td></tr>"
+            + "<tr><td><code>Ctrl+V</code></td><td>Paste (text fields), or open the paste dialog to append raw SWIFT text</td></tr>"
+            + "<tr><td><code>Ctrl+T</code></td><td>Copy Table — copy headers and all visible rows as tab-separated values</td></tr>"
+            + "<tr><td><code>Delete</code></td><td>Remove the selected row from the current view</td></tr>"
             + "<tr><td><code>F1</code></td><td>Open this help dialog</td></tr>"
             + "<tr><td><code>Esc</code></td><td>Close this dialog</td></tr>"
             + "</table>"
+            + "<p><i>On macOS, <code>Cmd</code> is used in place of <code>Ctrl</code> for these shortcuts.</i></p>"
             + "<hr/>";
     }
 
-    private static String buildSequenceModeSection() {
-        return "<h2>Sequence Mode (SEQ / FLAT)</h2>"
-            + "<p>The <b>SEQ / FLAT</b> button in the toolbar controls how tag columns are named "
-            + "when MT messages contain sequences.</p>"
-            + "<table>"
-            + "<tr><th>Mode</th><th>Column naming</th><th>When to use</th></tr>"
-            + "<tr><td><b>SEQ</b> (default)</td>"
-                + "<td>Columns include the sequence prefix — e.g. <code>GENL/95P</code> "
-                + "or <code>SUBSAFE/TRAD/36B</code>. Each sequence occurrence gets its own column.</td>"
-                + "<td>When you need to distinguish the same tag in different sequences "
-                + "(e.g. 95P in GENL vs. 95P in TRAD)</td></tr>"
-            + "<tr><td><b>FLAT</b></td>"
-                + "<td>Sequence prefix is removed — columns show only the tag name and qualifier, "
-                + "e.g. <code>95P</code>. When the same tag appears in multiple sequences, "
-                + "the values are merged into one column by occurrence order.</td>"
-                + "<td>When you want a compact view without sequence structure, "
-                + "or when comparing messages across different MT subtypes</td></tr>"
-            + "</table>"
-            + "<p>Column layouts (saved profiles) are maintained separately for SEQ and FLAT mode. "
-            + "Switching mode rebuilds the table; filters and sort order are reset.</p>"
+    private static String buildTabsSection() {
+        return "<h2>Tabs</h2>"
+            + "<p>Each tab is an independent workspace with its own MT Entries table, filters, "
+            + "column layout and Detail panel. Click <b>+</b> at the end of the tab strip or press "
+            + "<code>Ctrl+N</code> for an empty tab; <b>File &gt; Open...</b> or <b>Import Directory...</b> "
+            + "always loads into a new tab, while <b>Append</b>, <b>Save</b> and the "
+            + "Export actions apply to the active tab. Close a tab with the <b>×</b> on the tab itself; "
+            + "closing the last tab opens a fresh empty one.</p>"
             + "<hr/>";
     }
 
@@ -157,21 +151,9 @@ public final class HelpDialog {
             + buildQuickFilterTable()
             + "<p>Combine multiple values with <code>+</code> for <b>OR</b> logic within one field:<br/>"
             + "&nbsp;&nbsp;<code>=EUR+GBP</code> &nbsp;— cell is EUR or GBP<br/>"
-            + "&nbsp;&nbsp;<code>^DE+^AT</code> &nbsp;— begins with DE or AT</p>"
-            + "<h3>AND / OR Column Toggle</h3>"
-            + "<p>The <b>AND/OR button</b> in the toolbar controls how expressions in different columns are combined:</p>"
-            + "<table>"
-            + "<tr><th>Mode</th><th>Behaviour</th></tr>"
-            + "<tr><td><b>AND</b> (default)</td><td>A row is shown only if it satisfies the expressions in <i>all</i> filtered columns</td></tr>"
-            + "<tr><td><b>OR</b></td><td>A row is shown if it satisfies the expression in <i>any one</i> filtered column</td></tr>"
-            + "</table>"
-            + "<p>Click the button to toggle between modes. The icon changes from a blue AND badge to an orange OR badge. "
-            + "The dropdown Filter Row is always applied on top regardless of this setting.</p>"
-            + "<h3>Profiles</h3>"
-            + "<p>Right-click any Quick Filter field and choose <b>Save Quick Filter…</b> to save the current "
-            + "expressions under a name. Load saved profiles from the <b>Quick Filter</b> combobox in the toolbar. "
-            + "Right-click a profile name in the combobox to delete it. Profiles are stored in OS user preferences "
-            + "and survive restarts.</p>"
+            + "&nbsp;&nbsp;<code>^DE+^AT</code> &nbsp;— begins with DE or AT<br/>"
+            + "Expressions in different columns are always combined with <b>AND</b> — "
+            + "a row must satisfy every filtered column.</p>"
             + "<hr/>";
     }
 
@@ -197,37 +179,8 @@ public final class HelpDialog {
             + "</table>";
     }
 
-    private static String buildExplorerSection() {
-        return "<h2>Explorer Panel</h2>"
-            + "<p>The Explorer panel on the left side shows a persistent folder tree of SWIFT message files. "
-            + "Toggle it with <code>Ctrl+E</code> or hover over the divider when it is collapsed.</p>"
-            + "<table>"
-            + "<tr><th>Action</th><th>How</th></tr>"
-            + "<tr><td>Add a root folder</td><td>Click the <b>+</b> button in the Explorer header, "
-                + "or drag a folder from the OS file manager onto the panel</td></tr>"
-            + "<tr><td>Open file(s)</td><td>Select one or more files and press <b>Enter</b> or "
-                + "<b>double-click</b>; the Explorer collapses automatically after opening</td></tr>"
-            + "<tr><td>Refresh folder tree</td><td>Click the <b>↺</b> button in the Explorer header</td></tr>"
-            + "<tr><td>Remove a root folder</td><td>Right-click the root folder node and choose "
-                + "<b>Remove from Explorer</b></td></tr>"
-            + "</table>"
-            + "<hr/>";
-    }
-
     private static String buildContextMenuSection() {
         return "<h2>Context Menus (right-click)</h2>"
-            + "<h3>Explorer Panel — file or folder node</h3>"
-            + "<table>"
-            + "<tr><th>Item</th><th>Description</th></tr>"
-            + "<tr><td><b>Use in MT Entries / Use N Files in MT Entries</b></td>"
-                + "<td>Load the selected file(s) into the MT Entries table; Explorer collapses automatically</td></tr>"
-            + "<tr><td><b>View Source</b></td>"
-                + "<td>Open the selected file in a source viewer with syntax highlighting</td></tr>"
-            + "<tr><td><b>Import Directory</b></td>"
-                + "<td>Load all SWIFT files from the selected folder into the current view</td></tr>"
-            + "<tr><td><b>Remove from Explorer</b></td>"
-                + "<td>Remove the root folder from the Explorer tree (files are not deleted)</td></tr>"
-            + "</table>"
             + "<h3>Entries Table — cell</h3>"
             + "<table>"
             + "<tr><th>Item</th><th>Description</th></tr>"
@@ -241,7 +194,6 @@ public final class HelpDialog {
                 + "The correct occurrence is resolved automatically when the same tag appears multiple times.</td></tr>"
             + "<tr><td><b>Export Message</b></td><td>Export the raw SWIFT MT message for this row</td></tr>"
             + "<tr><td><b>Show in Editor</b></td><td>Open the source file in the system default text editor</td></tr>"
-            + "<tr><td><b>Add Bookmark</b></td><td>Add this entry to the bookmark list</td></tr>"
             + "<tr><td><b>Delete Row</b></td><td>Remove the selected row from the current view</td></tr>"
             + "</table>"
             + "<h3>Entries Table — column header</h3>"
@@ -251,7 +203,6 @@ public final class HelpDialog {
             + "<tr><td><b>✕ Clear sort</b></td><td>Remove all sort keys</td></tr>"
             + "<tr><td><b>⇤ Move to Start</b></td><td>Move this column to the first position</td></tr>"
             + "<tr><td><b>Hide</b></td><td>Hide this column</td></tr>"
-            + "<tr><td><b>Save Column Layout…</b></td><td>Save the current column order and visibility as a named profile</td></tr>"
             + "</table>"
             + "<h3>Filter Row button</h3>"
             + "<table>"
