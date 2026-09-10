@@ -81,7 +81,11 @@ public final class FrameMenuBar {
         Runnable          onShowTags,
         Runnable          onShowDiff,
         Runnable          onShowSource,
-        Runnable          onShowComponents
+        Runnable          onShowComponents,
+        // Lucene menu – embedded full-text index
+        Runnable          onIndexMessages,
+        Runnable          onSearchMessages,
+        Runnable          onClearIndex
     ) {}
 
     // -----------------------------------------------------------------------
@@ -180,6 +184,13 @@ public final class FrameMenuBar {
         viewMenu.add(menuSource);
         viewMenu.add(menuComponents);
 
+        // ── Repository menu (embedded Lucene index) ───────────────────────
+        JMenu repositoryMenu = new JMenu("Repository");
+        repositoryMenu.add(item("Index Messages", ToolbarIcons.menuImportFile(), null, cb.onIndexMessages()));
+        repositoryMenu.add(item("Search Messages...", ToolbarIcons.menuSearch(), "ctrl shift F", cb.onSearchMessages()));
+        repositoryMenu.addSeparator();
+        repositoryMenu.add(item("Clear Index...", ToolbarIcons.menuDelete(), null, cb.onClearIndex()));
+
         // ── Help menu ─────────────────────────────────────────────────────
         JMenuItem helpItem = new JMenuItem("Help...", ToolbarIcons.menuHelp());
         helpItem.setAccelerator(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F1, 0));
@@ -195,6 +206,7 @@ public final class FrameMenuBar {
         menuBar.add(fileMenu);
         menuBar.add(buildEditMenu(cb.populateEditMenu()));
         menuBar.add(viewMenu);
+        menuBar.add(repositoryMenu);
         menuBar.add(helpMenu);
 
         menuBar.add(Box.createHorizontalGlue());

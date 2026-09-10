@@ -39,8 +39,17 @@ final class SettingsDialog {
 
     private SettingsDialog() {}
 
-    record Config(CsvKeys csv, ThemeConfig theme, SystemKeys system, PowerUserConfig powerUser) {
+    record Config(CsvKeys csv, ThemeConfig theme, SystemKeys system, PowerUserConfig powerUser,
+                  LuceneConfig lucene) {
         record CsvKeys(String fieldSep, String decimalSep) {
+        }
+
+        /**
+         * Lucene "Index Messages" / "Search Messages" settings, stored directly in
+         * {@link Preferences}. {@code onChange} re-applies them to the running service.
+         */
+        record LuceneConfig(String dirPrefKey, String maxHitsPrefKey,
+                             String defaultDir, int defaultMaxHits, Runnable onChange) {
         }
 
         record SystemKeys(Supplier<String> getSender, Supplier<String> getReceiver,
@@ -65,7 +74,8 @@ final class SettingsDialog {
     }
 
     private record FormFields(JTextField fieldSep, JTextField decimalSep, JTextField sender, JTextField receiver,
-                               JTextField maxEntries, JTextField logSwiftStart, JTextField logNewlineToken) {
+                               JTextField maxEntries, JTextField logSwiftStart, JTextField logNewlineToken,
+                               JTextField luceneDir, JTextField luceneMaxHits) {
     }
 
     static void show(Frame owner, Preferences prefs, Config cfg, HintDictionary dict) {
@@ -92,13 +102,19 @@ final class SettingsDialog {
                 cfg.system.getLogSwiftStart.get(), 10);
         JTextField logNewlineTokenField = new JTextField(
                 cfg.system.getLogNewlineToken.get(), 10);
+        JTextField luceneDirField = new JTextField(
+                prefs.get(cfg.lucene.dirPrefKey, cfg.lucene.defaultDir), 24);
+        luceneDirField.setToolTipText("Leave empty for the default: " + cfg.lucene.defaultDir);
+        JTextField luceneMaxHitsField = new JTextField(
+                String.valueOf(prefs.getInt(cfg.lucene.maxHitsPrefKey, cfg.lucene.defaultMaxHits)), 6);
         FormFields fields = new FormFields(
                 fieldSepField, decimalSepField,
                 senderField, receiverField,
-                maxEntriesField, logSwiftStartField, logNewlineTokenField);
+                maxEntriesField, logSwiftStartField, logNewlineTokenField,
+                luceneDirField, luceneMaxHitsField);
 
         JPanel generalPanel  = buildGeneralPanel(darkModeCheck, powerUserCheck, fields);
-        JPanel advancedPanel = buildAdvancedPanel(fields);
+        JPanel advancedPanel = buildAdvancedPanel(fields, cfg.lucene);
 
         // ---- User Dictionary tab ----
         DefaultTableModel dictModel = new DefaultTableModel(
@@ -198,7 +214,7 @@ final class SettingsDialog {
     // Advanced tab
     // -----------------------------------------------------------------------
 
-    private static JPanel buildAdvancedPanel(FormFields fields) {
+    private static JPanel buildAdvancedPanel(FormFields fields, Config.LuceneConfig lucene) {
         FormPanel fp = new FormPanel();
         JPanel form = fp.panel;
         GridBagConstraints lc = fp.lc;
@@ -220,6 +236,33 @@ final class SettingsDialog {
         JPanel resetWrap = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         resetWrap.add(resetLogTokens);
         FormPanel.addRow(form, lc, fc, 5, "", resetWrap);
+
+        addSectionSeparator(form, 6, "Lucene Search");
+
+        JButton browse = new JButton("Browse…");
+        browse.addActionListener(e -> {
+            JFileChooser fcr = FileChoosers.create();
+            fcr.setDialogTitle("Select Lucene Index Directory");
+            fcr.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+            String cur = fields.luceneDir.getText().trim();
+            if (!cur.isEmpty()) fcr.setSelectedFile(new File(cur));
+            if (fcr.showOpenDialog(SwingUtilities.getWindowAncestor(form)) == JFileChooser.APPROVE_OPTION)
+                fields.luceneDir.setText(fcr.getSelectedFile().getAbsolutePath());
+        });
+        JPanel dirRow = new JPanel(new BorderLayout(4, 0));
+        dirRow.add(fields.luceneDir, BorderLayout.CENTER);
+        dirRow.add(browse,           BorderLayout.EAST);
+        FormPanel.addRow(form, lc, fc, 7, "Index directory:", dirRow);
+        FormPanel.addRow(form, lc, fc, 8, "Search hits (max.):", fields.luceneMaxHits);
+
+        JButton resetLucene = new JButton("Reset to defaults");
+        resetLucene.addActionListener(e -> {
+            fields.luceneDir.setText(lucene.defaultDir);
+            fields.luceneMaxHits.setText(String.valueOf(lucene.defaultMaxHits));
+        });
+        JPanel resetLuceneWrap = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        resetLuceneWrap.add(resetLucene);
+        FormPanel.addRow(form, lc, fc, 9, "", resetLuceneWrap);
 
         return form;
     }
@@ -253,6 +296,18 @@ final class SettingsDialog {
                     INVALID_INPUT, JOptionPane.WARNING_MESSAGE);
             return false;
         }
+        Integer luceneMaxHits = parsePositiveInt(fields.luceneMaxHits.getText().trim());
+        if (luceneMaxHits == null) {
+            JOptionPane.showMessageDialog(dlg, "Search hits (max.) must be a positive whole number.",
+                    INVALID_INPUT, JOptionPane.WARNING_MESSAGE);
+            return false;
+        }
+        String luceneDir = fields.luceneDir.getText().trim();
+        String luceneDirError = validateDirectory(luceneDir);
+        if (luceneDirError != null) {
+            JOptionPane.showMessageDialog(dlg, luceneDirError, INVALID_INPUT, JOptionPane.WARNING_MESSAGE);
+            return false;
+        }
         if (logSwiftStart.isEmpty()) {
             JOptionPane.showMessageDialog(dlg, "SWIFT start marker must not be empty.",
                     INVALID_INPUT, JOptionPane.WARNING_MESSAGE);
@@ -267,7 +322,21 @@ final class SettingsDialog {
         prefs.put(cfg.csv.fieldSep,     fieldSep);
         prefs.put(cfg.csv.decimalSep,   decimalSep);
         cfg.system.save.save(sender, receiver, maxEntries, logSwiftStart, logNewlineToken);
+
+        prefs.put(cfg.lucene.dirPrefKey, luceneDir);
+        prefs.putInt(cfg.lucene.maxHitsPrefKey, luceneMaxHits);
+        cfg.lucene.onChange.run();
         return true;
+    }
+
+    /** Empty means "use the default"; otherwise the folder must exist (or be creatable) and be writable. */
+    private static String validateDirectory(String dir) {
+        if (dir.isEmpty()) return null;
+        File f = new File(dir);
+        if (f.exists() && !f.isDirectory()) return "Index directory is not a folder:\n" + dir;
+        if (!f.exists() && !f.mkdirs())     return "Index directory could not be created:\n" + dir;
+        if (!f.canWrite())                  return "Index directory is not writable:\n" + dir;
+        return null;
     }
 
     private static Integer parsePositiveInt(String s) {

@@ -1,25 +1,51 @@
-# MT Analyze v1.1.1
+# MT Analyze v1.2.0
 
 ## Download & Run
 
 **Requirements:** Java 17 or higher
 
 ```bash
-java -jar MT-Analyze-1.1.1.jar
+java -jar MT-Analyze-1.2.0.jar
 ```
 
 ---
 
 ## Changes
 
-- The **MT** column is now pinned as the leftmost column in the MT Entries table, both on first load and after appending more files into a tab.
-- **Save...** now renames the tab to match the file name of the saved SWIFT message.
-- Fixed a potential crash (NullPointerException) while parsing certain SWIFT messages.
+### Message Repository (index and search)
+
+A new **Repository** menu provides a local full-text index of parsed messages, based on
+[Apache Lucene](https://lucene.apache.org/). The index is file-based; there is no server
+component. It is shared across all tabs and sessions.
+
+- **Index Messages** adds all messages of the active tab to the index. The operation runs
+  in the background, reports progress and can be cancelled. Indexing is idempotent: a
+  message is identified by its type, sender and the sender's own reference
+  (`:20C::SEME//`, or field `:20:` for cash messages), so re-indexing the same message
+  replaces its entry instead of creating a duplicate.
+- **Search Messages…** (`Ctrl+Shift+F`) executes a Lucene query and opens the result set
+  in a new tab. Indexed fields include `raw_message`, `mt`, `sender`,
+  `receiver`, `file_name` and per-tag fields such as `tag_20C` and `tag_35B`.
+- **Clear Index…** removes all documents from the index.
+- The index directory (default `~/.mtanalyze/swift-index`) and the maximum number of
+  results (default 100) are configured under **Settings ▸ Advanced ▸ Lucene Search**.
+
+### Copy Visible Messages to Tab
+
+The Entries table context menu provides a new action that copies the messages currently
+visible (that is, after filtering) to another open tab or to a new tab.
+
+### Diff view tooltips
+
+In the comparison view, hovering over a cell displays the ISO 15022 description for the
+Sequence, Tag and Qualifier columns and for known qualifier/value combinations. For all
+other value cells, the complete, untruncated content is shown.
 
 ---
 
 # Older Releases
 
+- **v1.1.1** — MT column pinned as the leftmost column in the Entries table; **Save...** renames the tab to the saved file name; fixed a potential NullPointerException while parsing certain messages.
 - **v1.1.0** — Multiple documents as tabs: each tab is an independent workspace with its own Entries table, filters, column layout and Detail panel.
 - **v1.0.18** — MT 530, MT 564-569 corporate actions and transaction processing support; log import MT type filter now accepts numeric ranges.
 - **v1.0.17** — MT 578 Settlement Allegement support.

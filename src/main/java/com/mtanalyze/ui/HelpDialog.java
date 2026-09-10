@@ -81,6 +81,7 @@ public final class HelpDialog {
             + buildTabsSection()
             + buildFilterRowSection()
             + buildQuickFilterSection()
+            + buildRepositorySection()
             + buildContextMenuSection()
             + "</body></html>";
     }
@@ -95,6 +96,7 @@ public final class HelpDialog {
             + "<tr><td><code>Ctrl+E</code></td><td>Save Excel... — export the active tab's view as an Excel file</td></tr>"
             + "<tr><td><code>Ctrl+Q</code></td><td>Exit the application</td></tr>"
             + "<tr><td><code>Ctrl+F</code></td><td>Focus the MT Entries search field (search only applies to that view)</td></tr>"
+            + "<tr><td><code>Ctrl+Shift+F</code></td><td>Search Messages — query the Repository (Lucene) index; results open in a new tab</td></tr>"
             + "<tr><td><code>Ctrl+D</code></td><td>Show / hide the active tab's Detail panel</td></tr>"
             + "<tr><td><code>Ctrl+3</code></td><td>Show Notifications in the Detail panel</td></tr>"
             + "<tr><td><code>Ctrl+4</code></td><td>Show Tags in the Detail panel</td></tr>"
@@ -179,6 +181,55 @@ public final class HelpDialog {
             + "</table>";
     }
 
+    private static String buildRepositorySection() {
+        return "<h2>Message Repository (Index &amp; Search)</h2>"
+            + "<p>The <b>Repository</b> menu keeps a local Apache Lucene full-text index of your "
+            + "messages &mdash; no server, just a directory on disk, shared across tabs and sessions.</p>"
+            + "<table>"
+            + "<tr><th>Item</th><th>Description</th></tr>"
+            + "<tr><td><b>Index Messages</b></td>"
+                + "<td>Adds every message in the active MT Entries tab to the index (progress bar, "
+                + "cancellable). Indexing is idempotent &mdash; a message is identified by its type, "
+                + "sender and the sender's own reference (<code>:20C::SEME//</code>, or field "
+                + "<code>:20:</code> for cash messages), so re-indexing the same message replaces "
+                + "its entry instead of creating a duplicate.</td></tr>"
+            + "<tr><td><b>Search Messages...</b> <code>(Ctrl+Shift+F)</code></td>"
+                + "<td>Enter a Lucene query; the matching messages open in a new tab.</td></tr>"
+            + "<tr><td><b>Clear Index...</b></td><td>Removes all documents from the index.</td></tr>"
+            + "</table>"
+            + "<p>The index directory (default <code>~/.mtanalyze/swift-index</code>) and the maximum "
+            + "number of hits (default 100) are set under <b>Settings &gt; Advanced &gt; Lucene Search</b>.</p>"
+            + "<h3>Query syntax</h3>"
+            + "<p>Classic Lucene <code>QueryParser</code> syntax: boolean operators "
+            + "(<code>AND</code>, <code>OR</code>, <code>NOT</code>), grouping <code>( )</code>, "
+            + "phrases <code>\"...\"</code>, ranges <code>[a TO b]</code>, wildcards <code>* ?</code>. "
+            + "A bare term with no <code>field:</code> prefix searches <code>raw_message</code>.</p>"
+            + "<table>"
+            + "<tr><th>Field</th><th>Contents</th><th>Matching</th></tr>"
+            + "<tr><td><code>raw_message</code></td><td>the complete message text</td><td>analyzed, lowercased</td></tr>"
+            + "<tr><td><code>mt</code></td><td>e.g. <code>536</code></td><td>verbatim, case-sensitive</td></tr>"
+            + "<tr><td><code>sender</code> / <code>receiver</code></td><td>LT address, e.g. <code>BANKUS33AXXX</code></td>"
+                + "<td>verbatim, case-sensitive</td></tr>"
+            + "<tr><td><code>file_name</code></td><td>source label (tab title)</td><td>verbatim</td></tr>"
+            + "<tr><td><code>tag_&lt;name&gt;</code></td><td>one SWIFT tag value, e.g. <code>tag_20C</code>, <code>tag_35B</code></td>"
+                + "<td>analyzed; split on <code>: / ,</code> and whitespace, lowercased</td></tr>"
+            + "<tr><td><code>tags_all</code></td><td>every indexed tag value combined</td><td>analyzed</td></tr>"
+            + "</table>"
+            + "<p>Only content-bearing tags are indexed &mdash; those whose name starts with "
+            + "<code>20</code>, <code>35</code>, <code>70</code>, <code>94</code>, <code>95</code>, "
+            + "<code>97</code> or <code>98</code>. Structural tags (<code>16R</code>/<code>16S</code>, "
+            + "<code>23G</code>, <code>22F</code>, ...) are not.</p>"
+            + "<p><b>Examples:</b></p>"
+            + "<table>"
+            + "<tr><td><code>mt:536 AND tag_35B:US0378331005</code></td></tr>"
+            + "<tr><td><code>raw_message:\"APPLE INC\"</code></td></tr>"
+            + "<tr><td><code>sender:BANKUS33AXXX</code></td></tr>"
+            + "<tr><td><code>tag_20C:seme AND mt:(536 OR 537)</code></td></tr>"
+            + "<tr><td><code>tag_98A:[20210101 TO 20211231] NOT tag_23G:CANC</code></td></tr>"
+            + "</table>"
+            + "<hr/>";
+    }
+
     private static String buildContextMenuSection() {
         return "<h2>Context Menus (right-click)</h2>"
             + "<h3>Entries Table — cell</h3>"
@@ -187,6 +238,8 @@ public final class HelpDialog {
             + "<tr><td><b>Copy</b></td><td>Copies the clicked cell's text to the clipboard</td></tr>"
             + "<tr><td><b>Copy Table</b></td>"
                 + "<td>Copies headers and all visible rows as tab-separated values — paste directly into Excel</td></tr>"
+            + "<tr><td><b>Copy Visible Messages to Tab</b></td>"
+                + "<td>Copies the messages currently visible (after filtering) into another open tab or a new one</td></tr>"
             + "<tr><td><b>Paste</b></td><td>Open the paste dialog to append raw SWIFT text to the current view</td></tr>"
             + "<tr><td><b>Goto Tag</b></td>"
                 + "<td>Selects and scrolls to the corresponding tag row in the detail panel. "

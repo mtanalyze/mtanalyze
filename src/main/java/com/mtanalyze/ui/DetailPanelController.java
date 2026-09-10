@@ -15,6 +15,7 @@
  */
 package com.mtanalyze.ui;
 
+import com.mtanalyze.parser.HintDictionary;
 import com.mtanalyze.ui.view.DiffPanel;
 import com.mtanalyze.ui.view.NotificationPanel;
 import com.mtanalyze.ui.view.SourcePanel;
@@ -37,6 +38,7 @@ class DetailPanelController {
     private static final String LABEL_COMPONENTS    = "Components";
 
     private final TagView                    tagPanel;
+    private final HintDictionary             dict;
     private final BiConsumer<Boolean,Boolean> onMenuSync;
 
     private boolean collapsed  = false;
@@ -56,8 +58,9 @@ class DetailPanelController {
 
     private JSplitPane split;
 
-    DetailPanelController(TagView tagPanel, BiConsumer<Boolean, Boolean> onMenuSync) {
+    DetailPanelController(TagView tagPanel, HintDictionary dict, BiConsumer<Boolean, Boolean> onMenuSync) {
         this.tagPanel    = tagPanel;
+        this.dict        = dict;
         this.onMenuSync  = onMenuSync;
     }
 
@@ -70,7 +73,7 @@ class DetailPanelController {
         cardPanel  = new JPanel(cardLayout);
         cardPanel.setMinimumSize(new Dimension(MIN_WIDTH, 0));
 
-        diffPanel   = new DiffPanel();
+        diffPanel   = new DiffPanel(dict);
 
         sourcePanel = new SourcePanel();
 

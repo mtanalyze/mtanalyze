@@ -20,9 +20,11 @@ import com.prowidesoftware.swift.model.Tag;
 import com.mtanalyze.model.Entry;
 import com.mtanalyze.model.EntrySelectionListener;
 import com.mtanalyze.model.SwiftMessage;
+import com.mtanalyze.parser.HintDictionary;
 import com.mtanalyze.parser.Lookups;
 import com.mtanalyze.parser.MtParser;
 import com.mtanalyze.ui.FilterSupport;
+import com.mtanalyze.ui.MtEntryPanel;
 import com.mtanalyze.ui.ToolbarIcons;
 
 import javax.swing.*;
@@ -45,8 +47,11 @@ public final class DiffPanel extends JPanel implements EntrySelectionListener {
     /** Key of the synthetic "MT type" column in {@link Entry#data()}. */
     private static final String MT_COL_KEY = "\t_MT_\t\t1";
 
-    public DiffPanel() {
+    private final transient HintDictionary dict;
+
+    public DiffPanel(HintDictionary dict) {
         super(new BorderLayout());
+        this.dict = dict;
         showPlaceholder();
     }
 
@@ -73,7 +78,7 @@ public final class DiffPanel extends JPanel implements EntrySelectionListener {
             rows.add(entryRows);
         }
         removeAll();
-        add(buildPanel(labels, rows), BorderLayout.CENTER);
+        add(buildPanel(dict, labels, rows), BorderLayout.CENTER);
         revalidate();
         repaint();
     }
@@ -164,7 +169,7 @@ public final class DiffPanel extends JPanel implements EntrySelectionListener {
     // Table
     // -----------------------------------------------------------------------
 
-    private static JTable buildTable(DefaultTableModel model,
+    private static JTable buildTable(HintDictionary dict, DefaultTableModel model,
             TableRowSorter<DefaultTableModel> sorter, int numEntries) {
         JTable table = new JTable(model);
         table.setRowSorter(sorter);
@@ -173,7 +178,7 @@ public final class DiffPanel extends JPanel implements EntrySelectionListener {
         table.setFillsViewportHeight(true);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
-        CompareRenderer renderer = new CompareRenderer(numEntries);
+        CompareRenderer renderer = new CompareRenderer(numEntries, dict);
         applyColumnWidthsAndRenderers(table, numEntries, renderer);
         SwingUtilities.invokeLater(() -> adjustRowHeights(table));
         sorter.addRowSorterListener(e -> {
@@ -319,11 +324,12 @@ public final class DiffPanel extends JPanel implements EntrySelectionListener {
     // Embeddable panel (used by the inline Compare view in MtAnalyze)
     // -----------------------------------------------------------------------
 
-    public static JPanel buildPanel(List<String> labels, List<List<String[]>> entryRows) {
+    public static JPanel buildPanel(HintDictionary dict, List<String> labels,
+            List<List<String[]>> entryRows) {
         int numEntries = labels.size();
         DefaultTableModel model = buildModel(labels, entryRows);
         TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(model);
-        JTable table = buildTable(model, sorter, numEntries);
+        JTable table = buildTable(dict, model, sorter, numEntries);
 
         addTablePopup(table, sorter, numEntries);
         JPanel panel = new JPanel(new BorderLayout());
@@ -393,9 +399,11 @@ public final class DiffPanel extends JPanel implements EntrySelectionListener {
     private static final class CompareRenderer extends DefaultTableCellRenderer {
 
         private final int numEntries;
+        private final transient HintDictionary dict;
 
-        CompareRenderer(int numEntries) {
+        CompareRenderer(int numEntries, HintDictionary dict) {
             this.numEntries = numEntries;
+            this.dict = dict;
             setVerticalAlignment(TOP);
         }
 
@@ -409,7 +417,30 @@ public final class DiffPanel extends JPanel implements EntrySelectionListener {
                 setText("<html>" + buildDiffHtml(table, row, col, text) + "</html>");
             else if (text.contains("\n"))
                 setText("<html>" + escHtml(text) + "</html>");
+            setToolTipText(resolveTooltip(table, row, col, text));
             return this;
+        }
+
+        /**
+         * Hover text: an ISO 15022 description for the Sequence / Tag / Qualifier
+         * columns and for known qualifier/value pairs; the full, untruncated cell
+         * value for every other value column.
+         */
+        private String resolveTooltip(JTable table, int viewRow, int col, String value) {
+            if (dict == null) return null;
+            String text = value.trim();
+            if (text.isEmpty()) return null;
+            String colName = table.getColumnName(col);
+            if ("Sequence".equals(colName) || "Tag".equals(colName))
+                return blankToNull(dict.tagDescription(text));
+            if ("Qualifier".equals(colName))
+                return blankToNull(dict.qualifierDescription(text));
+            String desc = MtEntryPanel.HighlightCellRenderer.resolveValueTooltip(table, text, viewRow, dict);
+            return desc != null ? desc : "<html>" + escHtml(text) + "</html>";
+        }
+
+        private static String blankToNull(String s) {
+            return s == null || s.isBlank() ? null : s;
         }
 
         private String buildDiffHtml(JTable table, int viewRow, int col, String text) {

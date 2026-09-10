@@ -66,6 +66,8 @@ public class MtEntryPanel extends JPanel {
         void exportMessageForRow(int modelRow);
         void showAppendTextDialog();
         void setStatus(String message);
+        /** Copy the messages currently visible in this table into another (user-chosen) tab. */
+        void copyVisibleMessagesToTab();
     }
 
     // -----------------------------------------------------------------------
@@ -387,6 +389,9 @@ public class MtEntryPanel extends JPanel {
         // ── Clipboard ─────────────────────────────────────────────────────
         popup.add(makeCopyCellItem(viewRow, viewCol));
         popup.add(makeCopyTableItem());
+        JMenuItem copyVisibleToTab = new JMenuItem("Copy Visible Messages to Tab…", ToolbarIcons.menuCopyTable());
+        copyVisibleToTab.addActionListener(ae -> host.copyVisibleMessagesToTab());
+        popup.add(copyVisibleToTab);
         JMenuItem appendItem = new JMenuItem("Paste", ToolbarIcons.menuPaste());
         appendItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_V, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()));
         appendItem.addActionListener(ae -> host.showAppendTextDialog());

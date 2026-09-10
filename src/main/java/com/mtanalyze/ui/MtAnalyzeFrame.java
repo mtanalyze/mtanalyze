@@ -27,6 +27,8 @@ import com.mtanalyze.parser.HintDictionary;
 import com.mtanalyze.export.CsvExport;
 import com.mtanalyze.export.ExcelExport;
 import com.mtanalyze.export.MtExport;
+import com.mtanalyze.lucene.MessageIndexService;
+import com.mtanalyze.lucene.MtLucene;
 import com.mtanalyze.ui.view.NotificationPanel;
 import com.mtanalyze.ui.view.TagView;
 import com.mtanalyze.util.FileChoosers;
@@ -43,6 +45,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.function.IntConsumer;
 import java.util.prefs.Preferences;
 
@@ -70,6 +73,7 @@ public class MtAnalyzeFrame extends JFrame {
     private final transient MtExport            mtExport    = new MtExport();
     private final transient ExcelExport         excelExport = new ExcelExport();
     private final transient ImportService       importService = new ImportService();
+    private final transient MessageIndexService messageIndex  = new MessageIndexService();
     private final transient HintDictionary      dict          = new HintDictionary();
     private final transient MtEntryPanel.PrefKeys prefKeys;
 
@@ -111,9 +115,14 @@ public class MtAnalyzeFrame extends JFrame {
     private static final String PREF_CSV_DECIMAL_SEP      = "csv_decimal_sep";
     private static final String PREF_USER_DICT             = "user_qualifier_values";
     private static final String PREF_POWER_USER            = "power_user";
+    private static final String PREF_LUCENE_DIR            = "lucene_index_dir";
+    private static final String PREF_LUCENE_MAX_HITS       = "lucene_max_hits";
     private static final String THEME_LIGHT             = "Light";
 
     private JButton    menuSearchBtn;
+
+    /** Last Lucene query string, pre-filled into the "Search Messages" dialog. */
+    private String lastLuceneQuery = "";
 
     private JRadioButtonMenuItem menuNotifications;
     private JRadioButtonMenuItem menuTags;
@@ -129,7 +138,7 @@ public class MtAnalyzeFrame extends JFrame {
     // Constructor / UI setup
     // -----------------------------------------------------------------------
     public MtAnalyzeFrame() {
-        super(APP_NAME);
+        super(windowTitle());
         String legacyDict = PREFS.get(PREF_USER_DICT, "");
         if (!legacyDict.isEmpty()) {
             dict.loadUserEntriesFromCsv(legacyDict);
@@ -149,6 +158,7 @@ public class MtAnalyzeFrame extends JFrame {
         setupIcons();
         setupMenuBar();
         setupStatusBar();
+        applyLuceneConfig();
         assembleMainLayout();
         openNewTab();
         applyPowerUserMode();
@@ -210,8 +220,168 @@ public class MtAnalyzeFrame extends JFrame {
             () -> withActiveTab(t -> t.switchDetailCard(DetailPanelController.INSPECTOR)),
             () -> withActiveTab(t -> t.switchDetailCard(DetailPanelController.COMPARE)),
             () -> withActiveTab(t -> t.switchDetailCard(DetailPanelController.EDITOR)),
-            () -> withActiveTab(EntryTab::switchToComponents)
+            () -> withActiveTab(EntryTab::switchToComponents),
+            this::onIndexMessages,
+            this::onSearchMessages,
+            this::onClearLuceneIndex
         );
+    }
+
+    // -----------------------------------------------------------------------
+    // Lucene: Index Messages / Search Messages
+    // -----------------------------------------------------------------------
+
+    /** Indexes every message of the active tab's MT Entries view into the shared Lucene index. */
+    private void onIndexMessages() {
+        EntryTab t = activeTab();
+        if (t == null) return;
+        List<SwiftMessage> messages = t.entryPanel.getLoadedMessages();
+        if (messages.isEmpty()) {
+            statusLabel.setText("Nothing to index – this tab has no MT entries.");
+            return;
+        }
+        final int count = messages.size();
+
+        JProgressBar bar = new JProgressBar(0, count);
+        bar.setStringPainted(true);
+        bar.setString("0 / " + count);
+        FrameLayout.ProgressDialog pd = FrameLayout.buildProgressDialog(this, "Index Messages",
+            "Indexing " + count + (count == 1 ? MSG_SINGULAR : MSG_PLURAL) + " into the Lucene index…", bar);
+
+        SwingWorker<Integer, Integer> worker = new SwingWorker<>() {
+            @Override protected Integer doInBackground() throws IOException {
+                return messageIndex.indexMessages(messages, t.title, n -> publish(n), this::isCancelled);
+            }
+            @Override protected void process(List<Integer> progress) {
+                int n = progress.get(progress.size() - 1);
+                bar.setValue(n);
+                bar.setString(n + " / " + count);
+            }
+            @Override protected void done() {
+                pd.dialog().dispose();
+                if (isCancelled()) { statusLabel.setText("Indexing cancelled."); return; }
+                try {
+                    int n = get();
+                    long total = messageIndex.documentCount();
+                    statusLabel.setText(n + (n == 1 ? MSG_SINGULAR : MSG_PLURAL)
+                        + " indexed (" + total + " in the Lucene index).");
+                    t.detailCtrl.notificationPanel().addNotification(
+                        NotificationPanel.Type.INFO, "Messages indexed",
+                        n + (n == 1 ? MSG_SINGULAR : MSG_PLURAL) + " indexed into the Lucene index at "
+                            + messageIndex.indexDir() + " (" + total + " total; messages already indexed are replaced).");
+                } catch (InterruptedException ex) {
+                    Thread.currentThread().interrupt();
+                } catch (ExecutionException | IOException ex) {
+                    Throwable cause = ex instanceof ExecutionException && ex.getCause() != null ? ex.getCause() : ex;
+                    JOptionPane.showMessageDialog(MtAnalyzeFrame.this, "Indexing failed:\n" + cause.getMessage(),
+                        ERROR_TITLE, JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        };
+        pd.runWorker(worker);
+    }
+
+    /** Prompts for a Lucene query string and shows the matching messages in a new tab. */
+    private void onSearchMessages() {
+        String query = promptLuceneQuery();
+        if (query == null || query.isBlank()) return;
+        String trimmed = query.trim();
+
+        List<MtLucene.SwiftHit> hits;
+        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        try {
+            hits = messageIndex.search(trimmed);
+        } catch (IllegalArgumentException ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage(),
+                "Invalid Query", JOptionPane.WARNING_MESSAGE);
+            return;
+        } catch (IOException ex) {
+            JOptionPane.showMessageDialog(this, "Search failed:\n" + ex.getMessage(),
+                ERROR_TITLE, JOptionPane.ERROR_MESSAGE);
+            return;
+        } finally {
+            setCursor(Cursor.getDefaultCursor());
+        }
+
+        if (hits.isEmpty()) {
+            JOptionPane.showMessageDialog(this,
+                "No indexed messages match:\n" + trimmed
+                    + "\n\n(Use Repository ▸ Index Messages first if the index is empty.)",
+                "Search Messages", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        List<String> chunks = hits.stream().map(MtLucene.SwiftHit::rawMessage).toList();
+        EntryTab tab = openNewTab();
+        int parsed = tab.importer.appendFromContent(chunks, null, null, MessageOrigin.CLIPBOARD);
+        tab.updateTitle("Search: " + trimmed);
+        boolean capped = hits.size() >= messageIndex.maxHits();
+        tab.setStatus(parsed + " of " + hits.size() + " search hit"
+            + (hits.size() == 1 ? "" : "s") + (capped ? " (hit limit reached)" : "")
+            + " loaded for query: " + trimmed);
+    }
+
+    /**
+     * Multi-line query dialog for "Search Messages". Returns the entered query,
+     * or {@code null} if cancelled. Ctrl+Enter confirms.
+     */
+    private String promptLuceneQuery() {
+        JTextArea area = new JTextArea(8, 48);
+        area.setLineWrap(true);
+        area.setWrapStyleWord(true);
+        area.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 13));
+        area.setText(lastLuceneQuery);
+        area.setCaretPosition(area.getText().length());
+        area.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
+
+        JScrollPane scroll = new JScrollPane(area);
+
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.add(scroll, BorderLayout.CENTER);
+        panel.setPreferredSize(new Dimension(560, 220));
+
+        JOptionPane optionPane = new JOptionPane(panel, JOptionPane.PLAIN_MESSAGE,
+            JOptionPane.OK_CANCEL_OPTION);
+        JDialog dialog = optionPane.createDialog(this, "Search Messages");
+        // Ctrl+Enter = OK
+        area.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER,
+            Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()), "submit");
+        area.getActionMap().put("submit", new AbstractAction() {
+            @Override public void actionPerformed(ActionEvent e) {
+                optionPane.setValue(JOptionPane.OK_OPTION);
+                dialog.dispose();
+            }
+        });
+        SwingUtilities.invokeLater(area::requestFocusInWindow);
+        dialog.setVisible(true);
+        dialog.dispose();
+
+        Object value = optionPane.getValue();
+        if (value == null || !value.equals(JOptionPane.OK_OPTION)) return null;
+        lastLuceneQuery = area.getText().trim();
+        return lastLuceneQuery;
+    }
+
+    private void onClearLuceneIndex() {
+        long total;
+        try {
+            total = messageIndex.documentCount();
+        } catch (IOException ex) {
+            total = -1;
+        }
+        int choice = JOptionPane.showConfirmDialog(this,
+            "Delete all " + (total >= 0 ? total + " " : "") + "documents from the Lucene index?\n"
+                + messageIndex.indexDir(),
+            "Clear Index", JOptionPane.OK_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE);
+        if (choice != JOptionPane.OK_OPTION) return;
+        try {
+            long removed = messageIndex.clearIndex();
+            statusLabel.setText(removed + " document" + (removed == 1 ? "" : "s")
+                + " removed from the Lucene index.");
+        } catch (IOException ex) {
+            JOptionPane.showMessageDialog(this, "Could not clear the index:\n" + ex.getMessage(),
+                ERROR_TITLE, JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private void showSettings() {
@@ -222,8 +392,18 @@ public class MtAnalyzeFrame extends JFrame {
                 config::getMtExportSender, config::getMtExportReceiver,
                 config::getMaxEntries, config::getLogSwiftStart, config::getLogNewlineToken,
                 config::saveSettings),
-            new SettingsDialog.Config.PowerUserConfig(PREF_POWER_USER, this::applyPowerUserMode)),
+            new SettingsDialog.Config.PowerUserConfig(PREF_POWER_USER, this::applyPowerUserMode),
+            new SettingsDialog.Config.LuceneConfig(PREF_LUCENE_DIR, PREF_LUCENE_MAX_HITS,
+                MessageIndexService.defaultIndexDir().toString(),
+                MessageIndexService.DEFAULT_MAX_HITS, this::applyLuceneConfig)),
             dict);
+    }
+
+    /** Re-applies the persisted Lucene index directory and hit limit to the running service. */
+    private void applyLuceneConfig() {
+        messageIndex.configure(
+            PREFS.get(PREF_LUCENE_DIR, ""),
+            PREFS.getInt(PREF_LUCENE_MAX_HITS, MessageIndexService.DEFAULT_MAX_HITS));
     }
 
     private void populateEditMenu(JMenu menu) {
@@ -365,6 +545,56 @@ public class MtAnalyzeFrame extends JFrame {
         if (t == null) return;
         saveExcelItem.setEnabled(!t.entryPanel.getLoadedMessages().isEmpty());
         saveAsMtItem.setEnabled(t.entryPanel.getTable().getSelectedRow() >= 0);
+    }
+
+    /**
+     * Context-menu action: copies the messages currently visible in {@code source}'s
+     * entries table (after filtering) into another tab chosen by the user, or a new one.
+     * The messages are re-parsed from their FIN text so the target tab gets independent
+     * copies.
+     */
+    private void copyVisibleMessagesToTab(EntryTab source) {
+        List<SwiftMessage> visible = source.entryPanel.getVisibleMessages();
+        if (visible.isEmpty()) {
+            source.setStatus("No visible messages to copy.");
+            return;
+        }
+
+        final String newTabOption = "＋  New Tab";
+        List<EntryTab> targets = new ArrayList<>();
+        List<String> options = new ArrayList<>();
+        options.add(newTabOption);
+        for (int i = 0; i < openTabs.size(); i++) {
+            EntryTab t = openTabs.get(i);
+            if (t == source) continue;
+            targets.add(t);
+            options.add((i + 1) + ":  " + t.title);
+        }
+
+        String choice = (String) JOptionPane.showInputDialog(this,
+            "Copy " + visible.size() + (visible.size() == 1 ? MSG_SINGULAR : MSG_PLURAL) + " to:",
+            "Copy Visible Messages to Tab", JOptionPane.QUESTION_MESSAGE, null,
+            options.toArray(), options.get(0));
+        if (choice == null) return;
+
+        EntryTab target = choice.equals(newTabOption)
+            ? openNewTab()
+            : targets.get(options.indexOf(choice) - 1);
+
+        List<String> chunks = new ArrayList<>(visible.size());
+        for (SwiftMessage m : visible) {
+            try {
+                String fin = m.raw().message();
+                if (fin != null && !fin.isBlank()) chunks.add(fin);
+            } catch (RuntimeException ignored) {
+                // skip a message that cannot be serialized back to FIN
+            }
+        }
+        int parsed = target.importer.appendFromContent(chunks, null, null, MessageOrigin.CLIPBOARD);
+        int idx = openTabs.indexOf(target);
+        if (idx >= 0) tabs.setSelectedIndex(idx);
+        target.setStatus(parsed + (parsed == 1 ? MSG_SINGULAR : MSG_PLURAL)
+            + " copied from " + source.title + ".");
     }
 
     // -----------------------------------------------------------------------
@@ -529,6 +759,14 @@ public class MtAnalyzeFrame extends JFrame {
     // -----------------------------------------------------------------------
     // About dialog / utilities
     // -----------------------------------------------------------------------
+    /** Main-window title: the app name, plus the release version when it is known. */
+    private static String windowTitle() {
+        String v = loadVersion();
+        return (v == null || v.isBlank() || "unknown".equals(v) || v.contains("${"))
+                ? APP_NAME
+                : APP_NAME + " " + v;
+    }
+
     static String loadVersion() {
         try (InputStream in = MtAnalyzeFrame.class.getResourceAsStream("/version.properties")) {
             if (in != null) {
@@ -784,7 +1022,7 @@ public class MtAnalyzeFrame extends JFrame {
             pasteBtn.addActionListener(e -> showAppendTextDialog());
             JPanel entriesWrapper = FrameLayout.wrapDetailCard(tranListPanel, entriesTitle, this::clearEntries, appendBtn, pasteBtn);
 
-            detailCtrl = new DetailPanelController(tagPanel, this::syncDetailMenuItems);
+            detailCtrl = new DetailPanelController(tagPanel, dict, this::syncDetailMenuItems);
             JPanel detailCardPanel = detailCtrl.buildCardPanel();
             selectionListeners.add(detailCtrl.sourcePanel());
             selectionListeners.add(detailCtrl.diffPanel());
@@ -840,6 +1078,9 @@ public class MtAnalyzeFrame extends JFrame {
                 }
                 @Override public void showAppendTextDialog() { EntryTab.this.showAppendTextDialog(); }
                 @Override public void setStatus(String message) { setStatusText(message); }
+                @Override public void copyVisibleMessagesToTab() {
+                    MtAnalyzeFrame.this.copyVisibleMessagesToTab(EntryTab.this);
+                }
             };
         }
 
