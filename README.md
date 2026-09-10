@@ -56,9 +56,8 @@ component. It is shared across all tabs and sessions.
 
 - **Index Messages** adds all messages of the active *MT Entries* tab to the index. The
   operation runs in the background, reports progress and can be cancelled. Indexing is
-  idempotent: a message is identified by its type, sender and the sender's own reference
-  (`:20C::SEME//`, or field `:20:` for cash messages), so re-indexing the same message
-  replaces its entry instead of creating a duplicate.
+  idempotent: a message is identified by a hash of its content, so re-indexing the same
+  message replaces its entry instead of creating a duplicate.
 - **Search Messages…** (`Ctrl+Shift+F`) executes a Lucene query and opens the result set
   in a new tab.
 - **Clear Index…** removes all documents from the index.

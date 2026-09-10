@@ -268,7 +268,7 @@ public class MtAnalyzeFrame extends JFrame {
                     t.detailCtrl.notificationPanel().addNotification(
                         NotificationPanel.Type.INFO, "Messages indexed",
                         n + (n == 1 ? MSG_SINGULAR : MSG_PLURAL) + " indexed into the Lucene index at "
-                            + messageIndex.indexDir() + " (" + total + " total; messages already indexed are replaced).");
+                            + messageIndex.indexDir() + " (" + total + " total; a message already in the index is replaced).");
                 } catch (InterruptedException ex) {
                     Thread.currentThread().interrupt();
                 } catch (ExecutionException | IOException ex) {

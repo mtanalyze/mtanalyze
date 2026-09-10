@@ -30,11 +30,10 @@ import java.util.function.IntConsumer;
  * Messages").
  * <p>
  * The index is a single directory shared by every tab and every session.
- * Indexing is idempotent: each message carries a stable identity (message type +
- * sender + the sender's own reference), so re-indexing the same message replaces
- * its document rather than adding a duplicate. {@link #clearIndex()} empties the
- * index. The index directory and the search hit limit are configurable via
- * {@link #configure(String, int)}.
+ * Indexing is idempotent: each message carries a content-hash identity, so
+ * re-indexing the same message replaces its document rather than adding a
+ * duplicate. {@link #clearIndex()} empties the index. The index directory and
+ * the search hit limit are configurable via {@link #configure(String, int)}.
  */
 public final class MessageIndexService {
 

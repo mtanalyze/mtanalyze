@@ -72,9 +72,8 @@ import java.util.stream.Stream;
  * Each document contains:
  * <ul>
  *  <li>{@code doc_id}       : a generated identifier for the indexed document</li>
- *  <li>{@code content_id}   : stable identity of the message (message type + sender +
- *      the sender's own reference); re-indexing the same message replaces its
- *      document instead of adding a copy</li>
+ *  <li>{@code content_id}   : content hash identifying the message; re-indexing the
+ *      same message replaces its document instead of adding a copy</li>
  *  <li>{@code file_name}    : original file name</li>
  *  <li>{@code msg_index}    : 1-based position of the message within its file</li>
  *  <li>{@code raw_message}  : the complete, unmodified text of this one message</li>
@@ -218,7 +217,7 @@ public class MtLucene implements AutoCloseable {
         String senderLt = MessageParser.extractSender(rawMessage);
         String receiverLt = MessageParser.extractReceiver(rawMessage);
         String docId = UUID.randomUUID().toString();
-        String contentId = contentId(messageType, senderLt, tags, rawMessage);
+        String contentId = contentId(rawMessage);
 
         Document doc = new Document();
         doc.add(new StringField(F_DOC_ID, docId, Field.Store.YES));
@@ -254,37 +253,16 @@ public class MtLucene implements AutoCloseable {
     }
 
     /**
-     * Stable identity of a message, so that re-indexing stays idempotent: a later
-     * pass over the same message replaces its document instead of adding a copy.
-     * <p>
-     * Built from message type, sender and the sender's own message reference --
-     * {@code :20C::SEME//} for category 5, field {@code :20:} for category 9.
-     * Falls back to a SHA-256 of the whitespace-normalised raw text when neither
-     * reference is present (e.g. a malformed or hand-edited message).
+     * Stable identity of a message, so that re-indexing stays idempotent: a
+     * second pass over the same message replaces its document instead of adding
+     * a copy. It is a SHA-256 over the raw message text with runs of whitespace
+     * collapsed, so re-serialised copies that differ only in line endings or
+     * padding still count as the same message. Two genuinely different messages
+     * -- including the individual pages of one paginated statement, which may
+     * share a {@code :20C::SEME//} reference -- always get distinct identities.
      */
-    static String contentId(String messageType, String sender,
-                            Map<String, List<String>> tags, String rawMessage) {
-        String reference = senderReference(tags);
-        if (reference != null && !reference.isBlank() && sender != null && !sender.isBlank()) {
-            return (nz(messageType) + "|" + sender + "|" + reference).toUpperCase(Locale.ROOT);
-        }
-        return "sha256|" + sha256Hex(rawMessage.replaceAll("\\s+", " ").strip());
-    }
-
-    /** {@code :20C::SEME//<ref>} (category 5) or field {@code :20:} (category 9). */
-    private static String senderReference(Map<String, List<String>> tags) {
-        for (String value : tags.getOrDefault("20C", List.of())) {
-            String v = value.startsWith(":") ? value.substring(1) : value;
-            if (v.startsWith("SEME//")) {
-                return v.substring("SEME//".length()).trim();
-            }
-        }
-        for (String value : tags.getOrDefault("20", List.of())) {
-            if (!value.isBlank()) {
-                return value.trim();
-            }
-        }
-        return null;
+    static String contentId(String rawMessage) {
+        return sha256Hex(rawMessage.replaceAll("\\s+", " ").strip());
     }
 
     private static String sha256Hex(String s) {
@@ -294,10 +272,6 @@ public class MtLucene implements AutoCloseable {
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException("SHA-256 not available", e);
         }
-    }
-
-    private static String nz(String s) {
-        return s == null ? "" : s;
     }
 
     /** Whether a SWIFT tag is kept in the index (see {@link #INDEXABLE_TAG_PREFIXES}). */
