@@ -130,6 +130,12 @@
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>com.mtanalyze.MtAnalyze</mainClass>
+                                    <manifestEntries>
+                                        <!-- Lucene 9.x ships MemorySegmentIndexInputProvider (Java 19+)
+                                             only under META-INF/versions/*; without this flag the JVM
+                                             ignores those and Lucene fails at runtime. -->
+                                        <Multi-Release>true</Multi-Release>
+                                    </manifestEntries>
                                 </transformer>
                                 <!-- META-INF/services-Dateien korrekt zusammenführen -->
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
@@ -204,6 +210,9 @@
                                     <transformers>
                                         <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                             <mainClass>com.mtanalyze.MtAnalyze</mainClass>
+                                            <manifestEntries>
+                                                <Multi-Release>true</Multi-Release>
+                                            </manifestEntries>
                                         </transformer>
                                         <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                                         <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheLicenseResourceTransformer"/>
