@@ -18,6 +18,7 @@ package com.mtanalyze.ui;
 import com.mtanalyze.model.Entry;
 import com.mtanalyze.model.SwiftMessage;
 import com.prowidesoftware.swift.model.SwiftTagListBlock;
+import com.prowidesoftware.swift.utils.SwiftMessageComparator;
 
 import com.mtanalyze.parser.HintDictionary;
 import com.mtanalyze.ui.view.PanelDecor;
@@ -81,6 +82,9 @@ public class MtEntryPanel extends JPanel {
 
 
     private static final List<String> REF_SEARCH_QUALIFIERS = List.of("SEME", "RELA", "TRCI", "PREV");
+
+    /** Qualifier of field 20C carrying the Sender's Message Reference. */
+    private static final String SEME_QUALIFIER = "SEME";
 
     private static final String DETAIL_CARD_EDITOR = "editor";
 
@@ -907,6 +911,54 @@ public class MtEntryPanel extends JPanel {
         model.deleteRow(modelRow);
         entryTableModel.rowDeleted(modelRow);
         host.setStatus("Row deleted.");
+    }
+
+    /** Outcome of {@link #removeDuplicateMessages()}: how many messages were removed and,
+     *  for each, the SEME reference (field 20C, qualifier SEME) to report back to the caller. */
+    public record DuplicateRemovalResult(int removedCount, List<String> removedSeme) {}
+
+    /**
+     * Detects exact duplicate messages using Prowide's {@link SwiftMessageComparator}
+     * (default settings, i.e. the entire message must match) and removes every duplicate,
+     * keeping the first occurrence of each. Rebuilds the table to reflect the removal.
+     */
+    public DuplicateRemovalResult removeDuplicateMessages() {
+        List<SwiftMessage> messages = model.getLoadedMessages();
+        SwiftMessageComparator comparator = new SwiftMessageComparator();
+        List<SwiftMessage> kept = new ArrayList<>();
+        List<SwiftMessage> duplicates = new ArrayList<>();
+        for (SwiftMessage msg : messages) {
+            boolean isDuplicate = false;
+            for (SwiftMessage k : kept) {
+                if (comparator.compare(msg.raw().getSwiftMessage(), k.raw().getSwiftMessage()) == 0) {
+                    isDuplicate = true;
+                    break;
+                }
+            }
+            (isDuplicate ? duplicates : kept).add(msg);
+        }
+        if (duplicates.isEmpty()) return new DuplicateRemovalResult(0, List.of());
+
+        List<String> removedSeme = new ArrayList<>();
+        for (SwiftMessage msg : duplicates) removedSeme.add(semeReference(msg));
+
+        model.removeMessages(duplicates);
+        rebuildPositionTable();
+        host.setStatus(duplicates.size() + (duplicates.size() == 1 ? " duplicate" : " duplicates") + " removed.");
+        return new DuplicateRemovalResult(duplicates.size(), removedSeme);
+    }
+
+    /** The message's field 20C / qualifier SEME value (Sender's Message Reference), or "" if absent. */
+    private static String semeReference(SwiftMessage msg) {
+        for (Entry e : msg.entries()) {
+            for (Map.Entry<String, String> kv : e.data().entrySet()) {
+                String[] parts = kv.getKey().split("\t", -1);
+                if (parts.length >= 3 && SEME_QUALIFIER.equals(parts[2])
+                        && kv.getValue() != null && !kv.getValue().isBlank())
+                    return kv.getValue();
+            }
+        }
+        return "";
     }
 
     // -----------------------------------------------------------------------

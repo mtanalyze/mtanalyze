@@ -142,6 +142,30 @@ final class EntryPanelModel {
         if (owner.entries().isEmpty()) project.removeMessage(msgIdx);
     }
 
+    /**
+     * Removes every entry belonging to each message in {@code toRemove}, and the messages
+     * themselves, from all backing structures. Entries are matched by identity rather than
+     * {@link Entry#equals} — duplicate messages are, by construction, structurally equal to
+     * the message they duplicate, so equals-based removal could delete the wrong occurrence.
+     * Caller fires the table event(s) (e.g. via a full {@code EntryTableModel} refresh).
+     */
+    public void removeMessages(Collection<SwiftMessage> toRemove) {
+        Set<Entry> targets = Collections.newSetFromMap(new IdentityHashMap<>());
+        for (SwiftMessage msg : toRemove) targets.addAll(msg.entries());
+        allEntries.removeIf(targets::contains);
+
+        for (SwiftMessage msg : toRemove) {
+            for (Entry e : new ArrayList<>(msg.entries())) {
+                Set<Tag> finSet = Collections.newSetFromMap(new IdentityHashMap<>());
+                finSet.addAll(e.sequence().getTags());
+                msg.raw().getSwiftMessage().getBlock4().getTags().removeIf(finSet::contains);
+                msg.removeEntry(e);
+            }
+            int idx = project.messages().indexOf(msg);
+            if (idx >= 0) project.removeMessage(idx);
+        }
+    }
+
     private int messageIndexForRow(int modelRow) {
         int offset = 0;
         List<SwiftMessage> msgs = project.messages();

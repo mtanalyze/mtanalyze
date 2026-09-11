@@ -95,6 +95,7 @@ public class MtAnalyzeFrame extends JFrame {
     private JMenuItem          exportComponentsItem;
     private JMenuItem          validateFileItem;
     private JMenuItem          attachBlock5Item;
+    private JMenuItem          removeDuplicatesItem;
     private JMenu              importMenu;
     private JMenu              exportMenu;
     private JSeparator         importExportLeadingSeparator;
@@ -180,6 +181,7 @@ public class MtAnalyzeFrame extends JFrame {
         exportComponentsItem    = items.exportComponentsItem();
         validateFileItem        = items.validateFileItem();
         attachBlock5Item        = items.attachBlock5Item();
+        removeDuplicatesItem    = items.removeDuplicatesItem();
         importMenu              = items.importMenu();
         exportMenu               = items.exportMenu();
         importExportLeadingSeparator = items.importExportLeadingSeparator();
@@ -203,6 +205,7 @@ public class MtAnalyzeFrame extends JFrame {
             this::onImportDirectory,
             this::onValidateFile,
             this::onAttachBlock5,
+            () -> withActiveTab(EntryTab::onRemoveDuplicates),
             () -> withActiveTab(t -> csvExport.export(this, t.entryPanel.getColumnDefs(), t.entryPanel.getRowData(), statusLabel::setText, csvPrefs)),
             () -> withActiveTab(t -> csvExport.exportComponents(this, t.entryPanel.getFullDisplaySequences(), t.entryPanel.getRowData(), SEQ_KEY, statusLabel::setText, csvPrefs)),
             () -> withActiveTab(t -> mtExport.export(this, t.entryPanel.getLoadedMessages().stream().map(SwiftMessage::raw).toList(),
@@ -908,7 +911,7 @@ public class MtAnalyzeFrame extends JFrame {
     private void applyPowerUserMode() {
         boolean on = isPowerUser();
         setVisible(on,
-            exportComponentsItem, validateFileItem, attachBlock5Item,
+            exportComponentsItem, validateFileItem, attachBlock5Item, removeDuplicatesItem,
             importMenu, exportMenu, importExportLeadingSeparator, importExportMiddleSeparator);
         JMenuBar bar = getJMenuBar();
         if (bar != null) { bar.revalidate(); bar.repaint(); }
@@ -1236,6 +1239,43 @@ public class MtAnalyzeFrame extends JFrame {
                 entryPanel.getRowData(),
                 SEQ_KEY,
                 statusLabel::setText);
+        }
+
+        /**
+         * Removes exact duplicate messages (compared with Prowide's {@code SwiftMessageComparator})
+         * from this tab, keeping the first occurrence of each. The SEME reference of every removed
+         * message is reported in the notification panel.
+         */
+        void onRemoveDuplicates() {
+            if (entryPanel.getLoadedMessages().isEmpty()) {
+                statusLabel.setText("Nothing to check – this tab has no MT entries.");
+                return;
+            }
+            int choice = JOptionPane.showConfirmDialog(MtAnalyzeFrame.this,
+                "Remove duplicate messages from this tab?\n"
+                    + "Messages are compared with Prowide's SwiftMessageComparator; exact duplicates "
+                    + "are deleted, keeping the first occurrence of each.",
+                "Remove Duplicates", JOptionPane.OK_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE);
+            if (choice != JOptionPane.OK_OPTION) return;
+
+            MtEntryPanel.DuplicateRemovalResult result = entryPanel.removeDuplicateMessages();
+            if (result.removedCount() == 0) {
+                statusLabel.setText("No duplicate messages found.");
+                return;
+            }
+            refreshFileMenuState();
+
+            String semeList = result.removedSeme().stream()
+                .filter(s -> !s.isEmpty())
+                .distinct()
+                .reduce((a, b) -> a + ", " + b)
+                .orElse("");
+            String body = "Removed " + result.removedCount()
+                + (result.removedCount() == 1 ? " duplicate message" : " duplicate messages")
+                + (semeList.isEmpty() ? "" : ("<br>SEME: " + semeList));
+            detailCtrl.notificationPanel().addNotification(NotificationPanel.Type.WARNING, "Duplicates removed", body);
+            switchDetailCard(DetailPanelController.NOTIFICATIONS);
+            detailCtrl.expandIfNeeded();
         }
 
         void onFileLoaded(ImportBatch batch, File file) {

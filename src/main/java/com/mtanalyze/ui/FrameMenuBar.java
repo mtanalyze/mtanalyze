@@ -40,6 +40,7 @@ public final class FrameMenuBar {
         JMenuItem             exportComponentsItem,
         JMenuItem             validateFileItem,
         JMenuItem             attachBlock5Item,
+        JMenuItem             removeDuplicatesItem,
         JMenu                 importMenu,
         JMenu                 exportMenu,
         JSeparator            importExportLeadingSeparator,
@@ -66,6 +67,7 @@ public final class FrameMenuBar {
         Runnable          onImportDirectory,
         Runnable          onValidateFile,
         Runnable          onAttachBlock5,
+        Runnable          onRemoveDuplicates,
         Runnable          onExportCsv,
         Runnable          onExportCsvComponents,
         Runnable          onExportMt,
@@ -138,6 +140,8 @@ public final class FrameMenuBar {
         fileMenu.add(validateFileItem);
         JMenuItem attachBlock5Item = item("Attach Block 5...", ToolbarIcons.menuAppendFile(), null, cb.onAttachBlock5());
         fileMenu.add(attachBlock5Item);
+        JMenuItem removeDuplicatesItem = item("Remove Duplicates...", ToolbarIcons.menuDelete(), null, cb.onRemoveDuplicates());
+        fileMenu.add(removeDuplicatesItem);
         fileMenu.addSeparator();
         fileMenu.add(item("Settings...", ToolbarIcons.menuSettings(), null, cb.onShowSettings()));
         fileMenu.addSeparator();
@@ -219,6 +223,7 @@ public final class FrameMenuBar {
         menuBar.add(settingsBtn);
 
         return new Items(menuBar, saveAsMtItem, saveExcelItem, exportComponentsItem, validateFileItem, attachBlock5Item,
+            removeDuplicatesItem,
             importMenu, exportMenu, importExportLeadingSeparator, importExportMiddleSeparator,
             searchBtn,
             menuNotifications, menuTags, menuCompare, menuSource, menuComponents);
