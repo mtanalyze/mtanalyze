@@ -7,3 +7,4 @@
 /misc
 /.sonarlint/connectedMode.json
 .DS_Store
+/.github/modernize/java-upgrade/

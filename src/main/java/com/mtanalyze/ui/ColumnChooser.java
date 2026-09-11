@@ -21,9 +21,19 @@ import javax.swing.*;
 import javax.swing.border.*;
 import javax.swing.event.*;
 import java.awt.*;
+import java.awt.datatransfer.StringSelection;
+import java.awt.datatransfer.Transferable;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.*;
 import java.util.List;
 
+/**
+ * Dialog for choosing which FIN table columns are visible and in which order.
+ * Shows two lists — "Available" (hidden) and "Visible" (shown, in display
+ * order) — with buttons to move columns between them and to reorder the
+ * visible list (also reorderable by dragging).
+ */
 public final class ColumnChooser {
 
     private ColumnChooser() {}
@@ -42,185 +52,303 @@ public final class ColumnChooser {
             return;
         }
 
-        final Map<String, Boolean>    working  = buildWorkingMap(cols);
-        final Map<JCheckBox, String>  cbToKey  = new LinkedHashMap<>();
+        final Map<ColumnDef, Integer> originalIndex = new IdentityHashMap<>();
+        for (int i = 0; i < cols.size(); i++) originalIndex.put(cols.get(i), i);
 
-        JPanel      contentPanel = new JPanel();
-        contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
-        JScrollPane scroll       = new JScrollPane(contentPanel);
-        scroll.setPreferredSize(new Dimension(520, 460));
-        scroll.getVerticalScrollBar().setUnitIncrement(16);
+        final List<ColumnDef> allAvailable = new ArrayList<>();
+        final DefaultListModel<ColumnDef> availableModel = new DefaultListModel<>();
+        final DefaultListModel<ColumnDef> visibleModel   = new DefaultListModel<>();
+        for (ColumnDef cd : cols) {
+            if (cd.isVisible()) visibleModel.addElement(cd);
+            else                allAvailable.add(cd);
+        }
 
         JTextField filterField = new JTextField();
-        filterField.setToolTipText("Tag, qualifier or segment — list is filtered instantly");
+        filterField.setToolTipText("Tag, qualifier or segment — filters the Available list instantly");
 
-        Runnable rebuild = () -> {
+        JList<ColumnDef> availableList = createColumnList(availableModel, dict);
+        JList<ColumnDef> visibleList   = createColumnList(visibleModel, dict);
+        enableDragReorder(visibleList, visibleModel);
+
+        Runnable refreshAvailable = () -> {
             String filter = filterField.getText().trim().toLowerCase(Locale.ROOT);
-            Map<String, List<ColumnDef>> segments = filterToSegments(cols, filter);
-            repopulatePanel(contentPanel, cbToKey, working, segments, filterField.getText().trim(), dict);
-            SwingUtilities.invokeLater(() -> scroll.getVerticalScrollBar().setValue(0));
+            availableModel.clear();
+            for (ColumnDef cd : allAvailable) {
+                if (filter.isEmpty() || matchesFilter(cd, filter)) availableModel.addElement(cd);
+            }
+        };
+        filterField.getDocument().addDocumentListener(new DocumentListener() {
+            @Override public void insertUpdate(DocumentEvent e)  { refreshAvailable.run(); }
+            @Override public void removeUpdate(DocumentEvent e)  { refreshAvailable.run(); }
+            @Override public void changedUpdate(DocumentEvent e) { refreshAvailable.run(); }
+        });
+        refreshAvailable.run();
+
+        Runnable toVisible = () -> {
+            for (ColumnDef cd : availableList.getSelectedValuesList()) {
+                allAvailable.remove(cd);
+                visibleModel.addElement(cd);
+            }
+            refreshAvailable.run();
+        };
+        Runnable toAvailable = () -> {
+            for (ColumnDef cd : visibleList.getSelectedValuesList()) {
+                visibleModel.removeElement(cd);
+                insertSorted(allAvailable, cd, originalIndex);
+            }
+            refreshAvailable.run();
         };
 
-        filterField.getDocument().addDocumentListener(new DocumentListener() {
-            @Override public void insertUpdate(DocumentEvent e)  { rebuild.run(); }
-            @Override public void removeUpdate(DocumentEvent e)  { rebuild.run(); }
-            @Override public void changedUpdate(DocumentEvent e) { rebuild.run(); }
-        });
-        rebuild.run();
+        JButton toVisibleBtn   = iconButton(ToolbarIcons.arrowRight(), "Show selected column(s)");
+        JButton toAvailableBtn = iconButton(ToolbarIcons.arrowLeft(),  "Hide selected column(s)");
+        toVisibleBtn.addActionListener(e -> toVisible.run());
+        toAvailableBtn.addActionListener(e -> toAvailable.run());
+        availableList.addMouseListener(doubleClickListener(toVisible));
+        visibleList.addMouseListener(doubleClickListener(toAvailable));
 
-        JButton allOn  = new JButton("Show all");
-        JButton allOff = new JButton("Hide all");
-        allOn .addActionListener(e -> cbToKey.forEach((cb, k) -> { cb.setSelected(true);  working.put(k, true);  }));
-        allOff.addActionListener(e -> cbToKey.forEach((cb, k) -> { cb.setSelected(false); working.put(k, false); }));
+        JButton moveUpBtn   = iconButton(ToolbarIcons.arrowUp(),   "Move up");
+        JButton moveDownBtn = iconButton(ToolbarIcons.arrowDown(), "Move down");
+        moveUpBtn  .addActionListener(e -> moveSelectionBy(visibleList, visibleModel, -1));
+        moveDownBtn.addActionListener(e -> moveSelectionBy(visibleList, visibleModel,  1));
+
+        JButton allOn  = new JButton("Show all »");
+        JButton allOff = new JButton("« Hide all");
+        allOn.addActionListener(e -> {
+            for (ColumnDef cd : new ArrayList<>(allAvailable)) visibleModel.addElement(cd);
+            allAvailable.clear();
+            refreshAvailable.run();
+        });
+        allOff.addActionListener(e -> {
+            for (int i = 0; i < visibleModel.size(); i++) insertSorted(allAvailable, visibleModel.get(i), originalIndex);
+            visibleModel.clear();
+            refreshAvailable.run();
+        });
+
+        JPanel transferPanel = new JPanel();
+        transferPanel.setLayout(new BoxLayout(transferPanel, BoxLayout.Y_AXIS));
+        transferPanel.add(Box.createVerticalGlue());
+        transferPanel.add(toVisibleBtn);
+        transferPanel.add(Box.createVerticalStrut(6));
+        transferPanel.add(toAvailableBtn);
+        transferPanel.add(Box.createVerticalGlue());
+
+        JPanel orderPanel = new JPanel();
+        orderPanel.setLayout(new BoxLayout(orderPanel, BoxLayout.Y_AXIS));
+        orderPanel.add(Box.createVerticalGlue());
+        orderPanel.add(moveUpBtn);
+        orderPanel.add(Box.createVerticalStrut(6));
+        orderPanel.add(moveDownBtn);
+        orderPanel.add(Box.createVerticalGlue());
+
+        JPanel availablePanel = titledListPanel("Available", availableList, allOn);
+        JPanel visiblePanel   = titledListPanel("Visible",   visibleList,   allOff);
+
+        JPanel listsRow = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridy = 0; gbc.fill = GridBagConstraints.BOTH;
+
+        gbc.gridx = 0; gbc.weightx = 1; gbc.weighty = 1; gbc.insets = new Insets(0, 0, 0, 0);
+        listsRow.add(availablePanel, gbc);
+
+        gbc.gridx = 1; gbc.weightx = 0; gbc.weighty = 0; gbc.fill = GridBagConstraints.NONE;
+        gbc.insets = new Insets(0, 8, 0, 8);
+        listsRow.add(transferPanel, gbc);
+
+        gbc.gridx = 2; gbc.weightx = 1; gbc.weighty = 1; gbc.fill = GridBagConstraints.BOTH;
+        gbc.insets = new Insets(0, 0, 0, 0);
+        listsRow.add(visiblePanel, gbc);
+
+        gbc.gridx = 3; gbc.weightx = 0; gbc.weighty = 0; gbc.fill = GridBagConstraints.NONE;
+        gbc.insets = new Insets(0, 8, 0, 0);
+        listsRow.add(orderPanel, gbc);
+
+        listsRow.setPreferredSize(new Dimension(680, 420));
 
         JPanel filterRow = new JPanel(new BorderLayout(6, 0));
-        filterRow.setBorder(new EmptyBorder(0, 0, 4, 0));
+        filterRow.setBorder(new EmptyBorder(0, 0, 6, 0));
         filterRow.add(new JLabel("Filter: "), BorderLayout.WEST);
         filterRow.add(filterField,             BorderLayout.CENTER);
 
-        JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
-        btnRow.add(allOn); btnRow.add(allOff);
-
-        JPanel top = new JPanel(new BorderLayout(4, 4));
-        top.setBorder(new EmptyBorder(0, 0, 6, 0));
-        top.add(filterRow, BorderLayout.NORTH);
-        top.add(btnRow,    BorderLayout.SOUTH);
-
         JPanel dlgContent = new JPanel(new BorderLayout(4, 4));
         dlgContent.setBorder(new EmptyBorder(8, 8, 4, 8));
-        dlgContent.add(top,    BorderLayout.NORTH);
-        dlgContent.add(scroll, BorderLayout.CENTER);
+        dlgContent.add(filterRow, BorderLayout.NORTH);
+        dlgContent.add(listsRow,  BorderLayout.CENTER);
 
         int result = JOptionPane.showConfirmDialog(owner, dlgContent,
             "Select FIN Table Columns",
             JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
         if (result == JOptionPane.OK_OPTION) {
-            for (ColumnDef cd : cols) cd.setVisible(Boolean.TRUE.equals(working.get(cd.key)));
+            List<ColumnDef> ordered = new ArrayList<>(cols.size());
+            for (int i = 0; i < visibleModel.size(); i++) {
+                ColumnDef cd = visibleModel.get(i);
+                cd.setVisible(true);
+                ordered.add(cd);
+            }
+            for (ColumnDef cd : allAvailable) {
+                cd.setVisible(false);
+                ordered.add(cd);
+            }
+            cols.clear();
+            cols.addAll(ordered);
             savePrefs.run();
             rebuildTable.run();
         }
     }
 
     // -----------------------------------------------------------------------
-    // Panel population
+    // List construction
     // -----------------------------------------------------------------------
 
-    private static void repopulatePanel(JPanel panel, Map<JCheckBox, String> cbToKey,
-                                        Map<String, Boolean> working,
-                                        Map<String, List<ColumnDef>> segments, String query,
-                                        HintDictionary dict) {
-        panel.removeAll();
-        cbToKey.clear();
-        if (segments.isEmpty()) {
-            addNoMatchLabel(panel, query);
-        } else {
-            panel.setBorder(new EmptyBorder(4, 6, 4, 6));
-            for (Map.Entry<String, List<ColumnDef>> e : segments.entrySet()) {
-                panel.add(buildGroupPanel(e.getKey(), e.getValue(), working, cbToKey, dict));
-                panel.add(Box.createVerticalStrut(5));
+    private static JList<ColumnDef> createColumnList(DefaultListModel<ColumnDef> model, HintDictionary dict) {
+        JList<ColumnDef> list = new JList<>(model) {
+            @Override public String getToolTipText(MouseEvent e) {
+                int idx = locationToIndex(e.getPoint());
+                if (idx < 0 || !getCellBounds(idx, idx).contains(e.getPoint())) return null;
+                return buildColumnTooltip(getModel().getElementAt(idx), dict);
             }
-        }
-        panel.revalidate();
-        panel.repaint();
+        };
+        list.setCellRenderer(columnListRenderer(dict));
+        list.setVisibleRowCount(-1);
+        ToolTipManager.sharedInstance().registerComponent(list);
+        return list;
     }
 
-    private static void addNoMatchLabel(JPanel panel, String query) {
-        JLabel none = new JLabel("  No matches for \"" + query + "\"");
-        none.setForeground(Color.GRAY);
-        none.setAlignmentX(Component.LEFT_ALIGNMENT);
-        panel.add(Box.createVerticalStrut(12));
-        panel.add(none);
+    private static ListCellRenderer<ColumnDef> columnListRenderer(HintDictionary dict) {
+        DefaultListCellRenderer base = new DefaultListCellRenderer();
+        return (list, value, index, isSelected, cellHasFocus) -> {
+            JLabel c = (JLabel) base.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+            c.setText(value.label);
+            c.setBorder(new EmptyBorder(3, 6, 3, 6));
+            return c;
+        };
     }
 
-    private static JPanel buildGroupPanel(String name, List<ColumnDef> cols,
-                                          Map<String, Boolean> working,
-                                          Map<JCheckBox, String> cbToKey,
-                                          HintDictionary dict) {
-        JPanel checkList = new JPanel();
-        checkList.setLayout(new BoxLayout(checkList, BoxLayout.Y_AXIS));
-        List<JCheckBox> groupBoxes = new ArrayList<>();
-        for (ColumnDef cd : cols) groupBoxes.add(addCheckBox(checkList, cd, working, cbToKey, dict));
+    private static JPanel titledListPanel(String title, JList<ColumnDef> list, JButton bulkButton) {
+        JScrollPane scroll = new JScrollPane(list);
+        scroll.getVerticalScrollBar().setUnitIncrement(16);
 
-        JPanel header = buildGroupHeader(name, groupBoxes, working, cbToKey);
+        JLabel titleLabel = new JLabel(title);
+        titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD));
 
-        JPanel grp = new JPanel(new BorderLayout(0, 2));
-        grp.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createEtchedBorder(),
-            new EmptyBorder(2, 6, 6, 6)));
-        grp.setAlignmentX(Component.LEFT_ALIGNMENT);
-        grp.add(header,    BorderLayout.NORTH);
-        grp.add(checkList, BorderLayout.CENTER);
-        return grp;
-    }
-
-    private static JPanel buildGroupHeader(String name, List<JCheckBox> groupBoxes,
-                                           Map<String, Boolean> working,
-                                           Map<JCheckBox, String> cbToKey) {
-        JLabel title = new JLabel(name);
-        title.setFont(title.getFont().deriveFont(Font.BOLD));
-
-        JButton allBtn  = groupLinkButton("All");
-        JButton noneBtn = groupLinkButton("None");
-        allBtn.addActionListener(e -> setGroupSelected(groupBoxes, working, cbToKey, true));
-        noneBtn.addActionListener(e -> setGroupSelected(groupBoxes, working, cbToKey, false));
-
-        JPanel header = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        JPanel header = new JPanel(new BorderLayout());
         header.setOpaque(false);
-        header.add(title);
-        header.add(allBtn);
-        header.add(noneBtn);
-        return header;
+        header.add(titleLabel, BorderLayout.WEST);
+        header.add(bulkButton, BorderLayout.EAST);
+
+        JPanel panel = new JPanel(new BorderLayout(0, 4));
+        panel.add(header, BorderLayout.NORTH);
+        panel.add(scroll, BorderLayout.CENTER);
+        return panel;
     }
 
-    private static void setGroupSelected(List<JCheckBox> groupBoxes, Map<String, Boolean> working,
-                                         Map<JCheckBox, String> cbToKey, boolean selected) {
-        for (JCheckBox cb : groupBoxes) {
-            cb.setSelected(selected);
-            working.put(cbToKey.get(cb), selected);
-        }
-    }
-
-    private static JButton groupLinkButton(String text) {
-        JButton btn = new JButton(text);
-        btn.setFont(btn.getFont().deriveFont(Font.PLAIN, btn.getFont().getSize2D() - 1f));
-        btn.setMargin(new Insets(0, 4, 0, 4));
+    private static JButton iconButton(Icon icon, String tooltip) {
+        JButton btn = new JButton(icon);
+        btn.setToolTipText(tooltip);
         btn.setFocusable(false);
+        Dimension size = new Dimension(30, 30);
+        btn.setPreferredSize(size);
+        btn.setMaximumSize(size);
         return btn;
     }
 
-    private static JCheckBox addCheckBox(JPanel grp, ColumnDef cd,
-                                         Map<String, Boolean> working,
-                                         Map<JCheckBox, String> cbToKey,
-                                         HintDictionary dict) {
-        JCheckBox cb = new JCheckBox(buildCheckBoxLabel(cd, dict), Boolean.TRUE.equals(working.get(cd.key)));
-        cb.setToolTipText(buildColumnTooltip(cd, dict));
-        cb.setAlignmentX(Component.LEFT_ALIGNMENT);
-        cb.addActionListener(ev -> working.put(cd.key, cb.isSelected()));
-        grp.add(cb);
-        cbToKey.put(cb, cd.key);
-        return cb;
+    private static MouseAdapter doubleClickListener(Runnable action) {
+        return new MouseAdapter() {
+            @Override public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2) action.run();
+            }
+        };
+    }
+
+    // -----------------------------------------------------------------------
+    // Move / reorder logic
+    // -----------------------------------------------------------------------
+
+    /** Inserts {@code cd} into {@code list}, keeping it sorted by original column order. */
+    private static void insertSorted(List<ColumnDef> list, ColumnDef cd, Map<ColumnDef, Integer> originalIndex) {
+        int idx = originalIndex.get(cd);
+        int pos = 0;
+        while (pos < list.size() && originalIndex.get(list.get(pos)) < idx) pos++;
+        list.add(pos, cd);
+    }
+
+    private static void moveSelectionBy(JList<ColumnDef> list, DefaultListModel<ColumnDef> model, int delta) {
+        int[] sel = list.getSelectedIndices();
+        if (sel.length == 0) return;
+        int n = model.size();
+        if (delta < 0) {
+            for (int i : sel) {
+                if (i == 0) continue;
+                swap(model, i, i - 1);
+            }
+        } else {
+            for (int i = sel.length - 1; i >= 0; i--) {
+                int idx = sel[i];
+                if (idx >= n - 1) continue;
+                swap(model, idx, idx + 1);
+            }
+        }
+        int[] newSel = new int[sel.length];
+        for (int i = 0; i < sel.length; i++) {
+            int idx = sel[i];
+            if (delta < 0 && idx > 0)          newSel[i] = idx - 1;
+            else if (delta > 0 && idx < n - 1) newSel[i] = idx + 1;
+            else                                newSel[i] = idx;
+        }
+        list.setSelectedIndices(newSel);
+    }
+
+    private static void swap(DefaultListModel<ColumnDef> model, int i, int j) {
+        ColumnDef tmp = model.get(i);
+        model.set(i, model.get(j));
+        model.set(j, tmp);
+    }
+
+    /** Lets the given list's rows be reordered by dragging them within the list. */
+    private static void enableDragReorder(JList<ColumnDef> list, DefaultListModel<ColumnDef> model) {
+        list.setDragEnabled(true);
+        list.setDropMode(DropMode.INSERT);
+        list.setTransferHandler(new TransferHandler() {
+            private int[] draggedIndices;
+
+            @Override public int getSourceActions(JComponent c) { return MOVE; }
+
+            @Override protected Transferable createTransferable(JComponent c) {
+                draggedIndices = list.getSelectedIndices();
+                return new StringSelection("columns");
+            }
+
+            @Override public boolean canImport(TransferSupport support) {
+                return support.isDrop() && support.getComponent() == list;
+            }
+
+            @Override public boolean importData(TransferSupport support) {
+                if (!canImport(support) || draggedIndices == null || draggedIndices.length == 0) return false;
+                int insertIndex = ((JList.DropLocation) support.getDropLocation()).getIndex();
+
+                List<ColumnDef> moving = new ArrayList<>();
+                for (int i : draggedIndices) moving.add(model.get(i));
+
+                int[] sorted = draggedIndices.clone();
+                Arrays.sort(sorted);
+                for (int i = sorted.length - 1; i >= 0; i--) {
+                    if (sorted[i] < insertIndex) insertIndex--;
+                    model.remove(sorted[i]);
+                }
+                for (int i = 0; i < moving.size(); i++) model.add(insertIndex + i, moving.get(i));
+                list.setSelectionInterval(insertIndex, insertIndex + moving.size() - 1);
+                return true;
+            }
+
+            @Override protected void exportDone(JComponent c, Transferable data, int action) {
+                draggedIndices = null;
+            }
+        });
     }
 
     // -----------------------------------------------------------------------
     // Filtering
     // -----------------------------------------------------------------------
-
-    private static Map<String, Boolean> buildWorkingMap(List<ColumnDef> cols) {
-        Map<String, Boolean> map = new LinkedHashMap<>();
-        for (ColumnDef cd : cols) map.put(cd.key, cd.isVisible());
-        return map;
-    }
-
-    private static Map<String, List<ColumnDef>> filterToSegments(List<ColumnDef> cols, String filter) {
-        Map<String, List<ColumnDef>> result = new LinkedHashMap<>();
-        for (ColumnDef cd : cols) {
-            if (!filter.isEmpty() && !matchesFilter(cd, filter)) continue;
-            String seg = cd.seqDisplay.isEmpty() ? "(General)" : cd.seqDisplay;
-            result.computeIfAbsent(seg, k -> new ArrayList<>()).add(cd);
-        }
-        return result;
-    }
 
     private static boolean matchesFilter(ColumnDef cd, String filter) {
         return cd.tagName.toLowerCase(Locale.ROOT).contains(filter)
@@ -234,18 +362,6 @@ public final class ColumnChooser {
     // Dictionary labels and tooltips
     // -----------------------------------------------------------------------
 
-    private static String buildCheckBoxLabel(ColumnDef cd, HintDictionary dict) {
-        String desc = inlineDescription(cd, dict);
-        if (desc == null) return cd.label;
-        return "<html>" + escHtml(cd.label)
-                + "<br><i><font color='gray'>" + escHtml(desc) + "</font></i></html>";
-    }
-
-    private static String inlineDescription(ColumnDef cd, HintDictionary dict) {
-        if (!cd.qualifier.isEmpty()) return dict.qualifierDescription(cd.qualifier);
-        return dict.tagDescription(cd.tagName);
-    }
-
     private static String buildColumnTooltip(ColumnDef cd, HintDictionary dict) {
         String tagDesc  = dict.tagDescription(cd.tagName);
         String qualDesc = cd.qualifier.isEmpty() ? null : dict.qualifierDescription(cd.qualifier);
@@ -253,9 +369,5 @@ public final class ColumnChooser {
         if (qualDesc == null) return tagDesc;
         if (tagDesc  == null) return qualDesc;
         return tagDesc + " | " + qualDesc;
-    }
-
-    private static String escHtml(String s) {
-        return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
     }
 }

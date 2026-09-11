@@ -5,6 +5,8 @@
 
 An open-source desktop tool for analyzing SWIFT MT messages and keeping them in a searchable local message store. Load instructions, statements and confirmations of any of 29 supported MT types (SWIFT categories 5 and 9) into a single table, resolve the ISO 15022 meaning of every field, and compare messages side by side. Stored messages stay queryable across tabs and sessions through an embedded full-text search engine.
 
+Open and Save read and write the standard SWIFT RJE bulk-message format (via Prowide's `RJEReader`/`RJEWriter`), so files stay interoperable with other SWIFT tooling.
+
 ---
 
 ## Getting Started
@@ -17,7 +19,7 @@ MT Analyze is a single self-contained JAR — no installation, no admin rights.
 2. Double-click it, or run:
 
 ```bash
-java -jar MT-Analyze-1.2.0.jar
+java -jar MT-Analyze-1.2.3.jar
 ```
 
 *(Optional)* Each [Releases](https://github.com/mtanalyze/mtanalyze/releases) page shows a SHA256 digest next to the JAR asset, if you'd like to verify the download — compare it against the output of:
@@ -142,10 +144,10 @@ MT Analyze is published on [Maven Central](https://central.sonatype.com/artifact
 
 ```bash
 mvn org.apache.maven.plugins:maven-dependency-plugin:3.6.1:copy \
-  -Dartifact=com.mtanalyze:mtanalyze:1.2.0:jar:all \
+  -Dartifact=com.mtanalyze:mtanalyze:1.2.3:jar:all \
   -DoutputDirectory=.
 
-java -jar mtanalyze-1.2.0-all.jar
+java -jar mtanalyze-1.2.3-all.jar
 ```
 ---
 

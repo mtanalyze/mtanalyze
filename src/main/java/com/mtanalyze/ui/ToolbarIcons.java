@@ -281,6 +281,44 @@ public final class ToolbarIcons {
         });
     }
 
+    // ── Directional arrows (dual-list transfer / reorder buttons) ─────
+
+    public static Icon arrowLeft() {
+        return makeMenuIcon((g, c) -> {
+            g.setColor(c);
+            g.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            g.drawLine(13, 8, 3, 8);
+            g.fillPolygon(new int[]{6, 1, 6}, new int[]{4, 8, 12}, 3);
+        });
+    }
+
+    public static Icon arrowRight() {
+        return makeMenuIcon((g, c) -> {
+            g.setColor(c);
+            g.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            g.drawLine(3, 8, 13, 8);
+            g.fillPolygon(new int[]{10, 15, 10}, new int[]{4, 8, 12}, 3);
+        });
+    }
+
+    public static Icon arrowUp() {
+        return makeMenuIcon((g, c) -> {
+            g.setColor(c);
+            g.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            g.drawLine(8, 13, 8, 3);
+            g.fillPolygon(new int[]{4, 8, 12}, new int[]{6, 1, 6}, 3);
+        });
+    }
+
+    public static Icon arrowDown() {
+        return makeMenuIcon((g, c) -> {
+            g.setColor(c);
+            g.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            g.drawLine(8, 3, 8, 13);
+            g.fillPolygon(new int[]{4, 8, 12}, new int[]{10, 15, 10}, 3);
+        });
+    }
+
     // ── Column / Layout ───────────────────────────────────────────────
 
     public static Icon menuHideColumn() {
