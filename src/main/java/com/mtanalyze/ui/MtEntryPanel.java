@@ -371,6 +371,9 @@ public class MtEntryPanel extends JPanel {
             syncColumnOrder();
         });
         popup.add(moveFirst);
+        JMenuItem sortColumns = new JMenuItem("Sort Columns", ToolbarIcons.menuSortAsc());
+        sortColumns.addActionListener(ae -> sortColumnsBySequence());
+        popup.add(sortColumns);
         popup.addSeparator();
         JMenuItem hide = new JMenuItem("Hide Column",         ToolbarIcons.menuHideColumn());
         hide.addActionListener(ae -> { cd.setVisible(false); rebuildPositionTable(); });
@@ -726,6 +729,13 @@ public class MtEntryPanel extends JPanel {
         }
         for (ColumnDef cd : active) if (!cd.isVisible()) reordered.add(cd);
         active.clear(); active.addAll(reordered);
+        saveColumnPrefs();
+    }
+
+    /** Puts the pinned Typ/MT columns first, sorts the rest by display sequence. */
+    private void sortColumnsBySequence() {
+        model.sortColumnsBySequence();
+        rebuildPositionTable();
         saveColumnPrefs();
     }
 

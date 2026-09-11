@@ -22,7 +22,6 @@ import com.prowidesoftware.swift.model.field.Field;
 import com.prowidesoftware.swift.model.mt.AbstractMT;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -39,6 +38,10 @@ import java.util.regex.Pattern;
  * {@code C1a1B1a1}) instead. {@link #translateSequence} maps that code to the
  * SWIFT block name it opens for the message's MT type, and the 16R/16S pair
  * is synthesized from a stack of currently open sequences as fields arrive.
+ * The code -&gt; block-name mapping itself is not hand-maintained: {@link ProwideSequences}
+ * reads it via reflection from Prowide's generated {@code MT<type>$Sequence<code>}
+ * classes, so every MT type Prowide ships is supported automatically and stays correct
+ * across SRU updates.
  */
 public final class NameValueConverter {
 
@@ -55,262 +58,13 @@ public final class NameValueConverter {
      */
     private static final List<String> SETPRTY_TAG_ORDER = List.of("95", "97", "98", "20", "70");
 
-    /**
-     * Name-Value sequence code -&gt; SWIFT block name it opens, keyed by MT type.
-     * MT types that share an identical sequence layout (e.g. 540-543) map to the
-     * same inner map instance.
-     */
-    // SWIFT block names referenced from more than one MT layout below.
-    private static final String ADDINFO = "ADDINFO";
-    private static final String BREAK = "BREAK";
-    private static final String TRANSDET = "TRANSDET";
+    // SWIFT block names compared against translateSequence()'s result below.
     private static final String SETPRTY = "SETPRTY";
     private static final String CSHPRTY = "CSHPRTY";
     private static final String CONFPRTY = "CONFPRTY";
-    private static final String SETDET = "SETDET";
-    private static final String COLLPRTY = "COLLPRTY";
-    private static final String SECMOVE = "SECMOVE";
-    private static final String CASHMOVE = "CASHMOVE";
-    private static final String USECU = "USECU";
-
-    private static final Map<Integer, Map<String, String>> SEQUENCE_BLOCKS = buildSequenceBlocks();
 
     private final ArrayList<String> sequenceStack = new ArrayList<>();
     private final Logger logger = Logger.getLogger(getClass().getName());
-
-    private static Map<Integer, Map<String, String>> buildSequenceBlocks() {
-        Map<Integer, Map<String, String>> byMt = new HashMap<>();
-
-        byMt.put(530, Map.ofEntries(
-                Map.entry("A", "GENL"),
-                Map.entry("B", "REQD"),
-                Map.entry("B1", "LINK"),
-                Map.entry("C", ADDINFO),
-                Map.entry("C1", "STAT"),
-                Map.entry("C1a", "REAS")));
-
-        byMt.put(535, Map.ofEntries(
-                Map.entry("A", "GENL"),
-                Map.entry("A1", "LINK"),
-                Map.entry("B", "SUBSAFE"),
-                Map.entry("B1", "FIN"),
-                Map.entry("B1a", "FIA"),
-                Map.entry("B1b", "SUBBAL"),
-                Map.entry("B1b1", BREAK),
-                Map.entry("B1c", BREAK),
-                Map.entry("C", ADDINFO)));
-
-        byMt.put(537, Map.ofEntries(
-                Map.entry("A", "GENL"),
-                Map.entry("A1", "LINK"),
-                Map.entry("B", "STAT"),
-                Map.entry("B1", "REAS"),
-                Map.entry("B2", "TRAN"),
-                Map.entry("B2a", "LINK"),
-                Map.entry("B2b", TRANSDET),
-                Map.entry("B2b1", SETPRTY),
-                Map.entry("C", "TRANS"),
-                Map.entry("C1", "LINK"),
-                Map.entry("C2", TRANSDET),
-                Map.entry("C2a", SETPRTY),
-                Map.entry("C3", "STAT"),
-                Map.entry("C3a", "REAS"),
-                Map.entry("D", "PENA"),
-                Map.entry("D1", "PENACUR"),
-                Map.entry("D1a", "PENACOUNT"),
-                Map.entry("D1a1", "PENDET"),
-                Map.entry("D1a1A", "CALDET"),
-                Map.entry("D1a1A1", "FIA"),
-                Map.entry("D1a1B", "RELTRAN"),
-                Map.entry("D1a1B1", "TRAN"),
-                Map.entry("D1a1B1a", "STAT"),
-                Map.entry("D1a1B1a1", "REAS"),
-                Map.entry("E", ADDINFO)));
-
-        byMt.put(527, Map.ofEntries(
-                Map.entry("A", "GENL"),
-                Map.entry("A1", COLLPRTY),
-                Map.entry("A2", "LINK"),
-                Map.entry("B", "DEALTRAN"),
-                Map.entry("B1", BREAK),
-                Map.entry("C", SECMOVE),
-                Map.entry("D", CASHMOVE),
-                Map.entry("E", ADDINFO)));
-
-        byMt.put(509, Map.ofEntries(
-                Map.entry("A", "GENL"),
-                Map.entry("A1", "LINK"),
-                Map.entry("A2", "STAT"),
-                Map.entry("A2a", "REAS"),
-                Map.entry("B", "TRADE"),
-                Map.entry("B1", "TRADPRTY"),
-                Map.entry("C", ADDINFO)));
-
-        // MT 514 (Trade Allocation Instruction) and MT 518 (Market-Side Securities
-        // Trade Confirmation) share an identical sequence layout.
-        Map<String, String> tradeConfirm = Map.ofEntries(
-                Map.entry("A", "GENL"),
-                Map.entry("A1", "LINK"),
-                Map.entry("B", "CONFDET"),
-                Map.entry("B1", CONFPRTY),
-                Map.entry("B2", "FIA"),
-                Map.entry("C", SETDET),
-                Map.entry("C1", SETPRTY),
-                Map.entry("C2", CSHPRTY),
-                Map.entry("C3", "AMT"),
-                Map.entry("D", "OTHRPRTY"),
-                Map.entry("E", "REPO"));
-        putAll(byMt, tradeConfirm, 514, 518);
-
-        byMt.put(515, Map.ofEntries(
-                Map.entry("A", "GENL"),
-                Map.entry("A1", "LINK"),
-                Map.entry("B", "PAFILL"),
-                Map.entry("C", "CONFDET"),
-                Map.entry("C1", CONFPRTY),
-                Map.entry("C2", "FIA"),
-                Map.entry("D", SETDET),
-                Map.entry("D1", SETPRTY),
-                Map.entry("D2", CSHPRTY),
-                Map.entry("D3", "AMT"),
-                Map.entry("E", "OTHRPRTY"),
-                Map.entry("F", "REPO")));
-
-        byMt.put(517, Map.ofEntries(
-                Map.entry("A", "GENL"),
-                Map.entry("A1", "LINK")));
-
-        Map<String, String> deliverReceive = Map.ofEntries(
-                Map.entry("A", "GENL"),
-                Map.entry("A1", "LINK"),
-                Map.entry("B", "TRADDET"),
-                Map.entry("B1", "FIA"),
-                Map.entry("C", "FIAC"),
-                Map.entry("D", "REPO"),
-                Map.entry("E", SETDET),
-                Map.entry("E1", SETPRTY),
-                Map.entry("E2", CSHPRTY),
-                Map.entry("E3", "AMT"));
-        putAll(byMt, deliverReceive, 540, 541, 542, 543);
-
-        Map<String, String> confirmation = Map.ofEntries(
-                Map.entry("A", "GENL"),
-                Map.entry("A1", "LINK"),
-                Map.entry("B", TRANSDET),
-                Map.entry("B1", "FIA"),
-                Map.entry("C", "FIAC"),
-                Map.entry("E", SETDET),
-                Map.entry("E1", SETPRTY),
-                Map.entry("E2", CSHPRTY),
-                Map.entry("E3", "AMT"));
-        putAll(byMt, confirmation, 544, 545, 546, 547);
-
-        byMt.put(548, Map.ofEntries(
-                Map.entry("A", "GENL"),
-                Map.entry("A1", "LINK"),
-                Map.entry("A2", "STAT"),
-                Map.entry("A2a", "REAS"),
-                Map.entry("B", "SETTRAN"),
-                Map.entry("B1", SETPRTY),
-                Map.entry("C", "PENA"),
-                Map.entry("C1", "PENACUR"),
-                Map.entry("C1a", "PENACOUNT"),
-                Map.entry("C1a1", "PENDET"),
-                Map.entry("C1a1A", "CALDET"),
-                Map.entry("C1a1A1", "FIA"),
-                Map.entry("C1a1B", "RELTRAN"),
-                Map.entry("C1a1B1", "TRAN"),
-                Map.entry("C1a1B1a", "STAT"),
-                Map.entry("C1a1B1a1", "REAS"),
-                Map.entry("D", ADDINFO)));
-
-        byMt.put(558, Map.ofEntries(
-                Map.entry("A", "GENL"),
-                Map.entry("A1", COLLPRTY),
-                Map.entry("A2", "STAT"),
-                Map.entry("A2a", "REAS"),
-                Map.entry("A3", "LINK"),
-                Map.entry("B", "DEALTRAN"),
-                Map.entry("B1", BREAK),
-                Map.entry("C", SECMOVE),
-                Map.entry("D", CASHMOVE),
-                Map.entry("E", ADDINFO)));
-
-        byMt.put(564, Map.ofEntries(
-                Map.entry("A", "GENL"),
-                Map.entry("A1", "LINK"),
-                Map.entry("A2", "REVR"),
-                Map.entry("B", USECU),
-                Map.entry("B1", "FIA"),
-                Map.entry("B2", "ACCTINFO"),
-                Map.entry("C", "INTSEC"),
-                Map.entry("D", "CADETL"),
-                Map.entry("E", "CAOPTN"),
-                Map.entry("E1", SECMOVE),
-                Map.entry("E1a", "FIA"),
-                Map.entry("E2", CASHMOVE),
-                Map.entry("F", ADDINFO)));
-
-        byMt.put(565, Map.ofEntries(
-                Map.entry("A", "GENL"),
-                Map.entry("A1", "LINK"),
-                Map.entry("B", USECU),
-                Map.entry("B1", "FIA"),
-                Map.entry("B2", "ACCTINFO"),
-                Map.entry("C", "BENODET"),
-                Map.entry("D", "CAINST"),
-                Map.entry("E", ADDINFO)));
-
-        byMt.put(567, Map.ofEntries(
-                Map.entry("A", "GENL"),
-                Map.entry("A1", "LINK"),
-                Map.entry("A2", "STAT"),
-                Map.entry("A2a", "REAS"),
-                Map.entry("B", "CADETL"),
-                Map.entry("C", ADDINFO)));
-
-        byMt.put(568, Map.ofEntries(
-                Map.entry("A", "GENL"),
-                Map.entry("A1", "LINK"),
-                Map.entry("B", USECU),
-                Map.entry("B1", "FIA"),
-                Map.entry("C", ADDINFO)));
-
-        byMt.put(569, Map.ofEntries(
-                Map.entry("A", "GENL"),
-                Map.entry("A1", COLLPRTY),
-                Map.entry("A2", "LINK"),
-                Map.entry("B", "SUMM"),
-                Map.entry("C", "SUME"),
-                Map.entry("C1", "SUMC"),
-                Map.entry("C1a", TRANSDET),
-                Map.entry("C1a1", "VALDET"),
-                Map.entry("C1a1A", "SECDET"),
-                Map.entry("D", ADDINFO)));
-
-        byMt.put(578, Map.ofEntries(
-                Map.entry("A", "GENL"),
-                Map.entry("A1", "LINK"),
-                Map.entry("B", "TRADDET"),
-                Map.entry("B1", "FIA"),
-                Map.entry("C", "FIAC"),
-                Map.entry("C1", BREAK),
-                Map.entry("D", "REPO"),
-                Map.entry("E", SETDET),
-                Map.entry("E1", SETPRTY),
-                Map.entry("E2", CSHPRTY),
-                Map.entry("E3", "AMT"),
-                Map.entry("F", ADDINFO)));
-
-        return Map.copyOf(byMt);
-    }
-
-    private static void putAll(Map<Integer, Map<String, String>> target,
-                               Map<String, String> blocks, int... mts) {
-        for (int mt : mts) {
-            target.put(mt, blocks);
-        }
-    }
 
     /**
      * True when {@code content} is a single-line Name-Value message that uses bare
@@ -339,16 +93,23 @@ public final class NameValueConverter {
         return hasMt && hasSequencedField;
     }
 
-    /** Maps a Name-Value sequence code (e.g. {@code "A1"}) to the SWIFT block name it opens for {@code mt}. */
+    /**
+     * Maps a Name-Value sequence code (e.g. {@code "A1"}) to the SWIFT block name it opens
+     * for {@code mt}. Throws when {@code mt} is unknown to Prowide, or when {@code sequence}
+     * does not match any of {@code mt}'s sequence codes -- silently falling back to a flat,
+     * unstructured field or a placeholder block name would hide a real mismatch (typo,
+     * unsupported export convention) instead of surfacing it as a parse error.
+     */
     public String translateSequence(int mt, String sequence) {
-        Map<String, String> blocks = SEQUENCE_BLOCKS.get(mt);
+        Map<String, String> blocks = ProwideSequences.byLetterPath(mt);
         if (blocks == null) {
-            throw new IllegalArgumentException("Message type %s is not implemented".formatted(mt));
+            throw new IllegalArgumentException("Message type %d is not supported by Prowide".formatted(mt));
         }
         String block = blocks.get(sequence);
         if (block == null) {
-            logger.warning("Unknown MT %s sequence: %s".formatted(mt, sequence));
-            return "XXX";
+            throw new IllegalArgumentException(
+                ("MT %d: unknown sequence code '%s' -- no matching :16R:/:16S: block "
+                    + "in the SWIFT standard for this message type").formatted(mt, sequence));
         }
         return block;
     }

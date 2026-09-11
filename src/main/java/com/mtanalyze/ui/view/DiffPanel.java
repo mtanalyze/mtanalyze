@@ -73,7 +73,7 @@ public final class DiffPanel extends JPanel implements EntrySelectionListener {
             Entry e    = entries.get(i);
             String seq = e.getValue(MtParser.SEQ_KEY);
             labels.add("Entry " + (i + 1));
-            List<String[]> entryRows = collectEntryRows(e.fullDisplaySequence(), baseSeq(seq));
+            List<String[]> entryRows = collectEntryRows(e.fullDisplaySequence(), baseSeq(seq), e.getValue(MT_COL_KEY));
             entryRows.add(0, new String[]{"\t_MT_\t\t", "", "MT", "", e.getValue(MT_COL_KEY)});
             rows.add(entryRows);
         }
@@ -346,7 +346,7 @@ public final class DiffPanel extends JPanel implements EntrySelectionListener {
      * non-boundary tag: {@code [key, seqLabel, tagName, qualifier, value]}.
      * The key uniquely identifies the tag occurrence within the entry.
      */
-    public static List<String[]> collectEntryRows(SwiftTagListBlock seq, String baseSeq) {
+    public static List<String[]> collectEntryRows(SwiftTagListBlock seq, String baseSeq, String mt) {
         List<String[]>             rows   = new ArrayList<>();
         Deque<String>              seqStk = new ArrayDeque<>();
         Deque<String>              qlStk  = new ArrayDeque<>();
@@ -355,8 +355,8 @@ public final class DiffPanel extends JPanel implements EntrySelectionListener {
         Map<String, Integer> occCount = new LinkedHashMap<>();
 
         for (Tag t : seq.getTags()) {
-            if (isBoundaryTag(t, qlStk, seqStk, occStk)) continue;
-            String seqLabel  = seqStk.isEmpty() ? baseSeq : seqStk.peek();
+            if (isBoundaryTag(t, mt, qlStk, seqStk, occStk)) continue;
+            String seqLabel  = seqStk.isEmpty() ? prowideOrFallback(mt, baseSeq) : seqStk.peek();
             String tagName   = t.getName();
             String qualifier = LOOKUPS.extractQualifier(t);
             String value     = LOOKUPS.valueWithoutQualifier(t);
@@ -367,21 +367,33 @@ public final class DiffPanel extends JPanel implements EntrySelectionListener {
         return rows;
     }
 
-    private static boolean isBoundaryTag(Tag t, Deque<String> qlStk,
+    /**
+     * Prowide's sequence letter-path (e.g. {@code "B1a2A"}) for qualifier {@code qualifier}
+     * (e.g. {@code "SETPRTY"}) in message type {@code mt}, or {@code qualifier} itself when
+     * Prowide can't resolve it (unknown/blank {@code mt}) -- never leaves the Sequence column
+     * blank just because the reflective lookup came up empty.
+     */
+    private static String prowideOrFallback(String mt, String qualifier) {
+        String label = LOOKUPS.prowideSequenceCode(mt, qualifier);
+        return label.isEmpty() ? qualifier : label;
+    }
+
+    private static boolean isBoundaryTag(Tag t, String mt, Deque<String> qlStk,
             Deque<String> seqStk, Deque<Map<String, Integer>> occStk) {
-        if ("16R".equals(t.getName())) { push16R(t, qlStk, seqStk, occStk); return true; }
+        if ("16R".equals(t.getName())) { push16R(t, mt, qlStk, seqStk, occStk); return true; }
         if ("16S".equals(t.getName())) { pop16S(qlStk, seqStk, occStk);     return true; }
         return false;
     }
 
-    private static void push16R(Tag t, Deque<String> qlStk,
+    private static void push16R(Tag t, String mt, Deque<String> qlStk,
             Deque<String> seqStk, Deque<Map<String, Integer>> occStk) {
         String seg   = t.getValue() != null ? t.getValue().trim() : "";
         String child = LOOKUPS.seqLabel(seg);
         Map<String, Integer> top = occStk.peek();
         int n = top != null ? top.merge(child, 1, Integer::sum) : 1;
         qlStk.push(seg);
-        seqStk.push(n > 1 ? child + "." + n : child);
+        String label = prowideOrFallback(mt, child);
+        seqStk.push(n > 1 ? label + "." + n : label);
         occStk.push(new LinkedHashMap<>());
     }
 
@@ -431,12 +443,30 @@ public final class DiffPanel extends JPanel implements EntrySelectionListener {
             String text = value.trim();
             if (text.isEmpty()) return null;
             String colName = table.getColumnName(col);
-            if ("Sequence".equals(colName) || "Tag".equals(colName))
+            if ("Sequence".equals(colName))
+                return sequenceTooltip(table, viewRow, text);
+            if ("Tag".equals(colName))
                 return blankToNull(dict.tagDescription(text));
             if ("Qualifier".equals(colName))
                 return blankToNull(dict.qualifierDescription(text));
             String desc = MtEntryPanel.HighlightCellRenderer.resolveValueTooltip(table, text, viewRow, dict);
             return desc != null ? desc : "<html>" + escHtml(text) + "</html>";
+        }
+
+        /**
+         * Hover text for a Sequence cell: the qualifier the standard pairs with this
+         * letter-path (e.g. {@code "Sequence B1a2A (SETPRTY)"}) plus its dictionary
+         * description when known -- the same combination the SWIFT MT Standards / CSD
+         * specs themselves use to identify a sequence, in business terms rather than
+         * implementation ones.
+         */
+        private String sequenceTooltip(JTable table, int viewRow, String letterPath) {
+            Object qualVal = table.getValueAt(viewRow, 2); // FIXED_COLS: 0=Sequence, 1=Tag, 2=Qualifier
+            String qualifier = qualVal != null ? qualVal.toString().trim() : "";
+            if (qualifier.isEmpty()) return "Sequence " + letterPath;
+            String label = "Sequence " + letterPath + " (" + qualifier + ")";
+            String desc  = dict.qualifierDescription(qualifier);
+            return (desc == null || desc.isBlank()) ? label : label + " – " + desc;
         }
 
         private static String blankToNull(String s) {

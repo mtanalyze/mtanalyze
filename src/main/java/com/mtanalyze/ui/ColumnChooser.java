@@ -216,7 +216,7 @@ public final class ColumnChooser {
         Map<String, List<ColumnDef>> result = new LinkedHashMap<>();
         for (ColumnDef cd : cols) {
             if (!filter.isEmpty() && !matchesFilter(cd, filter)) continue;
-            String seg = cd.seqLabel.isEmpty() ? "(General)" : cd.seqLabel;
+            String seg = cd.seqDisplay.isEmpty() ? "(General)" : cd.seqDisplay;
             result.computeIfAbsent(seg, k -> new ArrayList<>()).add(cd);
         }
         return result;
@@ -226,7 +226,8 @@ public final class ColumnChooser {
         return cd.tagName.toLowerCase(Locale.ROOT).contains(filter)
             || cd.qualifier.toLowerCase(Locale.ROOT).contains(filter)
             || cd.label.toLowerCase(Locale.ROOT).contains(filter)
-            || cd.seqLabel.toLowerCase(Locale.ROOT).contains(filter);
+            || cd.seqLabel.toLowerCase(Locale.ROOT).contains(filter)
+            || cd.seqDisplay.toLowerCase(Locale.ROOT).contains(filter);
     }
 
     // -----------------------------------------------------------------------

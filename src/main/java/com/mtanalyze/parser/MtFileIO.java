@@ -15,6 +15,8 @@
  */
 package com.mtanalyze.parser;
 
+import com.prowidesoftware.swift.io.RJEReader;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -457,6 +459,21 @@ public final class MtFileIO {
      * - SWIFT or block 4: a single message
      */
     public static List<String> splitIntoMessages(String content) {
+        return splitIntoMessages(content, MtFileIO::splitOnBlock1Boundaries);
+    }
+
+    /**
+     * Like {@link #splitIntoMessages} but, for plain concatenated SWIFT content, splits using
+     * Prowide's {@link RJEReader} instead of the plain block1-boundary split. Reserved for the
+     * "Open" file workflow, which should treat files the same way Prowide's own RJE tooling
+     * does; the various import/append workflows keep using {@link #splitIntoMessages} since they
+     * additionally handle CSV, log, name-value and other legacy formats with their own rules.
+     */
+    public static List<String> splitIntoMessagesForOpen(String content) {
+        return splitIntoMessages(content, MtFileIO::splitOnRjeBoundaries);
+    }
+
+    private static List<String> splitIntoMessages(String content, java.util.function.Function<String, List<String>> block1Splitter) {
         String trimmed = content.trim();
         if (isMultiLineNameValueContent(trimmed)) {
             return splitMultiLineNameValueMessages(trimmed);
@@ -470,7 +487,7 @@ public final class MtFileIO {
             return msgs.isEmpty() ? Collections.singletonList(trimmed) : msgs;
         }
         if (trimmed.contains("{1:")) {
-            List<String> msgs = splitOnBlock1Boundaries(trimmed);
+            List<String> msgs = block1Splitter.apply(trimmed);
             if (!msgs.isEmpty()) return msgs;
         }
         return Collections.singletonList(trimmed);
@@ -481,6 +498,27 @@ public final class MtFileIO {
         for (String part : content.split("(?=\\{1:)")) {
             String msg = part.trim();
             if (isCompleteSwiftMessage(msg)) msgs.add(deduplicateBlockClose(msg));
+        }
+        return msgs;
+    }
+
+    /**
+     * Splits {@code content} into individual SWIFT messages using Prowide's {@link RJEReader},
+     * which understands the standard RJE separator (a line containing only {@code $}). A file
+     * that instead just concatenates messages back-to-back with no separator comes back from
+     * the reader as a single chunk, which is then further split on block1 boundaries so that
+     * legacy exports without an RJE separator keep working.
+     */
+    private static List<String> splitOnRjeBoundaries(String content) {
+        List<String> msgs = new ArrayList<>();
+        RJEReader reader = new RJEReader(content);
+        while (reader.hasNext()) {
+            String rjeChunk = reader.next();
+            if (rjeChunk == null || rjeChunk.isBlank()) continue;
+            for (String part : rjeChunk.split("(?=\\{1:)")) {
+                String msg = part.trim();
+                if (isCompleteSwiftMessage(msg)) msgs.add(deduplicateBlockClose(msg));
+            }
         }
         return msgs;
     }

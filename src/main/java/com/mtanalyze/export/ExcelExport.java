@@ -60,7 +60,7 @@ public final class ExcelExport {
     private final DataHelper dataHelper = new DataHelper();
 
     public void exportComponents(JFrame owner, List<SwiftTagListBlock> seqs,
-                                  List<Map<String, String>> rowData, String seqKey,
+                                  List<Map<String, String>> rowData, String seqKey, String mtKey,
                                   Consumer<String> status) {
         if (seqs.isEmpty()) {
             JOptionPane.showMessageDialog(owner, "Please load a SWIFT file first.",
@@ -70,7 +70,7 @@ public final class ExcelExport {
         File file = pickFile(owner);
         if (file == null) return;
         try {
-            List<CompCell> compCells = dataHelper.collectAllComponentCells(seqs, rowData, seqKey);
+            List<CompCell> compCells = dataHelper.collectAllComponentCells(seqs, rowData, seqKey, mtKey);
             writeWorkbook(file, compCells);
         } catch (IOException ex) {
             JOptionPane.showMessageDialog(owner, "Error during export:\n" + ex.getMessage(),
@@ -188,9 +188,16 @@ public final class ExcelExport {
         }
     }
 
+    /**
+     * Builds the column header the same way the MT Entries table labels its columns
+     * (see {@code MtParser.registerTag}: {@code seq tag:qualifier}), with the component
+     * name appended since Excel splits each tag into one column per component.
+     */
     private static String compColHeader(String seq, String tag, String qualifier, String comp) {
-        StringBuilder sb = new StringBuilder(seq).append(" / ").append(tag);
-        if (!qualifier.isEmpty()) sb.append(" / ").append(qualifier);
-        return sb.append(" / ").append(comp).toString();
+        StringBuilder sb = new StringBuilder();
+        if (!seq.isEmpty()) sb.append(seq).append(' ');
+        sb.append(tag);
+        if (!qualifier.isEmpty()) sb.append(':').append(qualifier);
+        return sb.append(' ').append(comp).toString();
     }
 }

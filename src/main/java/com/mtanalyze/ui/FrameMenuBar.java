@@ -101,9 +101,9 @@ public final class FrameMenuBar {
 
         JMenuItem newTabItem = item("New Tab", ToolbarIcons.menuNewTab(), "ctrl N", cb.onNewTab());
 
-        JMenuItem openMtItem = item("Open...", ToolbarIcons.menuImportFile(), "ctrl O", cb.onOpenFile());
+        JMenuItem openMtItem = item("Open FIN MT Bulk Messages...", ToolbarIcons.menuImportFile(), "ctrl O", cb.onOpenFile());
 
-        JMenuItem saveAsMtItem = item("Save...", ToolbarIcons.menuExport(), "ctrl S", cb.onSaveAsMt());
+        JMenuItem saveAsMtItem = item("Save FIN MT Bulk Messages...", ToolbarIcons.menuExport(), "ctrl S", cb.onSaveAsMt());
         saveAsMtItem.setEnabled(false);
 
         JMenuItem saveExcelItem = item("Save Excel...", ToolbarIcons.menuExport(), "ctrl E", cb.onSaveExcel());

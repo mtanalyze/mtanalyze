@@ -198,7 +198,7 @@ public class MtAnalyzeFrame extends JFrame {
         CsvExport.Prefs csvPrefs = new CsvExport.Prefs(PREFS, PREF_CSV_FIELD_SEP, PREF_CSV_DECIMAL_SEP);
         return new FrameMenuBar.Callbacks(
             this::openNewTab,
-            () -> withActiveTab(EntryTab::onSaveSelectedMtAs),
+            () -> withActiveTab(EntryTab::onSaveMtAs),
             () -> withActiveTab(EntryTab::onSaveExcel),
             this::onOpenFile,
             this::onAppendFile,
@@ -533,6 +533,26 @@ public class MtAnalyzeFrame extends JFrame {
         if (openTabs.isEmpty()) openNewTab();
     }
 
+    /** Prompts for a new name for the tab at {@code idx} and applies it, unless cancelled or blank. */
+    private void renameTab(int idx) {
+        if (idx < 0 || idx >= openTabs.size()) return;
+        EntryTab t = openTabs.get(idx);
+        String newTitle = (String) JOptionPane.showInputDialog(this,
+            "Tab name:", "Rename Tab", JOptionPane.PLAIN_MESSAGE, null, null, t.title);
+        if (newTitle == null) return;
+        newTitle = newTitle.trim();
+        if (!newTitle.isEmpty() && !newTitle.equals(t.title)) t.updateTitle(newTitle);
+    }
+
+    private void showTabPopup(int idx, java.awt.event.MouseEvent e) {
+        if (idx < 0 || idx >= openTabs.size()) return;
+        JPopupMenu popup = new JPopupMenu();
+        JMenuItem renameItem = new JMenuItem("Rename Tab...");
+        renameItem.addActionListener(a -> renameTab(idx));
+        popup.add(renameItem);
+        popup.show(tabs, e.getX(), e.getY());
+    }
+
     private void onActiveTabChanged() {
         EntryTab t = activeTab();
         if (t == null) return;
@@ -547,7 +567,7 @@ public class MtAnalyzeFrame extends JFrame {
         EntryTab t = activeTab();
         if (t == null) return;
         saveExcelItem.setEnabled(!t.entryPanel.getLoadedMessages().isEmpty());
-        saveAsMtItem.setEnabled(t.entryPanel.getTable().getSelectedRow() >= 0);
+        saveAsMtItem.setEnabled(!t.entryPanel.getLoadedMessages().isEmpty());
     }
 
     /**
@@ -613,6 +633,18 @@ public class MtAnalyzeFrame extends JFrame {
         newTabBtn.addActionListener(e -> openNewTab());
         tabs.putClientProperty("JTabbedPane.trailingComponent", newTabBtn);
         tabs.addChangeListener(e -> onActiveTabChanged());
+        tabs.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override public void mouseClicked(java.awt.event.MouseEvent e) {
+                if (e.getClickCount() == 2 && SwingUtilities.isLeftMouseButton(e)) {
+                    renameTab(tabs.indexAtLocation(e.getX(), e.getY()));
+                }
+            }
+            @Override public void mousePressed(java.awt.event.MouseEvent e)  { maybeShowPopup(e); }
+            @Override public void mouseReleased(java.awt.event.MouseEvent e) { maybeShowPopup(e); }
+            private void maybeShowPopup(java.awt.event.MouseEvent e) {
+                if (e.isPopupTrigger()) showTabPopup(tabs.indexAtLocation(e.getX(), e.getY()), e);
+            }
+        });
 
         contentCards = new CardLayout();
         contentHost  = new JPanel(contentCards);
@@ -1211,24 +1243,11 @@ public class MtAnalyzeFrame extends JFrame {
                     "Entry Limit Reached", JOptionPane.WARNING_MESSAGE);
         }
 
-        void onSaveSelectedMtAs() {
-            JTable table = entryPanel.getTable();
-            int viewRow = table.getSelectedRow();
-            if (viewRow < 0) {
-                statusLabel.setText("Select an entry in MT Entries first.");
-                return;
-            }
-            int modelRow = table.convertRowIndexToModel(viewRow);
-            SwiftMessage msg = entryPanel.getMessageForRow(modelRow);
-            if (msg == null) {
-                statusLabel.setText("No SWIFT message for selected entry.");
-                return;
-            }
-            File saved = mtExport.exportSingle(MtAnalyzeFrame.this,
-                msg.raw(),
+        void onSaveMtAs() {
+            File saved = mtExport.save(MtAnalyzeFrame.this,
+                entryPanel.getLoadedMessages().stream().map(SwiftMessage::raw).toList(),
                 config.getMtExportSender(),
                 config.getMtExportReceiver(),
-                entryPanel.getRowValue(modelRow, EntryPanelModel.FILE_COL_KEY),
                 statusLabel::setText);
             if (saved != null) updateTitle(saved.getName());
         }
@@ -1238,6 +1257,7 @@ public class MtAnalyzeFrame extends JFrame {
                 entryPanel.getFullDisplaySequences(),
                 entryPanel.getRowData(),
                 SEQ_KEY,
+                EntryPanelModel.MT_COL_KEY,
                 statusLabel::setText);
         }
 

@@ -42,8 +42,13 @@ final class EntryPanelModel {
     static final String SECMOVE_INOU_KEY_1 = "SECMOVE\t22H\tINOU\t1";
     static final String SECMOVE_INOU_KEY_2 = "SECMOVE\t22H\tINOU\t2";
 
-    /** Metadata columns pinned to the front of the table, in display order (MT leftmost). */
-    private static final List<String> PINNED_FRONT_KEYS = List.of(MT_COL_KEY, TYPE_COL_KEY);
+    /** Metadata columns pinned to the front of the table, in display order (Typ leftmost). */
+    private static final List<String> PINNED_FRONT_KEYS = List.of(TYPE_COL_KEY, MT_COL_KEY);
+
+    /** MT540 Receive Free, MT541 Receive Against Payment, MT544/545 their confirmations. */
+    private static final Set<String> RECEIVE_MT_TYPES = Set.of("MT540", "MT541", "MT544", "MT545");
+    /** MT542 Deliver Free, MT543 Deliver Against Payment, MT546/547 their confirmations. */
+    private static final Set<String> DELIVER_MT_TYPES = Set.of("MT542", "MT543", "MT546", "MT547");
 
     // ── State ──────────────────────────────────────────────────────────────
     private final Project        project            = new Project();
@@ -54,6 +59,25 @@ final class EntryPanelModel {
     List<Entry>     allEntries() { return Collections.unmodifiableList(allEntries); }
     /** Mutable — {@code MtEntryPanel.syncColumnOrder()} reorders this list in place. */
     List<ColumnDef> columnDefs() { return allColumnDefs; }
+
+    /**
+     * Reorders columns: the pinned metadata columns ({@code Typ}, {@code MT}) stay first,
+     * everything else is sorted by its display sequence (e.g. {@code "A"}, {@code "B1"}, ...),
+     * keeping the original relative order among columns that share the same sequence.
+     */
+    void sortColumnsBySequence() {
+        List<ColumnDef> pinned = new ArrayList<>();
+        List<ColumnDef> rest   = new ArrayList<>();
+        for (ColumnDef cd : allColumnDefs) {
+            if (PINNED_FRONT_KEYS.contains(cd.key)) pinned.add(cd);
+            else rest.add(cd);
+        }
+        pinned.sort(Comparator.comparingInt(cd -> PINNED_FRONT_KEYS.indexOf(cd.key)));
+        rest.sort(Comparator.comparing(cd -> cd.seqDisplay));
+        allColumnDefs.clear();
+        allColumnDefs.addAll(pinned);
+        allColumnDefs.addAll(rest);
+    }
 
     // ── Public accessors ───────────────────────────────────────────────────
     public List<SwiftMessage> getLoadedMessages() { return project.messages(); }
@@ -108,11 +132,11 @@ final class EntryPanelModel {
         }
         if (knownKeys.add(TYPE_COL_KEY)) insertPinned(outCols, new ColumnDef("", "_TYPE_", "", 1, "Typ"));
         newEntries.forEach(e -> e.data().put(TYPE_COL_KEY, computeEntryType(e.data())));
+        // Not a visible column: the label isn't always a file path (Clipboard/Log/Name-Value
+        // origins use a placeholder), which was confusing in the table. Still stored per entry
+        // for the "View Source" gate and to seed the export Save dialog's initial directory.
         String fileLabel = fileLabel(msg);
-        if (fileLabel != null) {
-            if (knownKeys.add(FILE_COL_KEY)) outCols.add(new ColumnDef("", "_FILE_", "", 1, "File"));
-            newEntries.forEach(e -> e.data().put(FILE_COL_KEY, fileLabel));
-        }
+        if (fileLabel != null) newEntries.forEach(e -> e.data().put(FILE_COL_KEY, fileLabel));
         newEntries.forEach(msg::addEntry);
         return newEntries;
     }
@@ -279,6 +303,11 @@ final class EntryPanelModel {
         String func = row.getOrDefault(GENL_23G_KEY, "");
         if ("CANC".equals(func)) return "CANC";
         if ("REJT".equals(row.getOrDefault(GENL_25D_IPRC_KEY, ""))) return "REJT";
+        // MT540-547 (Settlement Instructions/Confirmations): unlike MT536/548, direction isn't
+        // carried in a field -- the message type itself is Receive or Deliver.
+        String mt = row.getOrDefault(MT_COL_KEY, "");
+        if (RECEIVE_MT_TYPES.contains(mt)) return "RECE";
+        if (DELIVER_MT_TYPES.contains(mt)) return "DELI";
         String rede = row.getOrDefault(TRAN_REDE_KEY, "");
         if ("RECE".equals(rede)) return "RECE";
         if ("DELI".equals(rede)) return "DELI";

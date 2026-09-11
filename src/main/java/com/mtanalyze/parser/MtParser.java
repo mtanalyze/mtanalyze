@@ -45,6 +45,9 @@ public class MtParser {
     private final List<ColumnDef>  columnDefs = new ArrayList<>();
     private final Set<String>      knownColKeys = new HashSet<>();
 
+    /** Message type of the {@link AbstractMT} passed to {@link #parse}, e.g. {@code "548"}. */
+    private String mtType = "";
+
     public MtParser(String rowSeqName)   { this.rowSeqName = rowSeqName; }
 
     public List<Entry>     getEntries()    { return entries; }
@@ -61,6 +64,8 @@ public class MtParser {
         entries.clear();
         columnDefs.clear();
         knownColKeys.clear();
+        String messageType = mt.getMessageType();
+        mtType = messageType != null ? messageType : "";
 
         SwiftTagListBlock b4 = mt.getSwiftMessage().getBlock4();
         if (b4 == null || b4.getTags().isEmpty()) return;
@@ -484,13 +489,26 @@ public class MtParser {
         String key = baseKey + "\t" + n;
 
         if (knownColKeys.add(key)) {
-            String label = seqLabel.trim() + " / " + tagName.trim()
-                    + (qualifier.isEmpty() ? "" : " / " + qualifier.trim())
+            String displaySeq = seqLabel.isEmpty() ? "" : prowideOrFallback(seqLabel.trim());
+            String label = (displaySeq.isEmpty() ? "" : displaySeq + " ")
+                    + tagName.trim()
+                    + (qualifier.isEmpty() ? "" : ":" + qualifier.trim())
                     + (n > 1 ? " (" + n + ")" : "");
-            columnDefs.add(new ColumnDef(seqLabel, tagName, qualifier, n, label));
+            columnDefs.add(new ColumnDef(seqLabel, tagName, qualifier, n, label, displaySeq));
         }
 
         rowDataMap.put(key, lookups.valueWithoutQualifier(t));
+    }
+
+    /**
+     * Prowide's sequence letter-path (e.g. {@code "B1a2A"}) for qualifier {@code qualifier}
+     * (e.g. {@code "SETPRTY"}) in {@link #mtType}, or {@code qualifier} itself when Prowide
+     * can't resolve it -- column headers show the SWIFT-standard sequence designation, but
+     * never go blank just because the reflective lookup came up empty.
+     */
+    private String prowideOrFallback(String qualifier) {
+        String label = lookups.prowideSequenceCode(mtType, qualifier);
+        return label.isEmpty() ? qualifier : label;
     }
 
     private String seqLabel(String seg) { return lookups.seqLabel(seg); }

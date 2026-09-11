@@ -71,7 +71,7 @@ final class FileImporter {
                     if (mtOverride == null && MtFileIO.needsMtTypeOverride(content))
                         mtOverride = ctx.promptMtType("Select the message type for: " + file.getName());
                 }
-                chunks = MtFileIO.splitIntoMessages(content);
+                chunks = MtFileIO.splitIntoMessagesForOpen(content);
             }
             ImportBatch batch;
             try (ProwideLogCapture cap = ProwideLogCapture.start()) {

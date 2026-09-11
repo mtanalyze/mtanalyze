@@ -1,49 +1,50 @@
-# MT Analyze v1.2.0
+# MT Analyze v1.2.3
 
 ## Download & Run
 
 **Requirements:** Java 17 or higher
 
 ```bash
-java -jar MT-Analyze-1.2.0.jar
+java -jar MT-Analyze-1.2.3.jar
 ```
 
 ---
 
 ## Changes
 
-### Message Repository (index and search)
+### Open and Save use the standard SWIFT RJE format
 
-A new **Repository** menu provides a local full-text index of parsed messages, based on
-[Apache Lucene](https://lucene.apache.org/). The index is file-based; there is no server
-component. It is shared across all tabs and sessions.
+**Open FIN MT Bulk Messages...** (`Ctrl+O`) and **Save FIN MT Bulk Messages...** (`Ctrl+S`,
+renamed from **Open...**/**Save...**) now read and write files using Prowide's `RJEReader`/
+`RJEWriter`, the standard format for bulk files of FIN MT messages (messages separated by a
+line containing only `$`). Files without a separator (plain concatenated messages) still
+open correctly. **Save** now writes every message loaded in the active tab to a single file,
+not just the currently selected one. **Import**/**Append**/**Export** are unchanged and keep
+handling CSV, log and Name-Value formats as before.
 
-- **Index Messages** adds all messages of the active tab to the index. The operation runs
-  in the background, reports progress and can be cancelled. Indexing is idempotent: a
-  message is identified by a hash of its content, so re-indexing the same message replaces
-  its entry instead of creating a duplicate.
-- **Search Messages…** (`Ctrl+Shift+F`) executes a Lucene query and opens the result set
-  in a new tab. Indexed fields include `raw_message`, `mt`, `sender`,
-  `receiver`, `file_name` and per-tag fields such as `tag_20C` and `tag_35B`.
-- **Clear Index…** removes all documents from the index.
-- The index directory (default `~/.mtanalyze/swift-index`) and the maximum number of
-  results (default 100) are configured under **Settings ▸ Advanced ▸ Lucene Search**.
+### Rename Tab
 
-### Copy Visible Messages to Tab
+Double-click a tab, or right-click it and choose **Rename Tab...**, to give it a custom name.
 
-The Entries table context menu provides a new action that copies the messages currently
-visible (that is, after filtering) to another open tab or to a new tab.
+### Save Excel column headers
 
-### Diff view tooltips
+Column headers in the Excel export now follow the same naming convention as the MT Entries
+table (`sequence tag:qualifier`, e.g. `B1 22F:CAEV`), with the component name appended since
+each tag is split into one column per component. Nested sequences are now resolved to
+Prowide's letter-path code instead of the raw qualifier.
 
-In the comparison view, hovering over a cell displays the ISO 15022 description for the
-Sequence, Tag and Qualifier columns and for known qualifier/value combinations. For all
-other value cells, the complete, untruncated content is shown.
+### Sort Columns
+
+The column header context menu has a new **Sort Columns** action: it keeps the pinned
+**Typ**/**MT** columns first and sorts the rest by sequence (e.g. `A`, `B1`, ...).
 
 ---
 
 # Older Releases
 
+- **v1.2.2** — Added **Remove Duplicates**: removes exact duplicate messages from a tab (compared with Prowide's `SwiftMessageComparator`, keeping the first occurrence), reporting the SEME references of removed messages.
+- **v1.2.1** — Indexed messages are now identified by a hash of their content instead of type+sender+SEME, so the individual pages of a paginated statement no longer collapse into a single index entry.
+- **v1.2.0** — Message Repository: local Lucene-based full-text index and search of parsed messages (Index Messages, Search Messages, Clear Index); Copy Visible Messages to Tab; Diff view tooltips showing ISO 15022 descriptions.
 - **v1.1.1** — MT column pinned as the leftmost column in the Entries table; **Save...** renames the tab to the saved file name; fixed a potential NullPointerException while parsing certain messages.
 - **v1.1.0** — Multiple documents as tabs: each tab is an independent workspace with its own Entries table, filters, column layout and Detail panel.
 - **v1.0.18** — MT 530, MT 564-569 corporate actions and transaction processing support; log import MT type filter now accepts numeric ranges.

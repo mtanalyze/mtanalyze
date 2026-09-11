@@ -16,6 +16,7 @@
 package com.mtanalyze.export;
 
 import com.mtanalyze.util.FileChoosers;
+import com.prowidesoftware.swift.io.RJEWriter;
 import com.prowidesoftware.swift.model.SwiftTagListBlock;
 import com.prowidesoftware.swift.model.Tag;
 import com.prowidesoftware.swift.model.mt.AbstractMT;
@@ -75,9 +76,8 @@ public final class MtExport {
         File file = fc.getSelectedFile();
         if (!file.getName().toLowerCase(Locale.ROOT).endsWith(".txt"))
             file = new File(file.getAbsolutePath() + ".txt");
-        try (BufferedWriter bw = new BufferedWriter(
-                new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8))) {
-            bw.write(msgText);
+        try {
+            writeRje(file, msgText);
         } catch (IOException ex) {
             JOptionPane.showMessageDialog(owner, "Error during export:\n" + ex.getMessage(),
                     "Error", JOptionPane.ERROR_MESSAGE);
@@ -98,6 +98,48 @@ public final class MtExport {
         fc.setSelectedFile(new File(initialDir != null ? initialDir : new File("."),
                 "MT" + mtType + ".txt"));
         return fc;
+    }
+
+    /**
+     * Saves every message in {@code messages} to a single file in RJE format via Prowide's
+     * {@link RJEWriter}. Returns the saved file, or {@code null} if there was nothing to save,
+     * the user cancelled, or the save failed.
+     */
+    public File save(Frame owner, List<AbstractMT> messages, String sender, String receiver,
+                     Consumer<String> status) {
+        if (messages.isEmpty()) {
+            JOptionPane.showMessageDialog(owner, "Please load a SWIFT file first.",
+                    "No Data", JOptionPane.INFORMATION_MESSAGE);
+            return null;
+        }
+
+        String[] bic = showBicDialog(owner, sender, receiver);
+        if (bic.length == 0) return null;
+
+        JFileChooser fc = FileChoosers.create();
+        fc.setDialogTitle("Save FIN MT Bulk Messages");
+        fc.setFileFilter(new FileNameExtensionFilter(
+                "MT Message Files (*.txt, *.fin)", "txt", "fin"));
+        fc.setSelectedFile(new File("SWIFT_Messages.txt"));
+        if (fc.showSaveDialog(owner) != JFileChooser.APPROVE_OPTION) return null;
+
+        File file = ensureExtension(fc.getSelectedFile());
+        String snd = padBic(bic[0]);
+        String rcv = padBic(bic[1]);
+
+        try {
+            writeRje(file, messages.stream().map(mt -> buildMessage(mt, snd, rcv)).toList());
+        } catch (IOException ex) {
+            JOptionPane.showMessageDialog(owner, "Error during save:\n" + ex.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+            return null;
+        }
+
+        int n = messages.size();
+        status.accept("Saved " + n + (n == 1 ? " message" : " messages")
+                + " to: " + file.getAbsolutePath());
+        CsvExport.offerOpenFile(owner, file);
+        return file;
     }
 
     public void export(Frame owner, List<AbstractMT> messages, String sender, String receiver,
@@ -212,6 +254,21 @@ public final class MtExport {
         if (b.length() >= 12) return b.substring(0, 12);
         while (b.length() < 12) b.append("X");
         return b.toString();
+    }
+
+    /** Writes {@code message} to {@code file} via Prowide's {@link RJEWriter}. */
+    private static void writeRje(File file, String message) throws IOException {
+        writeRje(file, List.of(message));
+    }
+
+    /** Writes {@code messages} to {@code file} in RJE format via Prowide's {@link RJEWriter}. */
+    private static void writeRje(File file, List<String> messages) throws IOException {
+        RJEWriter writer = new RJEWriter(file, StandardCharsets.UTF_8);
+        try {
+            for (String msg : messages) writer.write(msg);
+        } finally {
+            writer.close();
+        }
     }
 
     private static File ensureExtension(File file) {

@@ -29,6 +29,29 @@ public final class Lookups {
     }
 
     /**
+     * Prowide's letter-path (e.g. {@code "B1a2A"}) for the SWIFT sequence that opens with
+     * {@code qualifier} (e.g. {@code "SETPRTY"}) in message type {@code mt} (e.g. {@code "MT548"}
+     * or {@code "548"}). Empty string when {@code mt} can't be parsed, is unknown to Prowide,
+     * or has no sequence with that qualifier.
+     */
+    public String prowideSequenceCode(String mt, String qualifier) {
+        int mtNumber = parseMtType(mt);
+        if (mtNumber <= 0) return "";
+        String letterPath = ProwideSequences.letterPathFor(mtNumber, qualifier);
+        return letterPath != null ? letterPath : "";
+    }
+
+    private static int parseMtType(String mt) {
+        if (mt == null || mt.isEmpty()) return -1;
+        String digits = mt.toUpperCase(java.util.Locale.ROOT).replaceFirst("^MT", "");
+        try {
+            return Integer.parseInt(digits);
+        } catch (NumberFormatException e) {
+            return -1;
+        }
+    }
+
+    /**
      * Extracts the qualifier of a tag (component "Qualifier" or "Identification Type").
      * Also used by the parser to populate the qualifier column.
      */

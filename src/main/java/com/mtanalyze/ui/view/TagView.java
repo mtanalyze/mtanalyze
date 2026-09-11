@@ -20,6 +20,7 @@ import com.prowidesoftware.swift.model.SwiftTagListBlock;
 import com.mtanalyze.model.Entry;
 import com.mtanalyze.model.EntrySelectionListener;
 import com.mtanalyze.model.SwiftMessage;
+import com.mtanalyze.parser.Lookups;
 import com.mtanalyze.parser.MtParser;
 import com.mtanalyze.ui.MtEntryPanel;
 import com.mtanalyze.parser.HintDictionary;
@@ -60,7 +61,6 @@ public class TagView extends RoundedPanel implements EntrySelectionListener {
     // -----------------------------------------------------------------------
     private static final int    DETAIL_MIN_WIDTH            = 380;
     private static final String MT_COL_KEY   = "\t_MT_\t\t1";
-    private static final String FILE_COL_KEY = "\t_FILE_\t\t1";
     private static final String MT_COL_LABEL = "MT";
     private static final String COL_SEQUENCE  = "Sequence";
     private static final String COL_TAG       = "Tag";
@@ -79,6 +79,7 @@ public class TagView extends RoundedPanel implements EntrySelectionListener {
     private final transient Host               host;
     private final transient Preferences        prefs;
     private final transient HintDictionary dict;
+    private final transient Lookups            lookups = new Lookups();
 
     // -----------------------------------------------------------------------
     // Table
@@ -154,9 +155,9 @@ public class TagView extends RoundedPanel implements EntrySelectionListener {
     public void setComponentsButtonSelected(boolean selected)      { btnComp.setSelected(selected); }
 
     public void refresh(List<SwiftTagListBlock> displaySeqs, List<Map<String, String>> rowData,
-                        String seqKey, int modelRow, List<String[]> detailHeaders) {
+                        String seqKey, int modelRow, List<String[]> detailHeaders, String mt) {
         dataHelper.refreshDetailTable(tranDetailModel, displaySeqs, rowData,
-                showComponents, seqKey, modelRow, detailHeaders);
+                showComponents, seqKey, modelRow, detailHeaders, mt);
         updateFilterValues();
         applyDetailFilters();
     }
@@ -194,16 +195,15 @@ public class TagView extends RoundedPanel implements EntrySelectionListener {
         refresh(
             List.of(currentEntry.fullDisplaySequence()),
             List.of(currentEntry.data()),
-            MtParser.SEQ_KEY, 0, buildHeaders(currentEntry)
+            MtParser.SEQ_KEY, 0, buildHeaders(currentEntry),
+            currentEntry.getValue(MT_COL_KEY)
         );
     }
 
     private static List<String[]> buildHeaders(Entry entry) {
         List<String[]> h = new ArrayList<>();
         String mt = entry.getValue(MT_COL_KEY);
-        String fn = entry.getValue(FILE_COL_KEY);
         if (!mt.isEmpty()) h.add(new String[]{MT_COL_LABEL, mt});
-        if (!fn.isEmpty()) h.add(new String[]{"File", fn});
         return h;
     }
 
@@ -226,13 +226,19 @@ public class TagView extends RoundedPanel implements EntrySelectionListener {
         } catch (NumberFormatException e) {
             targetOcc = 1;
         }
+        // The Sequence column shows Prowide's letter-path (e.g. "B1a2A"), not the raw
+        // qualifier name ColumnDef.seqLabel carries (e.g. "SETPRTY") -- translate the same
+        // way DataHelper does, with the same qualifier-name fallback, before matching rows.
+        String mt = currentEntry != null ? currentEntry.getValue(MT_COL_KEY) : "";
+        String targetSeq = lookups.prowideSequenceCode(mt, cd.seqLabel);
+        if (targetSeq.isEmpty()) targetSeq = cd.seqLabel;
         int matchCount = 0;
         int targetModelRow = -1;
         for (int r = 0; r < tranDetailModel.getRowCount(); r++) {
             Object seq  = tranDetailModel.getValueAt(r, 0);
             Object tag  = tranDetailModel.getValueAt(r, 1);
             Object qual = tranDetailModel.getValueAt(r, 2);
-            if (cd.seqLabel.equals(seq) && cd.tagName.equals(tag)
+            if (targetSeq.equals(seq) && cd.tagName.equals(tag)
                     && cd.qualifier.equals(qual != null ? qual.toString() : "")
                     && ++matchCount == targetOcc) { targetModelRow = r; break; }
         }
@@ -429,6 +435,23 @@ public class TagView extends RoundedPanel implements EntrySelectionListener {
             host.showAddToDictionaryDialog(qual, value);
         });
         return item;
+    }
+
+    /**
+     * Hover text for a Sequence cell: the qualifier the standard pairs with this
+     * letter-path (e.g. {@code "Sequence B1a2A (SETPRTY)"}) plus its dictionary
+     * description when known -- the same combination the SWIFT MT Standards / CSD
+     * specs themselves use to identify a sequence, in business terms rather than
+     * implementation ones.
+     */
+    private String sequenceTooltip(JTable table, int row, String letterPath) {
+        int qualCol = findColumnIndexByName(table, COL_QUALIFIER);
+        Object qualVal = qualCol >= 0 ? table.getValueAt(row, qualCol) : null;
+        String qualifier = qualVal != null ? qualVal.toString().trim() : "";
+        if (qualifier.isEmpty()) return "Sequence " + letterPath;
+        String label = "Sequence " + letterPath + " (" + qualifier + ")";
+        String desc  = dict.qualifierDescription(qualifier);
+        return (desc == null || desc.isBlank()) ? label : label + " – " + desc;
     }
 
     private static int findColumnIndexByName(JTable table, String colName) {
@@ -669,7 +692,7 @@ public class TagView extends RoundedPanel implements EntrySelectionListener {
             String text = value.toString().trim();
             if (text.isEmpty()) return null;
             String colName = table.getColumnName(col);
-            if (COL_SEQUENCE.equals(colName))  return dict.tagDescription(text);
+            if (COL_SEQUENCE.equals(colName))  return sequenceTooltip(table, row, text);
             if (COL_TAG.equals(colName))       return dict.tagDescription(text);
             if (COL_QUALIFIER.equals(colName)) return dict.qualifierDescription(text);
             if (COL_COMPONENT.equals(colName)) return dict.componentDescription(text);

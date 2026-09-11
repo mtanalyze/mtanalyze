@@ -20,20 +20,27 @@ import com.mtanalyze.parser.Lookups;
 public class ColumnDef {
     /** Unique key: seqLabel \t tagName \t qualifier \t occurrence */
     public final String key;
-    public final String seqLabel;  // SWIFT sequence label, e.g. "B1a", "B1a2a"
-    public final String tagName;   // SWIFT tag, e.g. "35B", "20C"
-    public final String qualifier; // Qualifier value, or "" if none
-    public final String label;     // Column header
+    public final String seqLabel;   // Raw :16R:/:16S: qualifier, e.g. "SETPRTY" -- used for matching/filtering
+    public final String seqDisplay; // Human-facing sequence label, e.g. Prowide's "B1a2A" -- used for display/grouping
+    public final String tagName;    // SWIFT tag, e.g. "35B", "20C"
+    public final String qualifier;  // Qualifier value, or "" if none
+    public final String label;      // Column header
     private boolean visible;
 
+    /** Convenience constructor for columns with no distinct display sequence (e.g. synthetic columns). */
+    public ColumnDef(String seqLabel, String tagName, String qualifier, int occurrence, String label) {
+        this(seqLabel, tagName, qualifier, occurrence, label, seqLabel);
+    }
+
     public ColumnDef(String seqLabel, String tagName, String qualifier, int occurrence,
-              String label) {
-        this.seqLabel  = seqLabel;
-        this.tagName   = tagName;
-        this.qualifier = qualifier;
-        this.label     = label;
-        this.key       = seqLabel + "\t" + tagName + "\t" + qualifier + "\t" + occurrence;
-        this.visible   = Lookups.DEFAULT_VISIBLE;
+              String label, String seqDisplay) {
+        this.seqLabel   = seqLabel;
+        this.seqDisplay = seqDisplay;
+        this.tagName    = tagName;
+        this.qualifier  = qualifier;
+        this.label      = label;
+        this.key        = seqLabel + "\t" + tagName + "\t" + qualifier + "\t" + occurrence;
+        this.visible    = Lookups.DEFAULT_VISIBLE;
     }
 
     public boolean isVisible() { return visible; }
