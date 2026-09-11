@@ -174,9 +174,14 @@ public final class ColumnChooser {
         dlgContent.add(filterRow, BorderLayout.NORTH);
         dlgContent.add(listsRow,  BorderLayout.CENTER);
 
-        int result = JOptionPane.showConfirmDialog(owner, dlgContent,
-            "Select FIN Table Columns",
-            JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        JOptionPane pane = new JOptionPane(dlgContent, JOptionPane.PLAIN_MESSAGE, JOptionPane.OK_CANCEL_OPTION);
+        JDialog dialog = pane.createDialog(owner, "Select FIN Table Columns");
+        centerOnOwnerScreen(dialog, owner);
+        dialog.setVisible(true);
+        dialog.dispose();
+
+        Object selectedValue = pane.getValue();
+        int result = (selectedValue instanceof Integer) ? (Integer) selectedValue : JOptionPane.CLOSED_OPTION;
 
         if (result == JOptionPane.OK_OPTION) {
             List<ColumnDef> ordered = new ArrayList<>(cols.size());
@@ -194,6 +199,27 @@ public final class ColumnChooser {
             savePrefs.run();
             rebuildTable.run();
         }
+    }
+
+    /**
+     * Centers {@code dialog} on the monitor that actually holds {@code owner}, instead of
+     * relying on {@link Window#setLocationRelativeTo}. That method falls back to the primary
+     * screen whenever it can't resolve the owner's {@link GraphicsConfiguration} at the exact
+     * moment it runs — which happens intermittently when this dialog is opened from a popup
+     * menu action, causing it to appear on the wrong monitor in multi-monitor setups.
+     */
+    private static void centerOnOwnerScreen(Window dialog, Window owner) {
+        GraphicsConfiguration gc = owner != null ? owner.getGraphicsConfiguration() : null;
+        if (gc == null) {
+            gc = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration();
+        }
+        Rectangle screen = gc.getBounds();
+        Dimension size = dialog.getSize();
+        int x = screen.x + (screen.width  - size.width)  / 2;
+        int y = screen.y + (screen.height - size.height) / 2;
+        x = Math.max(screen.x, Math.min(x, screen.x + screen.width  - size.width));
+        y = Math.max(screen.y, Math.min(y, screen.y + screen.height - size.height));
+        dialog.setLocation(x, y);
     }
 
     // -----------------------------------------------------------------------

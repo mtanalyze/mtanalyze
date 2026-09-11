@@ -1,47 +1,31 @@
-# MT Analyze v1.2.3
+# MT Analyze v1.2.5
 
 ## Download & Run
 
 **Requirements:** Java 17 or higher
 
 ```bash
-java -jar MT-Analyze-1.2.3.jar
+java -jar MT-Analyze-1.2.5.jar
 ```
 
 ---
 
 ## Changes
 
-### Open and Save use the standard SWIFT RJE format
+### Redesigned Column Chooser
 
-**Open FIN MT Bulk Messages...** (`Ctrl+O`) and **Save FIN MT Bulk Messages...** (`Ctrl+S`,
-renamed from **Open...**/**Save...**) now read and write files using Prowide's `RJEReader`/
-`RJEWriter`, the standard format for bulk files of FIN MT messages (messages separated by a
-line containing only `$`). Files without a separator (plain concatenated messages) still
-open correctly. **Save** now writes every message loaded in the active tab to a single file,
-not just the currently selected one. **Import**/**Append**/**Export** are unchanged and keep
-handling CSV, log and Name-Value formats as before.
-
-### Rename Tab
-
-Double-click a tab, or right-click it and choose **Rename Tab...**, to give it a custom name.
-
-### Save Excel column headers
-
-Column headers in the Excel export now follow the same naming convention as the MT Entries
-table (`sequence tag:qualifier`, e.g. `B1 22F:CAEV`), with the component name appended since
-each tag is split into one column per component. Nested sequences are now resolved to
-Prowide's letter-path code instead of the raw qualifier.
-
-### Sort Columns
-
-The column header context menu has a new **Sort Columns** action: it keeps the pinned
-**Typ**/**MT** columns first and sorts the rest by sequence (e.g. `A`, `B1`, ...).
+The **Column Chooser** dialog is now a two-list transfer UI: **Available** (hidden) and
+**Visible** (shown, in display order) columns, with buttons to move columns between the
+two lists and to reorder the **Visible** list, which can also be reordered by dragging.
+Hovering a column shows its ISO 15022 description as a tooltip. The dialog now also
+centers itself on the monitor that actually holds the main window, instead of
+occasionally appearing on the wrong screen in multi-monitor setups.
 
 ---
 
 # Older Releases
 
+- **v1.2.3** — **Open FIN MT Bulk Messages...**/**Save FIN MT Bulk Messages...** now read and write the standard SWIFT RJE format via Prowide's `RJEReader`/`RJEWriter`, and **Save** writes every message in the active tab to a single file; **Rename Tab...**; Excel export column headers follow the same `sequence tag:qualifier` naming as the MT Entries table; column header context menu gained **Sort Columns**.
 - **v1.2.2** — Added **Remove Duplicates**: removes exact duplicate messages from a tab (compared with Prowide's `SwiftMessageComparator`, keeping the first occurrence), reporting the SEME references of removed messages.
 - **v1.2.1** — Indexed messages are now identified by a hash of their content instead of type+sender+SEME, so the individual pages of a paginated statement no longer collapse into a single index entry.
 - **v1.2.0** — Message Repository: local Lucene-based full-text index and search of parsed messages (Index Messages, Search Messages, Clear Index); Copy Visible Messages to Tab; Diff view tooltips showing ISO 15022 descriptions.
