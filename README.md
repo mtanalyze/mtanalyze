@@ -3,7 +3,7 @@
 [![Maven Central](https://img.shields.io/maven-central/v/com.mtanalyze/mtanalyze)](https://central.sonatype.com/artifact/com.mtanalyze/mtanalyze)
 [![SonarQube](https://sonarcloud.io/api/project_badges/measure?project=mtanalyze_mtanalyze&metric=alert_status)](https://sonarcloud.io/summary/overall?id=mtanalyze_mtanalyze)
 
-An open-source desktop tool for analyzing SWIFT MT messages and keeping them in a searchable local message store. Load instructions, statements and confirmations of any of 29 supported MT types (SWIFT categories 5 and 9) into a single table, resolve the ISO 15022 meaning of every field, and compare messages side by side. Stored messages stay queryable across tabs and sessions through an embedded full-text search engine.
+An open-source desktop tool for analyzing SWIFT MT messages — from a handful of files up to large archives — and keeping them in a searchable message store. Load instructions, statements and confirmations of any of 29 supported MT types (SWIFT categories 5 and 9) into a single table, resolve the ISO 15022 meaning of every field, and compare messages side by side. Indexed messages stay queryable across tabs and sessions through two interchangeable full-text search engines: an embedded Apache Lucene index for local, file-based search, or Elasticsearch when the volume calls for a real search cluster.
 
 Open and Save read and write the standard SWIFT RJE bulk-message format (via Prowide's `RJEReader`/`RJEWriter`), so files stay interoperable with other SWIFT tooling.
 
@@ -19,7 +19,7 @@ MT Analyze is a single self-contained JAR — no installation, no admin rights.
 2. Double-click it, or run:
 
 ```bash
-java -jar MT-Analyze-1.2.5.jar
+java -jar MT-Analyze-2.0.0.jar
 ```
 
 *(Optional)* Each [Releases](https://github.com/mtanalyze/mtanalyze/releases) page shows a SHA256 digest next to the JAR asset, if you'd like to verify the download — compare it against the output of:
@@ -52,9 +52,15 @@ MT Analyze parses 29 message types from SWIFT categories 5 (securities markets) 
 
 ## Message Repository (Index & Search)
 
-The **Repository** menu provides a local full-text index of parsed messages, based on
-[Apache Lucene](https://lucene.apache.org/). The index is file-based; there is no server
-component. It is shared across all tabs and sessions.
+The **Lucene** and **Elasticsearch** menus each provide a full-text index of parsed
+messages, in two independent engines you can use side by side — pick whichever fits the
+volume at hand. Both menus offer the same four actions and are shared across all tabs and
+sessions.
+
+### Lucene
+
+A local, file-based index built on [Apache Lucene](https://lucene.apache.org/). No server
+component — just a directory on disk.
 
 - **Index Messages** adds all messages of the active *MT Entries* tab to the index. The
   operation runs in the background, reports progress and can be cancelled. Indexing is
@@ -63,11 +69,12 @@ component. It is shared across all tabs and sessions.
 - **Search Messages…** (`Ctrl+Shift+F`) executes a Lucene query and opens the result set
   in a new tab.
 - **Clear Index…** removes all documents from the index.
+- **Statistics…** shows how many messages are currently indexed.
 
 The index directory (default `~/.mtanalyze/swift-index`) and the maximum number of
 results (default 100) are configured under **Settings ▸ Advanced ▸ Lucene Search**.
 
-### Query syntax
+#### Query syntax
 
 Queries use the classic Lucene
 [`QueryParser`](https://lucene.apache.org/core/9_12_0/queryparser/org/apache/lucene/queryparser/classic/package-summary.html)
@@ -97,6 +104,32 @@ tag_20C:seme AND mt:(536 OR 537)
 tag_98A:[20210101 TO 20211231] NOT tag_23G:CANC
 ```
 
+### Elasticsearch
+
+A remote/local [Elasticsearch](https://www.elastic.co/elasticsearch) index for message
+volumes beyond what a single desktop's file-based Lucene index comfortably handles —
+point MT Analyze at a cluster you run or manage.
+
+- **Index Messages** adds all messages of the active *MT Entries* tab to the configured
+  index. Same progress bar / cancel and content-hash idempotency as Lucene.
+- **Search Messages…** (`Ctrl+Shift+E`) executes an Elasticsearch `query_string` query
+  (close to Lucene's syntax) and opens the result set in a new tab.
+- **Clear Index…** removes all documents from the index.
+- **Statistics…** shows how many messages are currently indexed. This item and its Lucene
+  counterpart open the same dialog, which fetches both counts independently so a
+  slow/unreachable Elasticsearch cluster never delays the Lucene count from showing.
+
+Host, port, scheme, credentials, index name (default `swift-messages`) and the maximum
+number of results (default 100) are configured under **Settings ▸ Advanced ▸
+Elasticsearch**. Unlike Lucene this is a real server connection — indexing and searching
+report a network error if the cluster is unreachable.
+
+The basic-auth password is stored in the OS credential store (Windows Credential Manager,
+macOS Keychain, or the Freedesktop Secret Service/KWallet on Linux) via
+[java-keyring](https://github.com/javakeyring/java-keyring), not in plain text alongside
+the other settings; it falls back to a plain-text preference only on systems without a
+supported OS keyring backend.
+
 ---
 
 ## Dependencies
@@ -105,6 +138,8 @@ tag_98A:[20210101 TO 20211231] NOT tag_23G:CANC
 - **[FlatLaf](https://github.com/JFormDesigner/FlatLaf)** 3.7.2 — flat look and feel with dark mode (Apache 2.0)
 - **[Apache POI](https://poi.apache.org/)** 5.5.1 — Excel export (Apache 2.0)
 - **[Apache Lucene](https://lucene.apache.org/)** 9.12.3 — local message index and full-text search (Apache 2.0)
+- **[Elasticsearch Java API Client](https://github.com/elastic/elasticsearch-java)** 9.5.3 — remote message index and full-text search (Apache 2.0)
+- **[java-keyring](https://github.com/javakeyring/java-keyring)** 1.0.4 — OS credential store access for the Elasticsearch password (BSD-style)
 
 The full transitive dependency graph (SBOM), including versions pulled in indirectly, is visible on GitHub's [Dependency graph](https://github.com/mtanalyze/mtanalyze/network/dependencies). A standalone [CycloneDX](https://cyclonedx.org/) SBOM file can be generated locally with the optional `sbom` profile:
 
@@ -144,10 +179,10 @@ MT Analyze is published on [Maven Central](https://central.sonatype.com/artifact
 
 ```bash
 mvn org.apache.maven.plugins:maven-dependency-plugin:3.6.1:copy \
-  -Dartifact=com.mtanalyze:mtanalyze:1.2.5:jar:all \
+  -Dartifact=com.mtanalyze:mtanalyze:2.0.0:jar:all \
   -DoutputDirectory=.
 
-java -jar mtanalyze-1.2.5-all.jar
+java -jar mtanalyze-2.0.0-all.jar
 ```
 ---
 

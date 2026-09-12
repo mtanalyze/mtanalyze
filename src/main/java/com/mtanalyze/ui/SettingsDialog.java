@@ -40,7 +40,7 @@ final class SettingsDialog {
     private SettingsDialog() {}
 
     record Config(CsvKeys csv, ThemeConfig theme, SystemKeys system, PowerUserConfig powerUser,
-                  LuceneConfig lucene) {
+                  LuceneConfig lucene, ElasticConfig elastic) {
         record CsvKeys(String fieldSep, String decimalSep) {
         }
 
@@ -50,6 +50,20 @@ final class SettingsDialog {
          */
         record LuceneConfig(String dirPrefKey, String maxHitsPrefKey,
                              String defaultDir, int defaultMaxHits, Runnable onChange) {
+        }
+
+        /**
+         * Elasticsearch "Index Messages" / "Search Messages" connection settings, stored
+         * directly in {@link Preferences}. {@code onChange} re-applies them to the running
+         * service. The password is the exception: it goes through {@code getPassword}/
+         * {@code savePassword}, which store it in the OS keyring (see
+         * {@link com.mtanalyze.config.ElasticSecretStore}) rather than in plain text.
+         */
+        record ElasticConfig(String hostPrefKey, String portPrefKey, String schemePrefKey,
+                              String usernamePrefKey, Supplier<String> getPassword, Consumer<String> savePassword,
+                              String indexPrefKey, String maxHitsPrefKey,
+                              String defaultHost, int defaultPort, String defaultScheme,
+                              String defaultIndex, int defaultMaxHits, Runnable onChange) {
         }
 
         record SystemKeys(Supplier<String> getSender, Supplier<String> getReceiver,
@@ -75,7 +89,10 @@ final class SettingsDialog {
 
     private record FormFields(JTextField fieldSep, JTextField decimalSep, JTextField sender, JTextField receiver,
                                JTextField maxEntries, JTextField logSwiftStart, JTextField logNewlineToken,
-                               JTextField luceneDir, JTextField luceneMaxHits) {
+                               JTextField luceneDir, JTextField luceneMaxHits,
+                               JTextField elasticHost, JTextField elasticPort, JTextField elasticScheme,
+                               JTextField elasticUsername, JPasswordField elasticPassword,
+                               JTextField elasticIndex, JTextField elasticMaxHits) {
     }
 
     static void show(Frame owner, Preferences prefs, Config cfg, HintDictionary dict) {
@@ -107,14 +124,30 @@ final class SettingsDialog {
         luceneDirField.setToolTipText("Leave empty for the default: " + cfg.lucene.defaultDir);
         JTextField luceneMaxHitsField = new JTextField(
                 String.valueOf(prefs.getInt(cfg.lucene.maxHitsPrefKey, cfg.lucene.defaultMaxHits)), 6);
+        JTextField elasticHostField = new JTextField(
+                prefs.get(cfg.elastic.hostPrefKey, cfg.elastic.defaultHost), 14);
+        JTextField elasticPortField = new JTextField(
+                String.valueOf(prefs.getInt(cfg.elastic.portPrefKey, cfg.elastic.defaultPort)), 6);
+        JTextField elasticSchemeField = new JTextField(
+                prefs.get(cfg.elastic.schemePrefKey, cfg.elastic.defaultScheme), 6);
+        JTextField elasticUsernameField = new JTextField(
+                prefs.get(cfg.elastic.usernamePrefKey, ""), 14);
+        JPasswordField elasticPasswordField = new JPasswordField(
+                cfg.elastic.getPassword.get(), 14);
+        JTextField elasticIndexField = new JTextField(
+                prefs.get(cfg.elastic.indexPrefKey, cfg.elastic.defaultIndex), 18);
+        JTextField elasticMaxHitsField = new JTextField(
+                String.valueOf(prefs.getInt(cfg.elastic.maxHitsPrefKey, cfg.elastic.defaultMaxHits)), 6);
         FormFields fields = new FormFields(
                 fieldSepField, decimalSepField,
                 senderField, receiverField,
                 maxEntriesField, logSwiftStartField, logNewlineTokenField,
-                luceneDirField, luceneMaxHitsField);
+                luceneDirField, luceneMaxHitsField,
+                elasticHostField, elasticPortField, elasticSchemeField,
+                elasticUsernameField, elasticPasswordField, elasticIndexField, elasticMaxHitsField);
 
         JPanel generalPanel  = buildGeneralPanel(darkModeCheck, powerUserCheck, fields);
-        JPanel advancedPanel = buildAdvancedPanel(fields, cfg.lucene);
+        JPanel advancedPanel = buildAdvancedPanel(fields, cfg.lucene, cfg.elastic);
 
         // ---- User Dictionary tab ----
         DefaultTableModel dictModel = new DefaultTableModel(
@@ -214,7 +247,8 @@ final class SettingsDialog {
     // Advanced tab
     // -----------------------------------------------------------------------
 
-    private static JPanel buildAdvancedPanel(FormFields fields, Config.LuceneConfig lucene) {
+    private static JPanel buildAdvancedPanel(FormFields fields, Config.LuceneConfig lucene,
+                                              Config.ElasticConfig elastic) {
         FormPanel fp = new FormPanel();
         JPanel form = fp.panel;
         GridBagConstraints lc = fp.lc;
@@ -263,6 +297,29 @@ final class SettingsDialog {
         JPanel resetLuceneWrap = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         resetLuceneWrap.add(resetLucene);
         FormPanel.addRow(form, lc, fc, 9, "", resetLuceneWrap);
+
+        addSectionSeparator(form, 10, "Elasticsearch");
+        FormPanel.addRow(form, lc, fc, 11, "Host:",               fields.elasticHost);
+        FormPanel.addRow(form, lc, fc, 12, "Port:",                fields.elasticPort);
+        FormPanel.addRow(form, lc, fc, 13, "Scheme (http/https):", fields.elasticScheme);
+        FormPanel.addRow(form, lc, fc, 14, "Username:",            fields.elasticUsername);
+        FormPanel.addRow(form, lc, fc, 15, "Password:",            fields.elasticPassword);
+        FormPanel.addRow(form, lc, fc, 16, "Index name:",          fields.elasticIndex);
+        FormPanel.addRow(form, lc, fc, 17, "Search hits (max.):",  fields.elasticMaxHits);
+
+        JButton resetElastic = new JButton("Reset to defaults");
+        resetElastic.addActionListener(e -> {
+            fields.elasticHost.setText(elastic.defaultHost);
+            fields.elasticPort.setText(String.valueOf(elastic.defaultPort));
+            fields.elasticScheme.setText(elastic.defaultScheme);
+            fields.elasticUsername.setText("");
+            fields.elasticPassword.setText("");
+            fields.elasticIndex.setText(elastic.defaultIndex);
+            fields.elasticMaxHits.setText(String.valueOf(elastic.defaultMaxHits));
+        });
+        JPanel resetElasticWrap = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        resetElasticWrap.add(resetElastic);
+        FormPanel.addRow(form, lc, fc, 18, "", resetElasticWrap);
 
         return form;
     }
@@ -318,6 +375,25 @@ final class SettingsDialog {
                     INVALID_INPUT, JOptionPane.WARNING_MESSAGE);
             return false;
         }
+        Integer elasticPort = parsePositiveInt(fields.elasticPort.getText().trim());
+        if (elasticPort == null) {
+            JOptionPane.showMessageDialog(dlg, "Elasticsearch port must be a positive whole number.",
+                    INVALID_INPUT, JOptionPane.WARNING_MESSAGE);
+            return false;
+        }
+        String elasticScheme = fields.elasticScheme.getText().trim();
+        if (!elasticScheme.isEmpty() && !elasticScheme.equalsIgnoreCase("http")
+                && !elasticScheme.equalsIgnoreCase("https")) {
+            JOptionPane.showMessageDialog(dlg, "Elasticsearch scheme must be \"http\" or \"https\".",
+                    INVALID_INPUT, JOptionPane.WARNING_MESSAGE);
+            return false;
+        }
+        Integer elasticMaxHits = parsePositiveInt(fields.elasticMaxHits.getText().trim());
+        if (elasticMaxHits == null) {
+            JOptionPane.showMessageDialog(dlg, "Elasticsearch search hits (max.) must be a positive whole number.",
+                    INVALID_INPUT, JOptionPane.WARNING_MESSAGE);
+            return false;
+        }
 
         prefs.put(cfg.csv.fieldSep,     fieldSep);
         prefs.put(cfg.csv.decimalSep,   decimalSep);
@@ -326,6 +402,15 @@ final class SettingsDialog {
         prefs.put(cfg.lucene.dirPrefKey, luceneDir);
         prefs.putInt(cfg.lucene.maxHitsPrefKey, luceneMaxHits);
         cfg.lucene.onChange.run();
+
+        prefs.put(cfg.elastic.hostPrefKey, fields.elasticHost.getText().trim());
+        prefs.putInt(cfg.elastic.portPrefKey, elasticPort);
+        prefs.put(cfg.elastic.schemePrefKey, elasticScheme.isEmpty() ? cfg.elastic.defaultScheme : elasticScheme);
+        prefs.put(cfg.elastic.usernamePrefKey, fields.elasticUsername.getText().trim());
+        cfg.elastic.savePassword.accept(new String(fields.elasticPassword.getPassword()));
+        prefs.put(cfg.elastic.indexPrefKey, fields.elasticIndex.getText().trim());
+        prefs.putInt(cfg.elastic.maxHitsPrefKey, elasticMaxHits);
+        cfg.elastic.onChange.run();
         return true;
     }
 

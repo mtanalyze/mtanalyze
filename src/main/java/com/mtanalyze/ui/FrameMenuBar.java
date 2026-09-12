@@ -84,10 +84,16 @@ public final class FrameMenuBar {
         Runnable          onShowDiff,
         Runnable          onShowSource,
         Runnable          onShowComponents,
-        // Lucene menu – embedded full-text index
+        // Lucene menu – embedded index
         Runnable          onIndexMessages,
         Runnable          onSearchMessages,
-        Runnable          onClearIndex
+        Runnable          onClearIndex,
+        // Elasticsearch menu
+        Runnable          onIndexMessagesElastic,
+        Runnable          onSearchMessagesElastic,
+        Runnable          onClearIndexElastic,
+        // Shared by both menus
+        Runnable          onShowStatistics
     ) {}
 
     // -----------------------------------------------------------------------
@@ -188,12 +194,23 @@ public final class FrameMenuBar {
         viewMenu.add(menuSource);
         viewMenu.add(menuComponents);
 
-        // ── Repository menu (embedded Lucene index) ───────────────────────
-        JMenu repositoryMenu = new JMenu("Repository");
-        repositoryMenu.add(item("Index Messages", ToolbarIcons.menuImportFile(), null, cb.onIndexMessages()));
-        repositoryMenu.add(item("Search Messages...", ToolbarIcons.menuSearch(), "ctrl shift F", cb.onSearchMessages()));
-        repositoryMenu.addSeparator();
-        repositoryMenu.add(item("Clear Index...", ToolbarIcons.menuDelete(), null, cb.onClearIndex()));
+        // ── Lucene menu (embedded index) ──────────────────────────────────
+        JMenu luceneMenu = new JMenu("Lucene");
+        luceneMenu.add(item("Index Messages", ToolbarIcons.menuImportFile(), null, cb.onIndexMessages()));
+        luceneMenu.add(item("Search Messages...", ToolbarIcons.menuSearch(), "ctrl shift F", cb.onSearchMessages()));
+        luceneMenu.addSeparator();
+        luceneMenu.add(item("Clear Index...", ToolbarIcons.menuDelete(), null, cb.onClearIndex()));
+        luceneMenu.addSeparator();
+        luceneMenu.add(item("Statistics...", ToolbarIcons.menuStatistics(), null, cb.onShowStatistics()));
+
+        // ── Elasticsearch menu ─────────────────────────────────────────────
+        JMenu elasticMenu = new JMenu("Elasticsearch");
+        elasticMenu.add(item("Index Messages", ToolbarIcons.menuImportFile(), null, cb.onIndexMessagesElastic()));
+        elasticMenu.add(item("Search Messages...", ToolbarIcons.menuSearch(), "ctrl shift E", cb.onSearchMessagesElastic()));
+        elasticMenu.addSeparator();
+        elasticMenu.add(item("Clear Index...", ToolbarIcons.menuDelete(), null, cb.onClearIndexElastic()));
+        elasticMenu.addSeparator();
+        elasticMenu.add(item("Statistics...", ToolbarIcons.menuStatistics(), null, cb.onShowStatistics()));
 
         // ── Help menu ─────────────────────────────────────────────────────
         JMenuItem helpItem = new JMenuItem("Help...", ToolbarIcons.menuHelp());
@@ -210,7 +227,8 @@ public final class FrameMenuBar {
         menuBar.add(fileMenu);
         menuBar.add(buildEditMenu(cb.populateEditMenu()));
         menuBar.add(viewMenu);
-        menuBar.add(repositoryMenu);
+        menuBar.add(luceneMenu);
+        menuBar.add(elasticMenu);
         menuBar.add(helpMenu);
 
         menuBar.add(Box.createHorizontalGlue());

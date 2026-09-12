@@ -20,6 +20,7 @@ import com.mtanalyze.model.Entry;
 import com.mtanalyze.model.EntrySelectionListener;
 import com.mtanalyze.model.MessageOrigin;
 import com.mtanalyze.model.SwiftMessage;
+import com.mtanalyze.config.ElasticSecretStore;
 import com.mtanalyze.config.SystemConfig;
 import com.mtanalyze.parser.MtFileIO;
 import com.mtanalyze.parser.MtParser;
@@ -29,6 +30,8 @@ import com.mtanalyze.export.ExcelExport;
 import com.mtanalyze.export.MtExport;
 import com.mtanalyze.lucene.MessageIndexService;
 import com.mtanalyze.lucene.MtLucene;
+import com.mtanalyze.elastic.ElasticIndexService;
+import com.mtanalyze.elastic.MtElastic;
 import com.mtanalyze.ui.view.NotificationPanel;
 import com.mtanalyze.ui.view.TagView;
 import com.mtanalyze.util.FileChoosers;
@@ -74,6 +77,7 @@ public class MtAnalyzeFrame extends JFrame {
     private final transient ExcelExport         excelExport = new ExcelExport();
     private final transient ImportService       importService = new ImportService();
     private final transient MessageIndexService messageIndex  = new MessageIndexService();
+    private final transient ElasticIndexService elasticIndex  = new ElasticIndexService();
     private final transient HintDictionary      dict          = new HintDictionary();
     private final transient MtEntryPanel.PrefKeys prefKeys;
 
@@ -118,12 +122,19 @@ public class MtAnalyzeFrame extends JFrame {
     private static final String PREF_POWER_USER            = "power_user";
     private static final String PREF_LUCENE_DIR            = "lucene_index_dir";
     private static final String PREF_LUCENE_MAX_HITS       = "lucene_max_hits";
+    private static final String PREF_ELASTIC_HOST          = "elastic_host";
+    private static final String PREF_ELASTIC_PORT          = "elastic_port";
+    private static final String PREF_ELASTIC_SCHEME        = "elastic_scheme";
+    private static final String PREF_ELASTIC_USERNAME      = "elastic_username";
+    private static final String PREF_ELASTIC_INDEX         = "elastic_index";
+    private static final String PREF_ELASTIC_MAX_HITS      = "elastic_max_hits";
     private static final String THEME_LIGHT             = "Light";
 
     private JButton    menuSearchBtn;
 
-    /** Last Lucene query string, pre-filled into the "Search Messages" dialog. */
+    /** Last Lucene / Elasticsearch query string, pre-filled into the "Search Messages" dialog. */
     private String lastLuceneQuery = "";
+    private String lastElasticQuery = "";
 
     private JRadioButtonMenuItem menuNotifications;
     private JRadioButtonMenuItem menuTags;
@@ -160,6 +171,7 @@ public class MtAnalyzeFrame extends JFrame {
         setupMenuBar();
         setupStatusBar();
         applyLuceneConfig();
+        applyElasticConfig();
         assembleMainLayout();
         openNewTab();
         applyPowerUserMode();
@@ -226,7 +238,11 @@ public class MtAnalyzeFrame extends JFrame {
             () -> withActiveTab(EntryTab::switchToComponents),
             this::onIndexMessages,
             this::onSearchMessages,
-            this::onClearLuceneIndex
+            this::onClearLuceneIndex,
+            this::onIndexMessagesElastic,
+            this::onSearchMessagesElastic,
+            this::onClearElasticIndex,
+            this::onShowStatistics
         );
     }
 
@@ -286,8 +302,9 @@ public class MtAnalyzeFrame extends JFrame {
 
     /** Prompts for a Lucene query string and shows the matching messages in a new tab. */
     private void onSearchMessages() {
-        String query = promptLuceneQuery();
+        String query = promptQuery("Search Messages", lastLuceneQuery);
         if (query == null || query.isBlank()) return;
+        lastLuceneQuery = query;
         String trimmed = query.trim();
 
         List<MtLucene.SwiftHit> hits;
@@ -309,7 +326,7 @@ public class MtAnalyzeFrame extends JFrame {
         if (hits.isEmpty()) {
             JOptionPane.showMessageDialog(this,
                 "No indexed messages match:\n" + trimmed
-                    + "\n\n(Use Repository ▸ Index Messages first if the index is empty.)",
+                    + "\n\n(Use Lucene ▸ Index Messages first if the index is empty.)",
                 "Search Messages", JOptionPane.INFORMATION_MESSAGE);
             return;
         }
@@ -325,15 +342,15 @@ public class MtAnalyzeFrame extends JFrame {
     }
 
     /**
-     * Multi-line query dialog for "Search Messages". Returns the entered query,
-     * or {@code null} if cancelled. Ctrl+Enter confirms.
+     * Multi-line query dialog shared by the Lucene and Elasticsearch "Search Messages" items.
+     * Returns the entered query, or {@code null} if cancelled. Ctrl+Enter confirms.
      */
-    private String promptLuceneQuery() {
+    private String promptQuery(String dialogTitle, String initialText) {
         JTextArea area = new JTextArea(8, 48);
         area.setLineWrap(true);
         area.setWrapStyleWord(true);
         area.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 13));
-        area.setText(lastLuceneQuery);
+        area.setText(initialText);
         area.setCaretPosition(area.getText().length());
         area.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
 
@@ -345,7 +362,7 @@ public class MtAnalyzeFrame extends JFrame {
 
         JOptionPane optionPane = new JOptionPane(panel, JOptionPane.PLAIN_MESSAGE,
             JOptionPane.OK_CANCEL_OPTION);
-        JDialog dialog = optionPane.createDialog(this, "Search Messages");
+        JDialog dialog = optionPane.createDialog(this, dialogTitle);
         // Ctrl+Enter = OK
         area.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER,
             Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()), "submit");
@@ -361,8 +378,7 @@ public class MtAnalyzeFrame extends JFrame {
 
         Object value = optionPane.getValue();
         if (value == null || !value.equals(JOptionPane.OK_OPTION)) return null;
-        lastLuceneQuery = area.getText().trim();
-        return lastLuceneQuery;
+        return area.getText().trim();
     }
 
     private void onClearLuceneIndex() {
@@ -387,6 +403,127 @@ public class MtAnalyzeFrame extends JFrame {
         }
     }
 
+    // -----------------------------------------------------------------------
+    // Elasticsearch: Index Messages / Search Messages
+    // -----------------------------------------------------------------------
+
+    /** Indexes every message of the active tab's MT Entries view into the configured Elasticsearch index. */
+    private void onIndexMessagesElastic() {
+        EntryTab t = activeTab();
+        if (t == null) return;
+        List<SwiftMessage> messages = t.entryPanel.getLoadedMessages();
+        if (messages.isEmpty()) {
+            statusLabel.setText("Nothing to index – this tab has no MT entries.");
+            return;
+        }
+        final int count = messages.size();
+
+        JProgressBar bar = new JProgressBar(0, count);
+        bar.setStringPainted(true);
+        bar.setString("0 / " + count);
+        FrameLayout.ProgressDialog pd = FrameLayout.buildProgressDialog(this, "Index Messages",
+            "Indexing " + count + (count == 1 ? MSG_SINGULAR : MSG_PLURAL) + " into Elasticsearch…", bar);
+
+        SwingWorker<Integer, Integer> worker = new SwingWorker<>() {
+            @Override protected Integer doInBackground() throws IOException {
+                return elasticIndex.indexMessages(messages, t.title, n -> publish(n), this::isCancelled);
+            }
+            @Override protected void process(List<Integer> progress) {
+                int n = progress.get(progress.size() - 1);
+                bar.setValue(n);
+                bar.setString(n + " / " + count);
+            }
+            @Override protected void done() {
+                pd.dialog().dispose();
+                if (isCancelled()) { statusLabel.setText("Indexing cancelled."); return; }
+                try {
+                    int n = get();
+                    long total = elasticIndex.documentCount();
+                    statusLabel.setText(n + (n == 1 ? MSG_SINGULAR : MSG_PLURAL)
+                        + " indexed (" + total + " in the Elasticsearch index).");
+                    t.detailCtrl.notificationPanel().addNotification(
+                        NotificationPanel.Type.INFO, "Messages indexed",
+                        n + (n == 1 ? MSG_SINGULAR : MSG_PLURAL) + " indexed into "
+                            + elasticIndex.connectionLabel() + " (" + total + " total; a message already in the index is replaced).");
+                } catch (InterruptedException ex) {
+                    Thread.currentThread().interrupt();
+                } catch (ExecutionException | IOException ex) {
+                    Throwable cause = ex instanceof ExecutionException && ex.getCause() != null ? ex.getCause() : ex;
+                    JOptionPane.showMessageDialog(MtAnalyzeFrame.this, "Indexing failed:\n" + cause.getMessage(),
+                        ERROR_TITLE, JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        };
+        pd.runWorker(worker);
+    }
+
+    /** Prompts for a query_string search and shows the matching messages in a new tab. */
+    private void onSearchMessagesElastic() {
+        String query = promptQuery("Search Messages", lastElasticQuery);
+        if (query == null || query.isBlank()) return;
+        lastElasticQuery = query;
+        String trimmed = query.trim();
+
+        List<MtElastic.SwiftHit> hits;
+        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        try {
+            hits = elasticIndex.search(trimmed);
+        } catch (IllegalArgumentException ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage(),
+                "Invalid Query", JOptionPane.WARNING_MESSAGE);
+            return;
+        } catch (IOException ex) {
+            JOptionPane.showMessageDialog(this, "Search failed:\n" + ex.getMessage(),
+                ERROR_TITLE, JOptionPane.ERROR_MESSAGE);
+            return;
+        } finally {
+            setCursor(Cursor.getDefaultCursor());
+        }
+
+        if (hits.isEmpty()) {
+            JOptionPane.showMessageDialog(this,
+                "No indexed messages match:\n" + trimmed
+                    + "\n\n(Use Elasticsearch ▸ Index Messages first if the index is empty.)",
+                "Search Messages", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        List<String> chunks = hits.stream().map(MtElastic.SwiftHit::rawMessage).toList();
+        EntryTab tab = openNewTab();
+        int parsed = tab.importer.appendFromContent(chunks, null, null, MessageOrigin.CLIPBOARD);
+        tab.updateTitle("Search: " + trimmed);
+        boolean capped = hits.size() >= elasticIndex.maxHits();
+        tab.setStatus(parsed + " of " + hits.size() + " search hit"
+            + (hits.size() == 1 ? "" : "s") + (capped ? " (hit limit reached)" : "")
+            + " loaded for query: " + trimmed);
+    }
+
+    private void onClearElasticIndex() {
+        long total;
+        try {
+            total = elasticIndex.documentCount();
+        } catch (IOException ex) {
+            total = -1;
+        }
+        int choice = JOptionPane.showConfirmDialog(this,
+            "Delete all " + (total >= 0 ? total + " " : "") + "documents from the Elasticsearch index?\n"
+                + elasticIndex.connectionLabel(),
+            "Clear Index", JOptionPane.OK_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE);
+        if (choice != JOptionPane.OK_OPTION) return;
+        try {
+            long removed = elasticIndex.clearIndex();
+            statusLabel.setText(removed + " document" + (removed == 1 ? "" : "s")
+                + " removed from the Elasticsearch index.");
+        } catch (IOException ex) {
+            JOptionPane.showMessageDialog(this, "Could not clear the index:\n" + ex.getMessage(),
+                ERROR_TITLE, JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void onShowStatistics() {
+        StatisticsDialog.show(this, messageIndex, elasticIndex);
+    }
+
     private void showSettings() {
         SettingsDialog.show(this, PREFS, new SettingsDialog.Config(
             new SettingsDialog.Config.CsvKeys(PREF_CSV_FIELD_SEP, PREF_CSV_DECIMAL_SEP),
@@ -398,7 +535,15 @@ public class MtAnalyzeFrame extends JFrame {
             new SettingsDialog.Config.PowerUserConfig(PREF_POWER_USER, this::applyPowerUserMode),
             new SettingsDialog.Config.LuceneConfig(PREF_LUCENE_DIR, PREF_LUCENE_MAX_HITS,
                 MessageIndexService.defaultIndexDir().toString(),
-                MessageIndexService.DEFAULT_MAX_HITS, this::applyLuceneConfig)),
+                MessageIndexService.DEFAULT_MAX_HITS, this::applyLuceneConfig),
+            new SettingsDialog.Config.ElasticConfig(
+                PREF_ELASTIC_HOST, PREF_ELASTIC_PORT, PREF_ELASTIC_SCHEME,
+                PREF_ELASTIC_USERNAME,
+                () -> ElasticSecretStore.get(PREFS), password -> ElasticSecretStore.save(PREFS, password),
+                PREF_ELASTIC_INDEX, PREF_ELASTIC_MAX_HITS,
+                ElasticIndexService.DEFAULT_HOST, ElasticIndexService.DEFAULT_PORT,
+                ElasticIndexService.DEFAULT_SCHEME, ElasticIndexService.DEFAULT_INDEX,
+                ElasticIndexService.DEFAULT_MAX_HITS, this::applyElasticConfig)),
             dict);
     }
 
@@ -407,6 +552,18 @@ public class MtAnalyzeFrame extends JFrame {
         messageIndex.configure(
             PREFS.get(PREF_LUCENE_DIR, ""),
             PREFS.getInt(PREF_LUCENE_MAX_HITS, MessageIndexService.DEFAULT_MAX_HITS));
+    }
+
+    /** Re-applies the persisted Elasticsearch connection settings to the running service. */
+    private void applyElasticConfig() {
+        elasticIndex.configure(
+            PREFS.get(PREF_ELASTIC_HOST, ElasticIndexService.DEFAULT_HOST),
+            PREFS.getInt(PREF_ELASTIC_PORT, ElasticIndexService.DEFAULT_PORT),
+            PREFS.get(PREF_ELASTIC_SCHEME, ElasticIndexService.DEFAULT_SCHEME),
+            PREFS.get(PREF_ELASTIC_USERNAME, ""),
+            ElasticSecretStore.get(PREFS),
+            PREFS.get(PREF_ELASTIC_INDEX, ElasticIndexService.DEFAULT_INDEX),
+            PREFS.getInt(PREF_ELASTIC_MAX_HITS, ElasticIndexService.DEFAULT_MAX_HITS));
     }
 
     private void populateEditMenu(JMenu menu) {

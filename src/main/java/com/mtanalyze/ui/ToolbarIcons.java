@@ -526,6 +526,19 @@ public final class ToolbarIcons {
         });
     }
 
+    // ── Statistics ────────────────────────────────────────────────────
+
+    public static Icon menuStatistics() {
+        return makeMenuIcon((g, c) -> {
+            g.setColor(c);
+            g.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            g.drawLine(1, 14, 15, 14);
+            g.fillRect(3, 9, 3, 5);
+            g.fillRect(7, 5, 3, 9);
+            g.fillRect(11, 7, 3, 7);
+        });
+    }
+
     private static Icon menuFilledCircleLetter(String letter, Color fill) {
         return makeMenuIcon((g, c) -> {
             g.setColor(fill);

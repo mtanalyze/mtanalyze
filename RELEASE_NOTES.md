@@ -1,30 +1,60 @@
-# MT Analyze v1.2.5
+# MT Analyze v2.0.0
 
 ## Download & Run
 
 **Requirements:** Java 17 or higher
 
 ```bash
-java -jar MT-Analyze-1.2.5.jar
+java -jar MT-Analyze-2.0.0.jar
 ```
 
 ---
 
 ## Changes
 
-### Redesigned Column Chooser
+### Elasticsearch support — indexed search at scale
 
-The **Column Chooser** dialog is now a two-list transfer UI: **Available** (hidden) and
-**Visible** (shown, in display order) columns, with buttons to move columns between the
-two lists and to reorder the **Visible** list, which can also be reordered by dragging.
-Hovering a column shows its ISO 15022 description as a tooltip. The dialog now also
-centers itself on the monitor that actually holds the main window, instead of
-occasionally appearing on the wrong screen in multi-monitor setups.
+MT Analyze now scales from a handful of files up to large message archives. Alongside the
+existing embedded Apache Lucene index (its own **Lucene** menu), the menu bar gained a
+second, independent index backed by Elasticsearch, in its own **Elasticsearch** menu — point
+it at a local or remote cluster and index/search collections far beyond what a single
+desktop's file-based Lucene index comfortably handles. Both menus offer matching actions:
+
+- **Index Messages** / **Search Messages...** (`Ctrl+Shift+E`) / **Clear Index...** — same
+  three actions as the Lucene menu, now for Elasticsearch.
+- Search uses Elasticsearch's `query_string` syntax, close to Lucene's classic
+  `QueryParser` syntax, so query habits carry over between the two.
+- Indexing is idempotent, same as Lucene: a message is identified by a hash of its
+  content, so re-indexing the same message replaces its entry instead of creating a
+  duplicate.
+- Connection (host, port, scheme, credentials) and index name are configured under
+  **Settings ▸ Advanced ▸ Elasticsearch**.
+
+### Index Statistics
+
+Both the **Lucene** and **Elasticsearch** menus gained a **Statistics...** item, opening a
+dialog that shows how many messages are currently indexed in each backend. The two counts
+are fetched independently, so a slow or unreachable Elasticsearch cluster never delays the
+(near-instant) Lucene count from showing.
+
+### Elasticsearch password stored in the OS keyring
+
+The Elasticsearch password is no longer saved in plain text alongside the other settings.
+It now goes into the operating system's own credential store — Windows Credential Manager,
+macOS Keychain, or the Freedesktop Secret Service/KWallet on Linux — via
+[java-keyring](https://github.com/javakeyring/java-keyring).
+
+- A password already saved from an earlier version is picked up automatically the first
+  time Settings reads it, moved into the OS keyring, and removed from the plain-text
+  preference — no re-entry needed.
+- On a system without any supported OS keyring backend, MT Analyze falls back to the same
+  plain-text storage used before, so the app keeps working everywhere.
 
 ---
 
 # Older Releases
 
+- **v1.2.5** — Redesigned Column Chooser: two-list transfer UI (Available/Visible, drag-to-reorder) with ISO 15022 tooltips; dialog now centers on the correct monitor in multi-monitor setups.
 - **v1.2.3** — **Open FIN MT Bulk Messages...**/**Save FIN MT Bulk Messages...** now read and write the standard SWIFT RJE format via Prowide's `RJEReader`/`RJEWriter`, and **Save** writes every message in the active tab to a single file; **Rename Tab...**; Excel export column headers follow the same `sequence tag:qualifier` naming as the MT Entries table; column header context menu gained **Sort Columns**.
 - **v1.2.2** — Added **Remove Duplicates**: removes exact duplicate messages from a tab (compared with Prowide's `SwiftMessageComparator`, keeping the first occurrence), reporting the SEME references of removed messages.
 - **v1.2.1** — Indexed messages are now identified by a hash of their content instead of type+sender+SEME, so the individual pages of a paginated statement no longer collapse into a single index entry.
