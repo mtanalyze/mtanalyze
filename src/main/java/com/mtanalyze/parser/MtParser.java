@@ -132,18 +132,6 @@ public class MtParser {
         entries.add(new Entry(row, new SwiftTagListBlock(rowTags), new SwiftTagListBlock(new ArrayList<>(headerTags))));
     }
 
-    /**
-     * Wrapper-less row mode (MT 537: TRANS, MT 564: CAOPTN, MT 530: REQD, MT 567: STAT,
-     * MT 569: SECDET/VALDET/TRANSDET depending on message content): each
-     * :16R:{rowSeqName}...:16S:{rowSeqName} block is one row. Unlike
-     * MT 535/536 there is no SUBSAFE/FIN wrapper around the row sequence, so the row is
-     * recognised wherever it occurs in block4 (right after GENL, or nested inside repeated
-     * wrapper sequences such as USECU / SUMC / SUME / TRANSDET / VALDET, which are folded
-     * into the header instead).
-     * Tags before the first row sequence (e.g. GENL, USECU, CADETL) are header fields inherited by
-     * every row; tags inside a row are labelled by their nearest enclosing 16R (TRANSDET, LINK,
-     * SETPRTY, STAT, REAS, SECMOVE, CASHMOVE...).
-     */
     /** Mutable working state threaded through {@link #parseTransMode} while it walks block4. */
     private static final class TransParseState {
         final List<Tag>            headerTags     = new ArrayList<>();
@@ -159,6 +147,18 @@ public class MtParser {
         int rowNum;
     }
 
+    /**
+     * Wrapper-less row mode (MT 537: TRANS, MT 564: CAOPTN, MT 530: REQD, MT 567: STAT,
+     * MT 569: SECDET/VALDET/TRANSDET depending on message content): each
+     * :16R:{rowSeqName}...:16S:{rowSeqName} block is one row. Unlike
+     * MT 535/536 there is no SUBSAFE/FIN wrapper around the row sequence, so the row is
+     * recognised wherever it occurs in block4 (right after GENL, or nested inside repeated
+     * wrapper sequences such as USECU / SUMC / SUME / TRANSDET / VALDET, which are folded
+     * into the header instead).
+     * Tags before the first row sequence (e.g. GENL, USECU, CADETL) are header fields inherited by
+     * every row; tags inside a row are labelled by their nearest enclosing 16R (TRANSDET, LINK,
+     * SETPRTY, STAT, REAS, SECMOVE, CASHMOVE...).
+     */
     private void parseTransMode(SwiftTagListBlock b4) {
         TransParseState st = new TransParseState();
 

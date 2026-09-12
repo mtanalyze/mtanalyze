@@ -218,7 +218,7 @@ public final class ColumnChooser {
     private static void applyResult(JOptionPane pane, List<ColumnDef> cols, ChooserState st,
             Runnable savePrefs, Runnable rebuildTable) {
         Object selectedValue = pane.getValue();
-        int result = (selectedValue instanceof Integer) ? (Integer) selectedValue : JOptionPane.CLOSED_OPTION;
+        int result = (selectedValue instanceof Integer integer) ? integer : JOptionPane.CLOSED_OPTION;
         if (result != JOptionPane.OK_OPTION) return;
 
         List<ColumnDef> ordered = new ArrayList<>(cols.size());
@@ -270,13 +270,13 @@ public final class ColumnChooser {
                 return buildColumnTooltip(getModel().getElementAt(idx), dict);
             }
         };
-        list.setCellRenderer(columnListRenderer(dict));
+        list.setCellRenderer(columnListRenderer());
         list.setVisibleRowCount(-1);
         ToolTipManager.sharedInstance().registerComponent(list);
         return list;
     }
 
-    private static ListCellRenderer<ColumnDef> columnListRenderer(HintDictionary dict) {
+    private static ListCellRenderer<ColumnDef> columnListRenderer() {
         DefaultListCellRenderer base = new DefaultListCellRenderer();
         return (list, value, index, isSelected, cellHasFocus) -> {
             JLabel c = (JLabel) base.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);

@@ -57,18 +57,24 @@ public final class MtFileIO {
     private static final Pattern SWIFT_TAG_PAT = Pattern.compile("^:([A-Z0-9]{2,5}):");
     private static final Pattern APPEND_MT_HDR_PAT = Pattern.compile("^(\\d{3}):");
     private static final Pattern XML_CHAR_REF_PAT = Pattern.compile("&#x([\\dA-Fa-f]+);?|&#(\\d+);?");
+    private static final Pattern MT_EQ_LINE_PAT = Pattern.compile("MT\\s*=\\s*\\d{3}");
+    private static final Pattern MT_EQ_PREFIX_PAT = Pattern.compile("MT\\s*=\\s*");
+    private static final Pattern DIGITS_3_PAT = Pattern.compile("\\d{3}");
+    private static final Pattern ISO_DATE_PAT = Pattern.compile("(\\d{4})-(\\d{2})-(\\d{2})");
+    private static final Pattern NV_KEY_PAT =
+        Pattern.compile("^[A-Z0-9]*_((?:\\d{2}[A-Z]+|5R)\\s*:.*)$");
 
     /** Minimum number of genuine SWIFT fields required to classify content as Name-Value. */
     private static final int NAME_VALUE_MIN_FIELDS = 3;
     /** Detects a SWIFT field line in multi-line name-value format: [PREFIX]_TAG:...=... */
     private static final Pattern MULTI_LINE_NV_FIELD_PAT =
-        Pattern.compile("^(?:[A-Z][A-Z0-9]*|\\d+)?[_ ](?:\\d{2}[A-Z]+|5R)\\s*:[^=]*=[^\\n]*");
+        Pattern.compile("^[A-Z0-9]*[_ ](?:\\d{2}[A-Z]+|5R)\\s*:[^=]*=[^\\n]*");
     /** Parses a field line; groups: (1) tag, (2) qualifier, (3) value. */
     private static final Pattern MULTI_LINE_NV_PARSE_PAT =
         Pattern.compile("^[A-Z0-9]*[_ ]((?:\\d{2}[A-Z]+|5R))\\s*:\\s*([A-Z0-9]*+)\\s*=\\s*([^\\n]*)");
     /** Detects a SWIFT field segment in single-line name-value format: [PREFIX]_TAG[:QUAL]=VALUE, semicolon-separated. */
     private static final Pattern SINGLE_LINE_NV_FIELD_PAT =
-        Pattern.compile("^(?:[A-Z][A-Z0-9]*|\\d+)?_(?:\\d{2}[A-Z]+|5R)\\s*:[^=]*=.*$");
+        Pattern.compile("^[A-Z0-9]*_(?:\\d{2}[A-Z]+|5R)\\s*:[^=]*=.*$");
 
 
 
@@ -134,13 +140,18 @@ public final class MtFileIO {
         b -> tagPresent(b, ":16R:CAOPTN")   ? "564" : null,
         b -> tagPresent(b, ":22H::PAYM//") && tagPresent(b, ":22H::REDE//") ? "578" : null,
         b -> tagPresent(b, ":60F:") || tagPresent(b, ":60M:") ? "940" : null,
-        b -> tagPresent(b, ":16R:DEALTRAN") ? (tagPresent(b, ":16R:STAT") ? "558" : "527") : null,
+        MtFileIO::dealtranType,
         b -> tagPresent(b, ":16R:REQD")     ? "530" : null,
         b -> tagPresent(b, ":16R:CAINST")   ? "565" : null,
         b -> tagPresent(b, ":16R:CACONF")   ? "566" : null,
         b -> tagPresent(b, ":16R:STAT")     ? "567" : null,
         b -> tagPresent(b, ":16R:USECU")    ? "568" : null
     );
+
+    private static String dealtranType(String body) {
+        if (!tagPresent(body, ":16R:DEALTRAN")) return null;
+        return tagPresent(body, ":16R:STAT") ? "558" : "527";
+    }
 
     private static String matchMtTypeByTags(String body) {
         for (MtTypeRule rule : MT_TYPE_RULES) {
@@ -540,7 +551,7 @@ public final class MtFileIO {
         StringBuilder current = null;
         for (String line : content.split(NEWLINE_PATTERN)) {
             String t = line.trim();
-            if (t.matches("MT\\s*=\\s*\\d{3}")) {
+            if (MT_EQ_LINE_PAT.matcher(t).matches()) {
                 collectNvMessage(current, messages);
                 current = new StringBuilder();
             }
@@ -626,7 +637,7 @@ public final class MtFileIO {
                 part = part.trim();
                 if (part.startsWith("MT=")) {
                     String mt = part.substring(3).trim();
-                    if (mt.matches("\\d{3}")) return mt;
+                    if (DIGITS_3_PAT.matcher(mt).matches()) return mt;
                 }
             }
         }
@@ -751,23 +762,22 @@ public final class MtFileIO {
      */
     public static String convertNameValueToBlock4(String content) {
         StringBuilder sb  = new StringBuilder();
-        Pattern       pat = Pattern.compile("^(?:[A-Z][A-Z0-9]*|\\d+)?_((?:\\d{2}[A-Z]+|5R)\\s*:.*)$");
         String decoded = decodeXmlCharRefs(content.trim());
         for (String part : decoded.split(";")) {
-            processNameValuePart(part.trim(), sb, pat);
+            processNameValuePart(part.trim(), sb);
         }
         return sb.toString();
     }
 
-    private static void processNameValuePart(String part, StringBuilder sb, Pattern pat) {
+    private static void processNameValuePart(String part, StringBuilder sb) {
         if (part.isEmpty()) return;
         int eqIdx = part.indexOf('=');
         if (eqIdx < 0) return;
         String key = part.substring(0, eqIdx).trim();
-        String val = normalizeEmbeddedCr(part.substring(eqIdx + 1).trim())
-                         .replaceAll("(\\d{4})-(\\d{2})-(\\d{2})", "$1$2$3")
+        String val = ISO_DATE_PAT.matcher(normalizeEmbeddedCr(part.substring(eqIdx + 1).trim()))
+                         .replaceAll("$1$2$3")
                          .replaceFirst("^/+", "");
-        Matcher m = pat.matcher(key);
+        Matcher m = NV_KEY_PAT.matcher(key);
         if (!m.matches()) return;
         String tagAndSub = m.group(1).trim();
         int ci = tagAndSub.indexOf(':');
@@ -839,8 +849,8 @@ public final class MtFileIO {
         if (!m.matches()) return;
         String tag = m.group(1).trim();
         String sub = m.group(2).trim();
-        String val = normalizeEmbeddedCr(m.group(3).trim())
-                         .replaceAll("(\\d{4})-(\\d{2})-(\\d{2})", "$1$2$3")
+        String val = ISO_DATE_PAT.matcher(normalizeEmbeddedCr(m.group(3).trim()))
+                         .replaceAll("$1$2$3")
                          .replaceFirst("^/+", "");
         appendTag(tag, sub, val, sb);
     }
@@ -849,8 +859,8 @@ public final class MtFileIO {
     private static String extractMtTypeFromMultiLineNameValue(String content) {
         for (String line : content.split(NEWLINE_PATTERN)) {
             String t = line.trim();
-            if (t.matches("MT\\s*=\\s*\\d{3}")) {
-                return t.replaceFirst("MT\\s*=\\s*", "").trim();
+            if (MT_EQ_LINE_PAT.matcher(t).matches()) {
+                return MT_EQ_PREFIX_PAT.matcher(t).replaceFirst("").trim();
             }
         }
         return null;

@@ -48,6 +48,9 @@ public final class NameValueConverter {
     /** Strips the literal midnight time-of-day suffix appended to date-only values. */
     private static final Pattern MIDNIGHT_SUFFIX = Pattern.compile(" 00:00:00\\.000000");
 
+    /** Matches a genuine SWIFT field tag code (e.g. {@code "20C"}, {@code "5R"}). */
+    private static final Pattern TAG_CODE_PAT = Pattern.compile("\\d{2}[A-Z]+|5R");
+
     /**
      * Tag order shared by the repeating party subsequences {@code SETPRTY},
      * {@code CSHPRTY} and {@code CONFPRTY}. Such a subsequence repeats under the
@@ -78,19 +81,31 @@ public final class NameValueConverter {
         boolean hasMt = false;
         boolean hasSequencedField = false;
         for (String part : content.split(";")) {
-            String key = part.trim();
-            int eq = key.indexOf('=');
-            if (eq < 0) continue;
-            String name = key.substring(0, eq).trim();
-            if ("MT".equals(name)) { hasMt = true; continue; }
-            int us = name.indexOf('_');
-            if (us < 0) continue;
-            String tag = name.substring(us + 1).split(":")[0].trim();
-            if (!tag.matches("\\d{2}[A-Z]+|5R")) continue;
-            if ("16R".equals(tag) || "16S".equals(tag)) return false;
-            hasSequencedField = true;
+            PartKind kind = classifyPart(part);
+            if (kind == PartKind.EXPLICIT_MARKER) return false;
+            if (kind == PartKind.MT) hasMt = true;
+            if (kind == PartKind.SEQUENCED_FIELD) hasSequencedField = true;
         }
         return hasMt && hasSequencedField;
+    }
+
+    /** How one {@code ;}-separated segment of a Name-Value line bears on {@link #isSequenceCodeFormat}. */
+    private enum PartKind { IGNORE, MT, SEQUENCED_FIELD, EXPLICIT_MARKER }
+
+    private static PartKind classifyPart(String part) {
+        String key = part.trim();
+        int eq = key.indexOf('=');
+        if (eq < 0) return PartKind.IGNORE;
+        String name = key.substring(0, eq).trim();
+        if ("MT".equals(name)) return PartKind.MT;
+        int us = name.indexOf('_');
+        if (us < 0) return PartKind.IGNORE;
+        String tag = name.substring(us + 1).split(":")[0].trim();
+        if (!TAG_CODE_PAT.matcher(tag).matches()) return PartKind.IGNORE;
+        // An explicit :16R:/:16S: marker means the source already uses the format
+        // MtFileIO#convertNameValueToBlock4 expects -- not the bare-sequence-code format.
+        if ("16R".equals(tag) || "16S".equals(tag)) return PartKind.EXPLICIT_MARKER;
+        return PartKind.SEQUENCED_FIELD;
     }
 
     /**
@@ -102,14 +117,12 @@ public final class NameValueConverter {
      */
     public String translateSequence(int mt, String sequence) {
         Map<String, String> blocks = ProwideSequences.byLetterPath(mt);
-        if (blocks == null) {
-            throw new IllegalArgumentException("Message type %d is not supported by Prowide".formatted(mt));
-        }
         String block = blocks.get(sequence);
         if (block == null) {
             throw new IllegalArgumentException(
                 ("MT %d: unknown sequence code '%s' -- no matching :16R:/:16S: block "
-                    + "in the SWIFT standard for this message type").formatted(mt, sequence));
+                    + "in the SWIFT standard for this message type, or the message type "
+                    + "is not supported by Prowide").formatted(mt, sequence));
         }
         return block;
     }

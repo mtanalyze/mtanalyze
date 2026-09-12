@@ -120,6 +120,11 @@ final class ImportService {
         }
     }
 
+    /** Wraps the first parse failure Prowide reports while retrying with a shortened candidate. */
+    private static final class SwiftParseException extends Exception {
+        SwiftParseException(Throwable cause) { super(cause); }
+    }
+
     /**
      * Parses a chunk, retrying with the last (incomplete) block4 line dropped each
      * time Prowide rejects it. A message cut off mid-tag would otherwise fail to
@@ -132,7 +137,7 @@ final class ImportService {
      * only to have Prowide re-parse it back into the same object would be redundant
      * and risks losing structure that {@link AbstractMT#parse} cannot always recover.
      */
-    private static AbstractMT parseWithTruncationRecovery(String chunk, String mtOverride) throws Exception {
+    private static AbstractMT parseWithTruncationRecovery(String chunk, String mtOverride) throws SwiftParseException {
         if (NameValueConverter.isSequenceCodeFormat(chunk)) {
             return new NameValueConverter().convert(chunk);
         }
@@ -144,7 +149,7 @@ final class ImportService {
             } catch (Exception ex) {
                 if (firstFailure == null) firstFailure = ex;
                 String shorter = MtFileIO.dropLastBlock4Line(candidate);
-                if (shorter == null) throw firstFailure;
+                if (shorter == null) throw new SwiftParseException(firstFailure);
                 candidate = shorter;
             }
         }

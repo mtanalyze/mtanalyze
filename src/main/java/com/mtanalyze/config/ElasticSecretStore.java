@@ -42,24 +42,30 @@ public final class ElasticSecretStore {
 
     public static String get(Preferences prefs) {
         try (Keyring keyring = Keyring.create()) {
-            try {
-                return keyring.getPassword(SERVICE, ACCOUNT);
-            } catch (PasswordAccessException notFound) {
-                String legacy = prefs.get(PLAINTEXT_PREF_KEY, "");
-                if (!legacy.isEmpty()) {
-                    try {
-                        keyring.setPassword(SERVICE, ACCOUNT, legacy);
-                        prefs.remove(PLAINTEXT_PREF_KEY);
-                    } catch (PasswordAccessException ignored) {
-                        // keyring rejected the write -- keep the plain-text value for now
-                        // and retry the migration next time this is read
-                    }
-                }
-                return legacy;
-            }
+            return getFromKeyringOrMigrate(keyring, prefs);
         } catch (Exception noBackend) {
             // no OS keyring backend on this platform, or it failed to open
             return prefs.get(PLAINTEXT_PREF_KEY, "");
+        }
+    }
+
+    private static String getFromKeyringOrMigrate(Keyring keyring, Preferences prefs) {
+        try {
+            return keyring.getPassword(SERVICE, ACCOUNT);
+        } catch (PasswordAccessException notFound) {
+            String legacy = prefs.get(PLAINTEXT_PREF_KEY, "");
+            if (!legacy.isEmpty()) migrateLegacyPassword(keyring, prefs, legacy);
+            return legacy;
+        }
+    }
+
+    private static void migrateLegacyPassword(Keyring keyring, Preferences prefs, String legacy) {
+        try {
+            keyring.setPassword(SERVICE, ACCOUNT, legacy);
+            prefs.remove(PLAINTEXT_PREF_KEY);
+        } catch (PasswordAccessException ignored) {
+            // keyring rejected the write -- keep the plain-text value for now
+            // and retry the migration next time this is read
         }
     }
 
@@ -67,17 +73,21 @@ public final class ElasticSecretStore {
         String value = password == null ? "" : password;
         try (Keyring keyring = Keyring.create()) {
             if (value.isEmpty()) {
-                try {
-                    keyring.deletePassword(SERVICE, ACCOUNT);
-                } catch (PasswordAccessException ignored) {
-                    // nothing was stored
-                }
+                deleteFromKeyring(keyring);
             } else {
                 keyring.setPassword(SERVICE, ACCOUNT, value);
             }
             prefs.remove(PLAINTEXT_PREF_KEY);
         } catch (Exception noBackend) {
             prefs.put(PLAINTEXT_PREF_KEY, value);
+        }
+    }
+
+    private static void deleteFromKeyring(Keyring keyring) {
+        try {
+            keyring.deletePassword(SERVICE, ACCOUNT);
+        } catch (PasswordAccessException ignored) {
+            // nothing was stored
         }
     }
 }

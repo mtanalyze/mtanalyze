@@ -40,7 +40,8 @@ public final class ProwideSequences {
 
     /**
      * Letter-path (e.g. {@code "B1a2A"}) -&gt; qualifier name (e.g. {@code "SETPRTY"}) for
-     * {@code mt}. {@code null} when Prowide has no {@code MT<mt>} class for that type.
+     * {@code mt}. Empty when Prowide has no {@code MT<mt>} class for that type, or when
+     * {@code mt} has no {@code :16R:}/{@code :16S:} sequences at all (e.g. a flat MT type).
      */
     public static Map<String, String> byLetterPath(int mt) {
         return BY_LETTER_PATH.computeIfAbsent(mt, ProwideSequences::resolveByLetterPath);
@@ -55,7 +56,7 @@ public final class ProwideSequences {
     public static String letterPathFor(int mt, String qualifier) {
         if (qualifier == null || qualifier.isEmpty()) return null;
         Map<String, String> byQualifier = BY_QUALIFIER.computeIfAbsent(mt, ProwideSequences::resolveByQualifier);
-        return byQualifier != null ? byQualifier.get(qualifier) : null;
+        return byQualifier.get(qualifier);
     }
 
     private static Map<String, String> resolveByLetterPath(int mt) {
@@ -64,7 +65,7 @@ public final class ProwideSequences {
             String pkg = "com.prowidesoftware.swift.model.mt.mt" + (mt / 100) + "xx";
             mtClass = Class.forName(pkg + ".MT" + "%03d".formatted(mt));
         } catch (ClassNotFoundException e) {
-            return null;
+            return Map.of();
         }
         Map<String, String> blocks = new HashMap<>();
         for (Class<?> inner : mtClass.getDeclaredClasses()) {
@@ -82,7 +83,6 @@ public final class ProwideSequences {
 
     private static Map<String, String> resolveByQualifier(int mt) {
         Map<String, String> byPath = byLetterPath(mt);
-        if (byPath == null) return null;
         // A qualifier name identifies exactly one place in the standard for a given MT
         // type; putIfAbsent just makes the (never expected) collision deterministic.
         Map<String, String> inverted = new HashMap<>();

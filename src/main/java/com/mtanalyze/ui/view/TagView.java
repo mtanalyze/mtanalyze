@@ -156,8 +156,9 @@ public class TagView extends RoundedPanel implements EntrySelectionListener {
 
     public void refresh(List<SwiftTagListBlock> displaySeqs, List<Map<String, String>> rowData,
                         String seqKey, int modelRow, List<String[]> detailHeaders, String mt) {
-        dataHelper.refreshDetailTable(tranDetailModel, displaySeqs, rowData,
-                showComponents, seqKey, modelRow, detailHeaders, mt);
+        dataHelper.refreshDetailTable(tranDetailModel,
+                new DataHelper.RowContext(displaySeqs, rowData, seqKey, modelRow),
+                showComponents, detailHeaders, mt);
         updateFilterValues();
         applyDetailFilters();
     }
@@ -437,23 +438,6 @@ public class TagView extends RoundedPanel implements EntrySelectionListener {
         return item;
     }
 
-    /**
-     * Hover text for a Sequence cell: the qualifier the standard pairs with this
-     * letter-path (e.g. {@code "Sequence B1a2A (SETPRTY)"}) plus its dictionary
-     * description when known -- the same combination the SWIFT MT Standards / CSD
-     * specs themselves use to identify a sequence, in business terms rather than
-     * implementation ones.
-     */
-    private String sequenceTooltip(JTable table, int row, String letterPath) {
-        int qualCol = findColumnIndexByName(table, COL_QUALIFIER);
-        Object qualVal = qualCol >= 0 ? table.getValueAt(row, qualCol) : null;
-        String qualifier = qualVal != null ? qualVal.toString().trim() : "";
-        if (qualifier.isEmpty()) return "Sequence " + letterPath;
-        String label = "Sequence " + letterPath + " (" + qualifier + ")";
-        String desc  = dict.qualifierDescription(qualifier);
-        return (desc == null || desc.isBlank()) ? label : label + " – " + desc;
-    }
-
     private static int findColumnIndexByName(JTable table, String colName) {
         for (int c = 0; c < table.getColumnCount(); c++) {
             if (colName.equals(table.getColumnName(c))) return c;
@@ -698,6 +682,23 @@ public class TagView extends RoundedPanel implements EntrySelectionListener {
             if (COL_COMPONENT.equals(colName)) return dict.componentDescription(text);
             if (COL_VALUE.equals(colName))     return resolveValueTooltip(table, text, row, dict);
             return null;
+        }
+
+        /**
+         * Hover text for a Sequence cell: the qualifier the standard pairs with this
+         * letter-path (e.g. {@code "Sequence B1a2A (SETPRTY)"}) plus its dictionary
+         * description when known -- the same combination the SWIFT MT Standards / CSD
+         * specs themselves use to identify a sequence, in business terms rather than
+         * implementation ones.
+         */
+        private String sequenceTooltip(JTable table, int row, String letterPath) {
+            int qualCol = findColumnIndexByName(table, COL_QUALIFIER);
+            Object qualVal = qualCol >= 0 ? table.getValueAt(row, qualCol) : null;
+            String qualifier = qualVal != null ? qualVal.toString().trim() : "";
+            if (qualifier.isEmpty()) return "Sequence " + letterPath;
+            String label = "Sequence " + letterPath + " (" + qualifier + ")";
+            String desc  = dict.qualifierDescription(qualifier);
+            return (desc == null || desc.isBlank()) ? label : label + " – " + desc;
         }
     }
 }

@@ -48,14 +48,12 @@ public final class DataHelper {
                                                    String baseSeq, String entry) {
         TagStacks s = new TagStacks();
         for (Tag t : seq.getTags())
-            collectTag(out, t, baseSeq, entry, s.qual, s.seqLabel, s.occ);
+            collectTag(out, t, baseSeq, entry, s);
     }
 
-    private void collectTag(List<String[]> out, Tag t, String baseSeq, String entry,
-                                    Deque<String> qualStack, Deque<String> seqLabelStack,
-                                    Deque<Map<String, Integer>> occStack) {
-        if (handleBoundaryTag(t, "", qualStack, seqLabelStack, occStack)) return;
-        String seqLabel  = seqLabelStack.isEmpty() ? baseSeq : seqLabelStack.peek();
+    private void collectTag(List<String[]> out, Tag t, String baseSeq, String entry, TagStacks s) {
+        if (handleBoundaryTag(t, "", s)) return;
+        String seqLabel  = s.seqLabel.isEmpty() ? baseSeq : s.seqLabel.peek();
         String qualifier = lookups.extractQualifier(t);
         com.prowidesoftware.swift.model.field.Field field = t.asField();
         if (field != null)
@@ -124,14 +122,13 @@ public final class DataHelper {
                                             String baseSeq, String entry, String mt) {
         TagStacks s = new TagStacks();
         for (Tag t : seq.getTags())
-            collectTagCells(out, t, baseSeq, entry, mt, s.qual, s.seqLabel, s.occ);
+            collectTagCells(out, t, baseSeq, entry, mt, s);
     }
 
     private void collectTagCells(List<CompCell> out, Tag t, String baseSeq, String entry, String mt,
-                                  Deque<String> qualStack, Deque<String> seqLabelStack,
-                                  Deque<Map<String, Integer>> occStack) {
-        if (handleBoundaryTag(t, mt, qualStack, seqLabelStack, occStack)) return;
-        String seqLabel  = seqLabelStack.isEmpty() ? baseSeq : seqLabelStack.peek();
+                                  TagStacks s) {
+        if (handleBoundaryTag(t, mt, s)) return;
+        String seqLabel  = s.seqLabel.isEmpty() ? baseSeq : s.seqLabel.peek();
         String qualifier = lookups.extractQualifier(t);
         com.prowidesoftware.swift.model.field.Field field = t.asField();
         if (field != null)
@@ -160,19 +157,22 @@ public final class DataHelper {
     }
 
     public void refreshDetailTable(DefaultTableModel model,
-                                    List<SwiftTagListBlock> seqs,
-                                    List<Map<String, String>> rowData,
-                                    boolean showComponents, String seqKey, int modelRow,
+                                    RowContext ctx,
+                                    boolean showComponents,
                                     List<String[]> headerEntries, String mt) {
         model.setRowCount(0);
         for (String[] entry : headerEntries)
             addInfoRow(model, entry[0], entry[1], showComponents, entry.length > 2 && "1".equals(entry[2]));
-        SwiftTagListBlock seq = validateAndGetSequence(seqs, modelRow);
+        SwiftTagListBlock seq = validateAndGetSequence(ctx.seqs(), ctx.modelRow());
         if (seq == null) return;
 
-        String baseSeq = extractBaseSequence(rowData, seqKey, modelRow);
+        String baseSeq = extractBaseSequence(ctx.rowData(), ctx.seqKey(), ctx.modelRow());
         processDetailTags(model, seq, baseSeq, showComponents, mt);
     }
+
+    /** The row-table slice {@link #refreshDetailTable} needs to resolve which sequence to detail. */
+    public record RowContext(List<SwiftTagListBlock> seqs, List<Map<String, String>> rowData,
+                              String seqKey, int modelRow) {}
 
     private static void addInfoRow(DefaultTableModel model, String label, String value,
                                     boolean showComponents, boolean alwaysAdd) {
@@ -215,14 +215,13 @@ public final class DataHelper {
                                           String baseSeq, boolean showComponents, String mt) {
         TagStacks s = new TagStacks();
         for (Tag t : seq.getTags())
-            processDetailTag(model, t, baseSeq, showComponents, mt, s.qual, s.seqLabel, s.occ);
+            processDetailTag(model, t, baseSeq, showComponents, mt, s);
     }
 
     private void processDetailTag(DefaultTableModel model, Tag t, String baseSeq,
-                                         boolean showComponents, String mt, Deque<String> qualStack,
-                                         Deque<String> seqLabelStack, Deque<Map<String, Integer>> occStack) {
-        if (handleBoundaryTag(t, mt, qualStack, seqLabelStack, occStack)) return;
-        String seqLabel = seqLabelStack.isEmpty() ? prowideOrFallback(mt, baseSeq) : seqLabelStack.peek();
+                                         boolean showComponents, String mt, TagStacks s) {
+        if (handleBoundaryTag(t, mt, s)) return;
+        String seqLabel = s.seqLabel.isEmpty() ? prowideOrFallback(mt, baseSeq) : s.seqLabel.peek();
         addDetailRows(model, t, seqLabel, showComponents);
     }
 
@@ -238,25 +237,23 @@ public final class DataHelper {
         return label.isEmpty() ? qualifier : label;
     }
 
-    private void handle16RDetailTag(Tag t, String mt, Deque<String> qualStack, Deque<String> seqLabelStack,
-                                          Deque<Map<String, Integer>> occStack) {
+    private void handle16RDetailTag(Tag t, String mt, TagStacks s) {
         String seg    = nvl(t.getValue());
 
         String child  = lookups.seqLabel(seg);
-        Map<String, Integer> occ = occStack.peek();
+        Map<String, Integer> occ = s.occ.peek();
         if (occ == null) return;
         int n = occ.merge(child, 1, Integer::sum);
-        qualStack.push(seg);
+        s.qual.push(seg);
         String label = prowideOrFallback(mt, child);
-        seqLabelStack.push(n > 1 ? label + "." + n : label);
-        occStack.push(new LinkedHashMap<>());
+        s.seqLabel.push(n > 1 ? label + "." + n : label);
+        s.occ.push(new LinkedHashMap<>());
     }
 
-    private static void handle16SDetailTag(Deque<String> qualStack, Deque<String> seqLabelStack,
-                                          Deque<Map<String, Integer>> occStack) {
-        if (!qualStack.isEmpty())     qualStack.pop();
-        if (!seqLabelStack.isEmpty()) seqLabelStack.pop();
-        if (occStack.size() > 1)      occStack.pop();
+    private static void handle16SDetailTag(TagStacks s) {
+        if (!s.qual.isEmpty())     s.qual.pop();
+        if (!s.seqLabel.isEmpty()) s.seqLabel.pop();
+        if (s.occ.size() > 1)      s.occ.pop();
     }
 
     private void addDetailRows(DefaultTableModel model, Tag t, String seqLabel, boolean showComponents) {
@@ -301,11 +298,9 @@ public final class DataHelper {
 
     private static String nvl(String s) { return s != null ? s.trim() : ""; }
 
-    private boolean handleBoundaryTag(Tag t, String mt, Deque<String> qualStack,
-                                             Deque<String> seqLabelStack,
-                                             Deque<Map<String, Integer>> occStack) {
-        if ("16R".equals(t.getName())) { handle16RDetailTag(t, mt, qualStack, seqLabelStack, occStack); return true; }
-        if ("16S".equals(t.getName())) { handle16SDetailTag(qualStack, seqLabelStack, occStack); return true; }
+    private boolean handleBoundaryTag(Tag t, String mt, TagStacks s) {
+        if ("16R".equals(t.getName())) { handle16RDetailTag(t, mt, s); return true; }
+        if ("16S".equals(t.getName())) { handle16SDetailTag(s); return true; }
         return false;
     }
 
