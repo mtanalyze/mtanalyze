@@ -15,9 +15,9 @@
  */
 package com.mtanalyze.elastic;
 
+import com.mtanalyze.parser.SwiftMessageParser;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
-import co.elastic.clients.elasticsearch.core.CountResponse;
 import co.elastic.clients.elasticsearch.core.DeleteByQueryResponse;
 import co.elastic.clients.elasticsearch.core.IndexResponse;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
@@ -143,10 +143,10 @@ public class MtElastic implements AutoCloseable {
      * replaces its document instead of adding a copy.
      */
     public String uploadRaw(String fileName, String rawMessage) throws IOException {
-        Map<String, List<String>> tags = MessageParser.extractTags(rawMessage);
-        String messageType = MessageParser.extractMessageType(rawMessage);
-        String senderLt = MessageParser.extractSender(rawMessage);
-        String receiverLt = MessageParser.extractReceiver(rawMessage);
+        Map<String, List<String>> tags = SwiftMessageParser.extractTags(rawMessage);
+        String messageType = SwiftMessageParser.extractMessageType(rawMessage);
+        String senderLt = SwiftMessageParser.extractSender(rawMessage);
+        String receiverLt = SwiftMessageParser.extractReceiver(rawMessage);
         String docId = contentId(rawMessage);
 
         Map<String, Object> doc = new HashMap<>();
@@ -256,11 +256,11 @@ public class MtElastic implements AutoCloseable {
     /**
      * Combined search: Logical Terminal AND (optionally) a list of message types
      * AND any number of tag conditions -- everything ANDed together.
-     *
+     * <p>
      *  - lt           : LT address (sender OR receiver, prefix, case-insensitive); null/blank = ignored
      *  - messageTypes : list of allowed message types (ORed among themselves); null/empty = ignored
      *  - tagValues    : map of tag -> value, every condition must match (AND); empty = ignored
-     *
+     * <p>
      * If all three are empty the query matches nothing (empty hit list).
      */
     public List<SwiftHit> search(String lt, List<String> messageTypes,
@@ -353,15 +353,15 @@ public class MtElastic implements AutoCloseable {
 
     @SuppressWarnings("unchecked")
     private List<SwiftHit> runSearch(Query query) throws IOException {
-        SearchResponse<Map> response = client.search(s -> s
+        SearchResponse<Map<String, Object>> response = client.search(s -> s
                         .index(index)
                         .query(query)
                         .size(maxHits),
-                Map.class
+                (Class<Map<String, Object>>) (Class<?>) Map.class
         );
 
         List<SwiftHit> results = new ArrayList<>();
-        for (Hit<Map> hit : response.hits().hits()) {
+        for (Hit<Map<String, Object>> hit : response.hits().hits()) {
             Map<String, Object> source = hit.source();
             if (source == null) {
                 continue;

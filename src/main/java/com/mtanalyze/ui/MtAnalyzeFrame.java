@@ -49,7 +49,11 @@ import java.io.InputStream;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.IntConsumer;
+import java.util.function.IntSupplier;
 import java.util.prefs.Preferences;
 
 /**
@@ -252,8 +256,27 @@ public class MtAnalyzeFrame extends JFrame {
     // Lucene: Index Messages / Search Messages
     // -----------------------------------------------------------------------
 
+    @FunctionalInterface
+    private interface Indexer {
+        int indexMessages(List<SwiftMessage> messages, String sourceLabel,
+                IntConsumer onProgress, BooleanSupplier cancelled) throws IOException;
+    }
+
     /** Indexes every message of the active tab's MT Entries view into the shared Lucene index. */
     private void onIndexMessages() {
+        runIndexing(messageIndex::indexMessages, messageIndex::documentCount, "into the Lucene index…",
+            "the Lucene index", "the Lucene index at " + messageIndex.indexDir());
+    }
+
+    /** Indexes every message of the active tab's MT Entries view into the configured Elasticsearch index. */
+    private void onIndexMessagesElastic() {
+        runIndexing(elasticIndex::indexMessages, elasticIndex::documentCount, "into Elasticsearch…",
+            "the Elasticsearch index", elasticIndex.connectionLabel());
+    }
+
+    /** Shared background-indexing flow for the Lucene / Elasticsearch "Index Messages" items. */
+    private void runIndexing(Indexer indexer, CountSupplier documentCount, String progressVerb,
+            String indexDescription, String indexedIntoDescription) {
         EntryTab t = activeTab();
         if (t == null) return;
         List<SwiftMessage> messages = t.entryPanel.getLoadedMessages();
@@ -267,11 +290,11 @@ public class MtAnalyzeFrame extends JFrame {
         bar.setStringPainted(true);
         bar.setString("0 / " + count);
         FrameLayout.ProgressDialog pd = FrameLayout.buildProgressDialog(this, "Index Messages",
-            "Indexing " + count + (count == 1 ? MSG_SINGULAR : MSG_PLURAL) + " into the Lucene index…", bar);
+            "Indexing " + count + (count == 1 ? MSG_SINGULAR : MSG_PLURAL) + " " + progressVerb, bar);
 
         SwingWorker<Integer, Integer> worker = new SwingWorker<>() {
             @Override protected Integer doInBackground() throws IOException {
-                return messageIndex.indexMessages(messages, t.title, n -> publish(n), this::isCancelled);
+                return indexer.indexMessages(messages, t.title, n -> publish(n), this::isCancelled);
             }
             @Override protected void process(List<Integer> progress) {
                 int n = progress.get(progress.size() - 1);
@@ -279,8 +302,7 @@ public class MtAnalyzeFrame extends JFrame {
                 bar.setString(n + " / " + count);
             }
             @Override protected void done() {
-                finishIndexing(this, pd, t, messageIndex::documentCount, "the Lucene index",
-                    "the Lucene index at " + messageIndex.indexDir());
+                finishIndexing(this, pd, t, documentCount, indexDescription, indexedIntoDescription);
             }
         };
         pd.runWorker(worker);
@@ -314,17 +336,35 @@ public class MtAnalyzeFrame extends JFrame {
         }
     }
 
+    @FunctionalInterface
+    private interface QueryRunner<H> {
+        List<H> search(String query) throws IOException;
+    }
+
     /** Prompts for a Lucene query string and shows the matching messages in a new tab. */
     private void onSearchMessages() {
-        String query = promptQuery(SEARCH_MESSAGES, lastLuceneQuery);
+        runSearch("Lucene", lastLuceneQuery, q -> lastLuceneQuery = q,
+            messageIndex::search, messageIndex::maxHits, MtLucene.SwiftHit::rawMessage);
+    }
+
+    /** Prompts for a query_string search and shows the matching messages in a new tab. */
+    private void onSearchMessagesElastic() {
+        runSearch("Elasticsearch", lastElasticQuery, q -> lastElasticQuery = q,
+            elasticIndex::search, elasticIndex::maxHits, MtElastic.SwiftHit::rawMessage);
+    }
+
+    /** Shared query-and-load flow for the Lucene / Elasticsearch "Search Messages" items. */
+    private <H> void runSearch(String indexLabel, String lastQuery, Consumer<String> saveQuery,
+            QueryRunner<H> runner, IntSupplier maxHits, Function<H, String> rawMessage) {
+        String query = promptQuery(SEARCH_MESSAGES, lastQuery);
         if (query == null || query.isBlank()) return;
-        lastLuceneQuery = query;
+        saveQuery.accept(query);
         String trimmed = query.trim();
 
-        List<MtLucene.SwiftHit> hits;
+        List<H> hits;
         setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
         try {
-            hits = messageIndex.search(trimmed);
+            hits = runner.search(trimmed);
         } catch (IllegalArgumentException ex) {
             JOptionPane.showMessageDialog(this, ex.getMessage(),
                 "Invalid Query", JOptionPane.WARNING_MESSAGE);
@@ -340,16 +380,16 @@ public class MtAnalyzeFrame extends JFrame {
         if (hits.isEmpty()) {
             JOptionPane.showMessageDialog(this,
                 "No indexed messages match:\n" + trimmed
-                    + "\n\n(Use Lucene ▸ Index Messages first if the index is empty.)",
+                    + "\n\n(Use " + indexLabel + " ▸ Index Messages first if the index is empty.)",
                 SEARCH_MESSAGES, JOptionPane.INFORMATION_MESSAGE);
             return;
         }
 
-        List<String> chunks = hits.stream().map(MtLucene.SwiftHit::rawMessage).toList();
+        List<String> chunks = hits.stream().map(rawMessage).toList();
         EntryTab tab = openNewTab();
         int parsed = tab.importer.appendFromContent(chunks, null, null, MessageOrigin.CLIPBOARD);
         tab.updateTitle("Search: " + trimmed);
-        boolean capped = hits.size() >= messageIndex.maxHits();
+        boolean capped = hits.size() >= maxHits.getAsInt();
         tab.setStatus(parsed + " of " + hits.size() + " search hit"
             + (hits.size() == 1 ? "" : "s") + (capped ? " (hit limit reached)" : "")
             + " loaded for query: " + trimmed);
@@ -396,122 +436,36 @@ public class MtAnalyzeFrame extends JFrame {
     }
 
     private void onClearLuceneIndex() {
-        long total;
-        try {
-            total = messageIndex.documentCount();
-        } catch (IOException ex) {
-            total = -1;
-        }
-        int choice = JOptionPane.showConfirmDialog(this,
-            "Delete all " + (total >= 0 ? total + " " : "") + "documents from the Lucene index?\n"
-                + messageIndex.indexDir(),
-            "Clear Index", JOptionPane.OK_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE);
-        if (choice != JOptionPane.OK_OPTION) return;
-        try {
-            long removed = messageIndex.clearIndex();
-            statusLabel.setText(removed + " document" + (removed == 1 ? "" : "s")
-                + " removed from the Lucene index.");
-        } catch (IOException ex) {
-            JOptionPane.showMessageDialog(this, "Could not clear the index:\n" + ex.getMessage(),
-                ERROR_TITLE, JOptionPane.ERROR_MESSAGE);
-        }
+        onClearIndex(messageIndex::documentCount, messageIndex::clearIndex,
+            "Lucene", "the Lucene index?\n" + messageIndex.indexDir());
     }
 
     // -----------------------------------------------------------------------
     // Elasticsearch: Index Messages / Search Messages
     // -----------------------------------------------------------------------
 
-    /** Indexes every message of the active tab's MT Entries view into the configured Elasticsearch index. */
-    private void onIndexMessagesElastic() {
-        EntryTab t = activeTab();
-        if (t == null) return;
-        List<SwiftMessage> messages = t.entryPanel.getLoadedMessages();
-        if (messages.isEmpty()) {
-            statusLabel.setText("Nothing to index – this tab has no MT entries.");
-            return;
-        }
-        final int count = messages.size();
-
-        JProgressBar bar = new JProgressBar(0, count);
-        bar.setStringPainted(true);
-        bar.setString("0 / " + count);
-        FrameLayout.ProgressDialog pd = FrameLayout.buildProgressDialog(this, "Index Messages",
-            "Indexing " + count + (count == 1 ? MSG_SINGULAR : MSG_PLURAL) + " into Elasticsearch…", bar);
-
-        SwingWorker<Integer, Integer> worker = new SwingWorker<>() {
-            @Override protected Integer doInBackground() throws IOException {
-                return elasticIndex.indexMessages(messages, t.title, n -> publish(n), this::isCancelled);
-            }
-            @Override protected void process(List<Integer> progress) {
-                int n = progress.get(progress.size() - 1);
-                bar.setValue(n);
-                bar.setString(n + " / " + count);
-            }
-            @Override protected void done() {
-                finishIndexing(this, pd, t, elasticIndex::documentCount, "the Elasticsearch index",
-                    elasticIndex.connectionLabel());
-            }
-        };
-        pd.runWorker(worker);
-    }
-
-    /** Prompts for a query_string search and shows the matching messages in a new tab. */
-    private void onSearchMessagesElastic() {
-        String query = promptQuery(SEARCH_MESSAGES, lastElasticQuery);
-        if (query == null || query.isBlank()) return;
-        lastElasticQuery = query;
-        String trimmed = query.trim();
-
-        List<MtElastic.SwiftHit> hits;
-        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-        try {
-            hits = elasticIndex.search(trimmed);
-        } catch (IllegalArgumentException ex) {
-            JOptionPane.showMessageDialog(this, ex.getMessage(),
-                "Invalid Query", JOptionPane.WARNING_MESSAGE);
-            return;
-        } catch (IOException ex) {
-            JOptionPane.showMessageDialog(this, "Search failed:\n" + ex.getMessage(),
-                ERROR_TITLE, JOptionPane.ERROR_MESSAGE);
-            return;
-        } finally {
-            setCursor(Cursor.getDefaultCursor());
-        }
-
-        if (hits.isEmpty()) {
-            JOptionPane.showMessageDialog(this,
-                "No indexed messages match:\n" + trimmed
-                    + "\n\n(Use Elasticsearch ▸ Index Messages first if the index is empty.)",
-                SEARCH_MESSAGES, JOptionPane.INFORMATION_MESSAGE);
-            return;
-        }
-
-        List<String> chunks = hits.stream().map(MtElastic.SwiftHit::rawMessage).toList();
-        EntryTab tab = openNewTab();
-        int parsed = tab.importer.appendFromContent(chunks, null, null, MessageOrigin.CLIPBOARD);
-        tab.updateTitle("Search: " + trimmed);
-        boolean capped = hits.size() >= elasticIndex.maxHits();
-        tab.setStatus(parsed + " of " + hits.size() + " search hit"
-            + (hits.size() == 1 ? "" : "s") + (capped ? " (hit limit reached)" : "")
-            + " loaded for query: " + trimmed);
-    }
-
     private void onClearElasticIndex() {
+        onClearIndex(elasticIndex::documentCount, elasticIndex::clearIndex,
+            "Elasticsearch", "the Elasticsearch index?\n" + elasticIndex.connectionLabel());
+    }
+
+    /** Shared confirm-and-delete flow for the Lucene / Elasticsearch "Clear Index" items. */
+    private void onClearIndex(CountSupplier documentCount, CountSupplier clearIndex,
+            String indexLabel, String targetDescription) {
         long total;
         try {
-            total = elasticIndex.documentCount();
+            total = documentCount.count();
         } catch (IOException ex) {
             total = -1;
         }
         int choice = JOptionPane.showConfirmDialog(this,
-            "Delete all " + (total >= 0 ? total + " " : "") + "documents from the Elasticsearch index?\n"
-                + elasticIndex.connectionLabel(),
+            "Delete all " + (total >= 0 ? total + " " : "") + "documents from " + targetDescription,
             "Clear Index", JOptionPane.OK_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE);
         if (choice != JOptionPane.OK_OPTION) return;
         try {
-            long removed = elasticIndex.clearIndex();
+            long removed = clearIndex.count();
             statusLabel.setText(removed + " document" + (removed == 1 ? "" : "s")
-                + " removed from the Elasticsearch index.");
+                + " removed from the " + indexLabel + " index.");
         } catch (IOException ex) {
             JOptionPane.showMessageDialog(this, "Could not clear the index:\n" + ex.getMessage(),
                 ERROR_TITLE, JOptionPane.ERROR_MESSAGE);

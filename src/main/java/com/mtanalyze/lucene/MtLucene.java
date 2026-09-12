@@ -15,6 +15,7 @@
  */
 package com.mtanalyze.lucene;
 
+import com.mtanalyze.parser.SwiftMessageParser;
 import com.prowidesoftware.swift.io.RJEReader;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -212,10 +213,10 @@ public class MtLucene implements AutoCloseable {
     }
 
     private String addMessage(String fileName, int msgIndex, String rawMessage) throws IOException {
-        Map<String, List<String>> tags = MessageParser.extractTags(rawMessage);
-        String messageType = MessageParser.extractMessageType(rawMessage);
-        String senderLt = MessageParser.extractSender(rawMessage);
-        String receiverLt = MessageParser.extractReceiver(rawMessage);
+        Map<String, List<String>> tags = SwiftMessageParser.extractTags(rawMessage);
+        String messageType = SwiftMessageParser.extractMessageType(rawMessage);
+        String senderLt = SwiftMessageParser.extractSender(rawMessage);
+        String receiverLt = SwiftMessageParser.extractReceiver(rawMessage);
         String docId = UUID.randomUUID().toString();
         String contentId = contentId(rawMessage);
 
@@ -340,11 +341,11 @@ public class MtLucene implements AutoCloseable {
     /**
      * Combined search: Logical Terminal AND (optionally) a list of message types
      * AND any number of tag conditions -- everything ANDed together.
-     *
+     * <p>
      *  - lt           : LT address (sender OR receiver, prefix, case-insensitive); null/blank = ignored
      *  - messageTypes : list of allowed message types (ORed among themselves); null/empty = ignored
      *  - tagValues    : map of tag -> value, every condition must match (AND); empty = ignored
-     *
+     * <p>
      * If all three are empty the result is an empty hit list.
      */
     public List<SwiftHit> search(String lt, List<String> messageTypes,

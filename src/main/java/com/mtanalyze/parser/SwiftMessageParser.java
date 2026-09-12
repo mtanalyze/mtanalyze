@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.mtanalyze.lucene;
+package com.mtanalyze.parser;
 
 import com.prowidesoftware.swift.io.parser.SwiftParser;
 import com.prowidesoftware.swift.model.SwiftBlock4;
@@ -37,11 +37,11 @@ import java.util.Map;
  * because we only want to search and return the complete original document --
  * not validate it semantically.
  * <p>
- * Ported from the standalone {@code mtlucene} command-line tool.
+ * Shared by the Lucene and Elasticsearch indexing backends.
  */
-public final class MessageParser {
+public final class SwiftMessageParser {
 
-    private MessageParser() {
+    private SwiftMessageParser() {
     }
 
     /** Parses the raw text into a {@link SwiftMessage}; null on empty/invalid input. */
@@ -63,7 +63,7 @@ public final class MessageParser {
      * preserved, both for tags and for the values within a tag).
      * Repeated tags (common in category 5: {@code :16R:} / {@code :16S:},
      * {@code :20C:}, {@code :98A:} ...) keep every occurrence, so each value
-     * stays individually searchable in the Lucene index.
+     * stays individually searchable in the index.
      */
     public static Map<String, List<String>> extractTags(String rawMessage) {
         Map<String, List<String>> tags = new LinkedHashMap<>();
