@@ -52,31 +52,39 @@ public final class ColumnChooser {
             return;
         }
 
-        final Map<ColumnDef, Integer> originalIndex = new IdentityHashMap<>();
-        for (int i = 0; i < cols.size(); i++) originalIndex.put(cols.get(i), i);
+        ChooserState st = buildState(cols);
+        JPanel dlgContent = buildDialogContent(st, dict);
+        JOptionPane pane = showDialog(owner, dlgContent);
+        applyResult(pane, cols, st, savePrefs, rebuildTable);
+    }
 
+    /** Working lists/models shared by the dialog's widgets and the OK-result handling. */
+    private static final class ChooserState {
+        final Map<ColumnDef, Integer> originalIndex = new IdentityHashMap<>();
         final List<ColumnDef> allAvailable = new ArrayList<>();
         final DefaultListModel<ColumnDef> availableModel = new DefaultListModel<>();
         final DefaultListModel<ColumnDef> visibleModel   = new DefaultListModel<>();
-        for (ColumnDef cd : cols) {
-            if (cd.isVisible()) visibleModel.addElement(cd);
-            else                allAvailable.add(cd);
-        }
+    }
 
+    private static ChooserState buildState(List<ColumnDef> cols) {
+        ChooserState st = new ChooserState();
+        for (int i = 0; i < cols.size(); i++) st.originalIndex.put(cols.get(i), i);
+        for (ColumnDef cd : cols) {
+            if (cd.isVisible()) st.visibleModel.addElement(cd);
+            else                st.allAvailable.add(cd);
+        }
+        return st;
+    }
+
+    private static JPanel buildDialogContent(ChooserState st, HintDictionary dict) {
         JTextField filterField = new JTextField();
         filterField.setToolTipText("Tag, qualifier or segment — filters the Available list instantly");
 
-        JList<ColumnDef> availableList = createColumnList(availableModel, dict);
-        JList<ColumnDef> visibleList   = createColumnList(visibleModel, dict);
-        enableDragReorder(visibleList, visibleModel);
+        JList<ColumnDef> availableList = createColumnList(st.availableModel, dict);
+        JList<ColumnDef> visibleList   = createColumnList(st.visibleModel, dict);
+        enableDragReorder(visibleList, st.visibleModel);
 
-        Runnable refreshAvailable = () -> {
-            String filter = filterField.getText().trim().toLowerCase(Locale.ROOT);
-            availableModel.clear();
-            for (ColumnDef cd : allAvailable) {
-                if (filter.isEmpty() || matchesFilter(cd, filter)) availableModel.addElement(cd);
-            }
-        };
+        Runnable refreshAvailable = () -> refreshAvailable(st, filterField);
         filterField.getDocument().addDocumentListener(new DocumentListener() {
             @Override public void insertUpdate(DocumentEvent e)  { refreshAvailable.run(); }
             @Override public void removeUpdate(DocumentEvent e)  { refreshAvailable.run(); }
@@ -84,20 +92,8 @@ public final class ColumnChooser {
         });
         refreshAvailable.run();
 
-        Runnable toVisible = () -> {
-            for (ColumnDef cd : availableList.getSelectedValuesList()) {
-                allAvailable.remove(cd);
-                visibleModel.addElement(cd);
-            }
-            refreshAvailable.run();
-        };
-        Runnable toAvailable = () -> {
-            for (ColumnDef cd : visibleList.getSelectedValuesList()) {
-                visibleModel.removeElement(cd);
-                insertSorted(allAvailable, cd, originalIndex);
-            }
-            refreshAvailable.run();
-        };
+        Runnable toVisible   = () -> moveToVisible(availableList, st, refreshAvailable);
+        Runnable toAvailable = () -> moveToAvailable(visibleList, st, refreshAvailable);
 
         JButton toVisibleBtn   = iconButton(ToolbarIcons.arrowRight(), "Show selected column(s)");
         JButton toAvailableBtn = iconButton(ToolbarIcons.arrowLeft(),  "Hide selected column(s)");
@@ -108,41 +104,85 @@ public final class ColumnChooser {
 
         JButton moveUpBtn   = iconButton(ToolbarIcons.arrowUp(),   "Move up");
         JButton moveDownBtn = iconButton(ToolbarIcons.arrowDown(), "Move down");
-        moveUpBtn  .addActionListener(e -> moveSelectionBy(visibleList, visibleModel, -1));
-        moveDownBtn.addActionListener(e -> moveSelectionBy(visibleList, visibleModel,  1));
+        moveUpBtn  .addActionListener(e -> moveSelectionBy(visibleList, st.visibleModel, -1));
+        moveDownBtn.addActionListener(e -> moveSelectionBy(visibleList, st.visibleModel,  1));
 
         JButton allOn  = new JButton("Show all »");
         JButton allOff = new JButton("« Hide all");
-        allOn.addActionListener(e -> {
-            for (ColumnDef cd : new ArrayList<>(allAvailable)) visibleModel.addElement(cd);
-            allAvailable.clear();
-            refreshAvailable.run();
-        });
-        allOff.addActionListener(e -> {
-            for (int i = 0; i < visibleModel.size(); i++) insertSorted(allAvailable, visibleModel.get(i), originalIndex);
-            visibleModel.clear();
-            refreshAvailable.run();
-        });
+        allOn.addActionListener(e -> showAll(st, refreshAvailable));
+        allOff.addActionListener(e -> hideAll(st, refreshAvailable));
 
-        JPanel transferPanel = new JPanel();
-        transferPanel.setLayout(new BoxLayout(transferPanel, BoxLayout.Y_AXIS));
-        transferPanel.add(Box.createVerticalGlue());
-        transferPanel.add(toVisibleBtn);
-        transferPanel.add(Box.createVerticalStrut(6));
-        transferPanel.add(toAvailableBtn);
-        transferPanel.add(Box.createVerticalGlue());
-
-        JPanel orderPanel = new JPanel();
-        orderPanel.setLayout(new BoxLayout(orderPanel, BoxLayout.Y_AXIS));
-        orderPanel.add(Box.createVerticalGlue());
-        orderPanel.add(moveUpBtn);
-        orderPanel.add(Box.createVerticalStrut(6));
-        orderPanel.add(moveDownBtn);
-        orderPanel.add(Box.createVerticalGlue());
+        JPanel transferPanel = buildVerticalButtonPanel(toVisibleBtn, toAvailableBtn);
+        JPanel orderPanel    = buildVerticalButtonPanel(moveUpBtn, moveDownBtn);
 
         JPanel availablePanel = titledListPanel("Available", availableList, allOn);
         JPanel visiblePanel   = titledListPanel("Visible",   visibleList,   allOff);
 
+        JPanel listsRow = buildListsRow(availablePanel, transferPanel, visiblePanel, orderPanel);
+
+        JPanel filterRow = new JPanel(new BorderLayout(6, 0));
+        filterRow.setBorder(new EmptyBorder(0, 0, 6, 0));
+        filterRow.add(new JLabel("Filter: "), BorderLayout.WEST);
+        filterRow.add(filterField,             BorderLayout.CENTER);
+
+        JPanel dlgContent = new JPanel(new BorderLayout(4, 4));
+        dlgContent.setBorder(new EmptyBorder(8, 8, 4, 8));
+        dlgContent.add(filterRow, BorderLayout.NORTH);
+        dlgContent.add(listsRow,  BorderLayout.CENTER);
+        return dlgContent;
+    }
+
+    private static void refreshAvailable(ChooserState st, JTextField filterField) {
+        String filter = filterField.getText().trim().toLowerCase(Locale.ROOT);
+        st.availableModel.clear();
+        for (ColumnDef cd : st.allAvailable) {
+            if (filter.isEmpty() || matchesFilter(cd, filter)) st.availableModel.addElement(cd);
+        }
+    }
+
+    private static void moveToVisible(JList<ColumnDef> availableList, ChooserState st, Runnable refreshAvailable) {
+        for (ColumnDef cd : availableList.getSelectedValuesList()) {
+            st.allAvailable.remove(cd);
+            st.visibleModel.addElement(cd);
+        }
+        refreshAvailable.run();
+    }
+
+    private static void moveToAvailable(JList<ColumnDef> visibleList, ChooserState st, Runnable refreshAvailable) {
+        for (ColumnDef cd : visibleList.getSelectedValuesList()) {
+            st.visibleModel.removeElement(cd);
+            insertSorted(st.allAvailable, cd, st.originalIndex);
+        }
+        refreshAvailable.run();
+    }
+
+    private static void showAll(ChooserState st, Runnable refreshAvailable) {
+        for (ColumnDef cd : new ArrayList<>(st.allAvailable)) st.visibleModel.addElement(cd);
+        st.allAvailable.clear();
+        refreshAvailable.run();
+    }
+
+    private static void hideAll(ChooserState st, Runnable refreshAvailable) {
+        for (int i = 0; i < st.visibleModel.size(); i++) {
+            insertSorted(st.allAvailable, st.visibleModel.get(i), st.originalIndex);
+        }
+        st.visibleModel.clear();
+        refreshAvailable.run();
+    }
+
+    private static JPanel buildVerticalButtonPanel(JButton first, JButton second) {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.add(Box.createVerticalGlue());
+        panel.add(first);
+        panel.add(Box.createVerticalStrut(6));
+        panel.add(second);
+        panel.add(Box.createVerticalGlue());
+        return panel;
+    }
+
+    private static JPanel buildListsRow(JPanel availablePanel, JPanel transferPanel,
+            JPanel visiblePanel, JPanel orderPanel) {
         JPanel listsRow = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridy = 0; gbc.fill = GridBagConstraints.BOTH;
@@ -163,42 +203,38 @@ public final class ColumnChooser {
         listsRow.add(orderPanel, gbc);
 
         listsRow.setPreferredSize(new Dimension(680, 420));
+        return listsRow;
+    }
 
-        JPanel filterRow = new JPanel(new BorderLayout(6, 0));
-        filterRow.setBorder(new EmptyBorder(0, 0, 6, 0));
-        filterRow.add(new JLabel("Filter: "), BorderLayout.WEST);
-        filterRow.add(filterField,             BorderLayout.CENTER);
-
-        JPanel dlgContent = new JPanel(new BorderLayout(4, 4));
-        dlgContent.setBorder(new EmptyBorder(8, 8, 4, 8));
-        dlgContent.add(filterRow, BorderLayout.NORTH);
-        dlgContent.add(listsRow,  BorderLayout.CENTER);
-
+    private static JOptionPane showDialog(Window owner, JPanel dlgContent) {
         JOptionPane pane = new JOptionPane(dlgContent, JOptionPane.PLAIN_MESSAGE, JOptionPane.OK_CANCEL_OPTION);
         JDialog dialog = pane.createDialog(owner, "Select FIN Table Columns");
         centerOnOwnerScreen(dialog, owner);
         dialog.setVisible(true);
         dialog.dispose();
+        return pane;
+    }
 
+    private static void applyResult(JOptionPane pane, List<ColumnDef> cols, ChooserState st,
+            Runnable savePrefs, Runnable rebuildTable) {
         Object selectedValue = pane.getValue();
         int result = (selectedValue instanceof Integer) ? (Integer) selectedValue : JOptionPane.CLOSED_OPTION;
+        if (result != JOptionPane.OK_OPTION) return;
 
-        if (result == JOptionPane.OK_OPTION) {
-            List<ColumnDef> ordered = new ArrayList<>(cols.size());
-            for (int i = 0; i < visibleModel.size(); i++) {
-                ColumnDef cd = visibleModel.get(i);
-                cd.setVisible(true);
-                ordered.add(cd);
-            }
-            for (ColumnDef cd : allAvailable) {
-                cd.setVisible(false);
-                ordered.add(cd);
-            }
-            cols.clear();
-            cols.addAll(ordered);
-            savePrefs.run();
-            rebuildTable.run();
+        List<ColumnDef> ordered = new ArrayList<>(cols.size());
+        for (int i = 0; i < st.visibleModel.size(); i++) {
+            ColumnDef cd = st.visibleModel.get(i);
+            cd.setVisible(true);
+            ordered.add(cd);
         }
+        for (ColumnDef cd : st.allAvailable) {
+            cd.setVisible(false);
+            ordered.add(cd);
+        }
+        cols.clear();
+        cols.addAll(ordered);
+        savePrefs.run();
+        rebuildTable.run();
     }
 
     /**
@@ -302,18 +338,27 @@ public final class ColumnChooser {
         int[] sel = list.getSelectedIndices();
         if (sel.length == 0) return;
         int n = model.size();
-        if (delta < 0) {
-            for (int i : sel) {
-                if (i == 0) continue;
-                swap(model, i, i - 1);
-            }
-        } else {
-            for (int i = sel.length - 1; i >= 0; i--) {
-                int idx = sel[i];
-                if (idx >= n - 1) continue;
-                swap(model, idx, idx + 1);
-            }
+        if (delta < 0) swapUp(model, sel);
+        else           swapDown(model, sel, n);
+        list.setSelectedIndices(shiftedSelection(sel, delta, n));
+    }
+
+    private static void swapUp(DefaultListModel<ColumnDef> model, int[] sel) {
+        for (int i : sel) {
+            if (i == 0) continue;
+            swap(model, i, i - 1);
         }
+    }
+
+    private static void swapDown(DefaultListModel<ColumnDef> model, int[] sel, int n) {
+        for (int i = sel.length - 1; i >= 0; i--) {
+            int idx = sel[i];
+            if (idx >= n - 1) continue;
+            swap(model, idx, idx + 1);
+        }
+    }
+
+    private static int[] shiftedSelection(int[] sel, int delta, int n) {
         int[] newSel = new int[sel.length];
         for (int i = 0; i < sel.length; i++) {
             int idx = sel[i];
@@ -321,7 +366,7 @@ public final class ColumnChooser {
             else if (delta > 0 && idx < n - 1) newSel[i] = idx + 1;
             else                                newSel[i] = idx;
         }
-        list.setSelectedIndices(newSel);
+        return newSel;
     }
 
     private static void swap(DefaultListModel<ColumnDef> model, int i, int j) {

@@ -114,127 +114,150 @@ public final class NameValueConverter {
         return block;
     }
 
-    /** Converts one Name-Value line into the corresponding SWIFT MT message. */
-    public AbstractMT convert(String line) {
+    /** Mutable working state threaded through {@link #convert} as it walks the Name-Value fields. */
+    private static final class ConvertState {
         AbstractMT swiftMessage = AbstractMT.create(599);
-
         String lastSequence = "";
         int setPrtyTagIndex = -1;
+        int mt;
+    }
 
-        int mt = 0;
-        line = line.replace("&#x0d;", "\n");
-        line = MIDNIGHT_SUFFIX.matcher(line).replaceAll("");
+    /** Converts one Name-Value line into the corresponding SWIFT MT message. */
+    public AbstractMT convert(String line) {
+        String normalized = normalizeLine(line);
+        ConvertState st = new ConvertState();
+        for (String field : normalized.split(";")) {
+            processField(field, normalized, st);
+        }
+        closeAllSequences(st);
+        return st.swiftMessage;
+    }
+
+    private static String normalizeLine(String line) {
+        String normalized = line.replace("&#x0d;", "\n");
+        normalized = MIDNIGHT_SUFFIX.matcher(normalized).replaceAll("");
         // Known export quirk: MT 558's RELA reference sometimes arrives without its
         // A3 (LINK) sequence prefix.
-        if (line.contains("MT=558")) line = line.replace(";_20C:RELA", ";A3_20C:RELA");
-        String[] fields = line.split(";");
+        if (normalized.contains("MT=558")) normalized = normalized.replace(";_20C:RELA", ";A3_20C:RELA");
+        return normalized;
+    }
 
-        for (String field : fields) {
-            String[] nameValues = field.split("=");
-            if (nameValues.length >= 2) {
-                String name = nameValues[0];
-                String value = nameValues[1].stripLeading();
+    private void processField(String field, String line, ConvertState st) {
+        String[] nameValues = field.split("=");
+        if (nameValues.length < 2) return;
+        String name = nameValues[0];
+        String value = nameValues[1].stripLeading();
 
-                switch (name) {
-                    case "MT" -> {
-                        mt = Integer.parseInt(value);
-
-                        swiftMessage = AbstractMT.create(mt);
-
-                        // A fresh Block2 carries no message type of its own; without it
-                        // getMessageType() returns null downstream, which breaks MT-type-based
-                        // row-sequence detection (e.g. flat vs. sequenced parsing).
-                        if (mt == 527 || (mt >= 540 && mt <= 544)) {
-                            SwiftBlock2Input block2 = new SwiftBlock2Input();
-                            block2.setMessageType(value);
-                            swiftMessage.getSwiftMessage().setBlock2(block2);
-                        } else {
-                            SwiftBlock2Output block2 = new SwiftBlock2Output();
-                            block2.setMessageType(value);
-                            swiftMessage.getSwiftMessage().setBlock2(block2);
-                        }
-                    }
-                    case "SWIFTABS" -> {
-                        if (swiftMessage.getSwiftMessage().getBlock2().isInput()) {
-                            SwiftBlock2Input block2 = (SwiftBlock2Input) swiftMessage.getSwiftMessage().getBlock2();
-                            block2.setReceiver(value);
-                        } else {
-                            SwiftBlock2Output block2 = (SwiftBlock2Output) swiftMessage.getSwiftMessage().getBlock2();
-                            block2.setSender(value);
-                        }
-                    }
-                    case "SWIFTEMP" -> swiftMessage.getSwiftMessage().getBlock1().setSender(value);
-                    default -> {
-                        String[] seqs = nameValues[0].split("_");
-                        if (seqs.length >= 2) {
-                            String seq = seqs[0];
-                            String tag = seqs[1].replace(" ", "");
-                            String[] tagFields = tag.split(":");
-
-                            if (!seq.contains(lastSequence) && !sequenceStack.isEmpty()) {
-                                String last = sequenceStack.get(sequenceStack.size() - 1);
-                                closeSequence("16S", mt, last, swiftMessage);
-                                sequenceStack.remove(sequenceStack.size() - 1);
-                                if (!sequenceStack.isEmpty()) {
-                                    last = sequenceStack.get(sequenceStack.size() - 1);
-                                    if (!seq.contains(last)) {
-                                        closeSequence("16S", mt, last, swiftMessage);
-                                        sequenceStack.remove(sequenceStack.size() - 1);
-                                    }
-                                }
-                            }
-
-                            boolean freshSequence = !lastSequence.equals(seq);
-                            if (freshSequence) {
-                                closeSequence("16R", mt, seq, swiftMessage);
-                                sequenceStack.add(seq);
-                                setPrtyTagIndex = -1;
-                            }
-
-                            // A SETPRTY / CSHPRTY / CONFPRTY subsequence can occur several times in a
-                            // row under the same bare sequence code. Its fields arrive in the fixed
-                            // order 95a, 97a, 98a, 20C, 70a, so a tag that is not after the previous
-                            // one belongs to the next party: close the running party and open a fresh one.
-                            String blockName = translateSequence(mt, seq);
-                            if (SETPRTY.equals(blockName) || CSHPRTY.equals(blockName) || CONFPRTY.equals(blockName)) {
-                                int tagIndex = setPrtyTagOrder(tagFields[0]);
-                                if (tagIndex >= 0) {
-                                    if (!freshSequence && tagIndex <= setPrtyTagIndex) {
-                                        closeSequence("16S", mt, seq, swiftMessage);
-                                        closeSequence("16R", mt, seq, swiftMessage);
-                                    }
-                                    setPrtyTagIndex = tagIndex;
-                                }
-                            }
-
-                            if (tagFields.length >= 2) {
-                                try {
-                                    if (tagFields[0].startsWith("98")) {
-                                        value = value.replace("-", "");
-                                        value = value.replace(" ", "");
-                                        value = value.replace(":", "");
-                                    }
-                                    if (tagFields[0].startsWith("5R")) {
-                                        tagFields[0] = "95R";
-                                    }
-                                    swiftMessage.append(Field.getField(tagFields[0], tagFields[1] + "//" + value));
-                                } catch (Exception ex) {
-                                    logger.warning(line);
-                                    logger.severe(ex.getMessage());
-                                }
-                            }
-                            lastSequence = seq;
-                        }
-                    }
-                }
-            }
+        switch (name) {
+            case "MT" -> handleMtField(value, st);
+            case "SWIFTABS" -> handleSwiftAbsField(value, st);
+            case "SWIFTEMP" -> st.swiftMessage.getSwiftMessage().getBlock1().setSender(value);
+            default -> handleSequencedField(nameValues[0], value, line, st);
         }
-        while (!sequenceStack.isEmpty()) {
-            String last = sequenceStack.get(sequenceStack.size() - 1);
-            closeSequence("16S", mt, last, swiftMessage);
+    }
+
+    private static void handleMtField(String value, ConvertState st) {
+        st.mt = Integer.parseInt(value);
+        st.swiftMessage = AbstractMT.create(st.mt);
+
+        // A fresh Block2 carries no message type of its own; without it
+        // getMessageType() returns null downstream, which breaks MT-type-based
+        // row-sequence detection (e.g. flat vs. sequenced parsing).
+        if (st.mt == 527 || (st.mt >= 540 && st.mt <= 544)) {
+            SwiftBlock2Input block2 = new SwiftBlock2Input();
+            block2.setMessageType(value);
+            st.swiftMessage.getSwiftMessage().setBlock2(block2);
+        } else {
+            SwiftBlock2Output block2 = new SwiftBlock2Output();
+            block2.setMessageType(value);
+            st.swiftMessage.getSwiftMessage().setBlock2(block2);
+        }
+    }
+
+    private static void handleSwiftAbsField(String value, ConvertState st) {
+        if (st.swiftMessage.getSwiftMessage().getBlock2().isInput()) {
+            SwiftBlock2Input block2 = (SwiftBlock2Input) st.swiftMessage.getSwiftMessage().getBlock2();
+            block2.setReceiver(value);
+        } else {
+            SwiftBlock2Output block2 = (SwiftBlock2Output) st.swiftMessage.getSwiftMessage().getBlock2();
+            block2.setSender(value);
+        }
+    }
+
+    private void handleSequencedField(String rawName, String value, String line, ConvertState st) {
+        String[] seqs = rawName.split("_");
+        if (seqs.length < 2) return;
+        String seq = seqs[0];
+        String tag = seqs[1].replace(" ", "");
+        String[] tagFields = tag.split(":");
+
+        closeStaleSequences(seq, st);
+
+        boolean freshSequence = !st.lastSequence.equals(seq);
+        if (freshSequence) {
+            closeSequence("16R", st.mt, seq, st.swiftMessage);
+            sequenceStack.add(seq);
+            st.setPrtyTagIndex = -1;
+        }
+
+        handlePartySequenceBoundary(seq, tagFields, freshSequence, st);
+        appendField(tagFields, value, line, st);
+        st.lastSequence = seq;
+    }
+
+    private void closeStaleSequences(String seq, ConvertState st) {
+        if (seq.contains(st.lastSequence) || sequenceStack.isEmpty()) return;
+        String last = sequenceStack.get(sequenceStack.size() - 1);
+        closeSequence("16S", st.mt, last, st.swiftMessage);
+        sequenceStack.remove(sequenceStack.size() - 1);
+        if (sequenceStack.isEmpty()) return;
+        last = sequenceStack.get(sequenceStack.size() - 1);
+        if (!seq.contains(last)) {
+            closeSequence("16S", st.mt, last, st.swiftMessage);
             sequenceStack.remove(sequenceStack.size() - 1);
         }
-        return swiftMessage;
+    }
+
+    /**
+     * A SETPRTY / CSHPRTY / CONFPRTY subsequence can occur several times in a row under
+     * the same bare sequence code. Its fields arrive in the fixed order 95a, 97a, 98a,
+     * 20C, 70a, so a tag that is not after the previous one belongs to the next party:
+     * close the running party and open a fresh one.
+     */
+    private void handlePartySequenceBoundary(String seq, String[] tagFields, boolean freshSequence, ConvertState st) {
+        String blockName = translateSequence(st.mt, seq);
+        if (!SETPRTY.equals(blockName) && !CSHPRTY.equals(blockName) && !CONFPRTY.equals(blockName)) return;
+        int tagIndex = setPrtyTagOrder(tagFields[0]);
+        if (tagIndex < 0) return;
+        if (!freshSequence && tagIndex <= st.setPrtyTagIndex) {
+            closeSequence("16S", st.mt, seq, st.swiftMessage);
+            closeSequence("16R", st.mt, seq, st.swiftMessage);
+        }
+        st.setPrtyTagIndex = tagIndex;
+    }
+
+    private void appendField(String[] tagFields, String value, String line, ConvertState st) {
+        if (tagFields.length < 2) return;
+        try {
+            if (tagFields[0].startsWith("98")) {
+                value = value.replace("-", "").replace(" ", "").replace(":", "");
+            }
+            if (tagFields[0].startsWith("5R")) {
+                tagFields[0] = "95R";
+            }
+            st.swiftMessage.append(Field.getField(tagFields[0], tagFields[1] + "//" + value));
+        } catch (Exception ex) {
+            logger.warning(line);
+            logger.severe(ex.getMessage());
+        }
+    }
+
+    private void closeAllSequences(ConvertState st) {
+        while (!sequenceStack.isEmpty()) {
+            String last = sequenceStack.get(sequenceStack.size() - 1);
+            closeSequence("16S", st.mt, last, st.swiftMessage);
+            sequenceStack.remove(sequenceStack.size() - 1);
+        }
     }
 
     /**

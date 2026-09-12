@@ -36,6 +36,7 @@ import java.util.prefs.Preferences;
 final class SettingsDialog {
 
     private static final char UTF8_BOM = '\uFEFF';
+    private static final String RESET_TO_DEFAULTS = "Reset to defaults";
 
     private SettingsDialog() {}
 
@@ -261,7 +262,7 @@ final class SettingsDialog {
         FormPanel.addRow(form, lc, fc, 3, "SWIFT start marker:", fields.logSwiftStart);
         FormPanel.addRow(form, lc, fc, 4, "Newline token:",      fields.logNewlineToken);
 
-        JButton resetLogTokens = new JButton("Reset to defaults");
+        JButton resetLogTokens = new JButton(RESET_TO_DEFAULTS);
         resetLogTokens.addActionListener(e -> {
             fields.maxEntries.setText(String.valueOf(SystemConfig.DEFAULT_MAX_ENTRIES));
             fields.logSwiftStart.setText(MtFileIO.DEFAULT_LOG_SWIFT_START);
@@ -289,7 +290,7 @@ final class SettingsDialog {
         FormPanel.addRow(form, lc, fc, 7, "Index directory:", dirRow);
         FormPanel.addRow(form, lc, fc, 8, "Search hits (max.):", fields.luceneMaxHits);
 
-        JButton resetLucene = new JButton("Reset to defaults");
+        JButton resetLucene = new JButton(RESET_TO_DEFAULTS);
         resetLucene.addActionListener(e -> {
             fields.luceneDir.setText(lucene.defaultDir);
             fields.luceneMaxHits.setText(String.valueOf(lucene.defaultMaxHits));
@@ -307,7 +308,7 @@ final class SettingsDialog {
         FormPanel.addRow(form, lc, fc, 16, "Index name:",          fields.elasticIndex);
         FormPanel.addRow(form, lc, fc, 17, "Search hits (max.):",  fields.elasticMaxHits);
 
-        JButton resetElastic = new JButton("Reset to defaults");
+        JButton resetElastic = new JButton(RESET_TO_DEFAULTS);
         resetElastic.addActionListener(e -> {
             fields.elasticHost.setText(elastic.defaultHost);
             fields.elasticPort.setText(String.valueOf(elastic.defaultPort));

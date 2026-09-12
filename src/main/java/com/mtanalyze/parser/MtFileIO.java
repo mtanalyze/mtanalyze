@@ -116,25 +116,37 @@ public final class MtFileIO {
         return detected != null ? detected : "536";
     }
 
+    @FunctionalInterface
+    private interface MtTypeRule {
+        /** Returns the matched MT type, or {@code null} when the rule does not apply. */
+        String apply(String body);
+    }
+
+    // Order matters: MT 569 carries a nested :16R:TRANSDET sequence too, so its more
+    // distinctive :16R:SUME marker must be checked before the plain TRANSDET check to
+    // avoid misclassifying it as 537. Likewise MT 530 carries a nested :16R:STAT sequence,
+    // so its distinctive :16R:REQD marker is checked before the generic STAT check.
+    private static final List<MtTypeRule> MT_TYPE_RULES = List.of(
+        b -> tagPresent(b, ":16R:SUBBAL")   ? "535" : null,
+        b -> tagPresent(b, ":16R:SUBSAFE")  ? "536" : null,
+        b -> tagPresent(b, ":16R:SUME")     ? "569" : null,
+        b -> tagPresent(b, ":16R:TRANSDET") ? "537" : null,
+        b -> tagPresent(b, ":16R:CAOPTN")   ? "564" : null,
+        b -> tagPresent(b, ":22H::PAYM//") && tagPresent(b, ":22H::REDE//") ? "578" : null,
+        b -> tagPresent(b, ":60F:") || tagPresent(b, ":60M:") ? "940" : null,
+        b -> tagPresent(b, ":16R:DEALTRAN") ? (tagPresent(b, ":16R:STAT") ? "558" : "527") : null,
+        b -> tagPresent(b, ":16R:REQD")     ? "530" : null,
+        b -> tagPresent(b, ":16R:CAINST")   ? "565" : null,
+        b -> tagPresent(b, ":16R:CACONF")   ? "566" : null,
+        b -> tagPresent(b, ":16R:STAT")     ? "567" : null,
+        b -> tagPresent(b, ":16R:USECU")    ? "568" : null
+    );
+
     private static String matchMtTypeByTags(String body) {
-        if (tagPresent(body, ":16R:SUBBAL"))   return "535";
-        if (tagPresent(body, ":16R:SUBSAFE"))  return "536";
-        // MT 569 (Triparty Collateral and Exposure Statement) also carries a nested
-        // :16R:TRANSDET sequence, so its more distinctive :16R:SUME marker must be
-        // checked before the plain TRANSDET check below to avoid misclassifying it as 537.
-        if (tagPresent(body, ":16R:SUME"))     return "569";
-        if (tagPresent(body, ":16R:TRANSDET")) return "537";
-        if (tagPresent(body, ":16R:CAOPTN"))    return "564";
-        if (tagPresent(body, ":22H::PAYM//") && tagPresent(body, ":22H::REDE//")) return "578";
-        if (tagPresent(body, ":60F:") || tagPresent(body, ":60M:")) return "940";
-        if (tagPresent(body, ":16R:DEALTRAN")) return tagPresent(body, ":16R:STAT") ? "558" : "527";
-        // MT 530 (Transaction Processing Command) carries a nested :16R:STAT sequence too,
-        // so its distinctive :16R:REQD marker is checked before the generic STAT check below.
-        if (tagPresent(body, ":16R:REQD"))     return "530";
-        if (tagPresent(body, ":16R:CAINST"))    return "565";
-        if (tagPresent(body, ":16R:CACONF"))    return "566";
-        if (tagPresent(body, ":16R:STAT"))      return "567";
-        if (tagPresent(body, ":16R:USECU"))     return "568";
+        for (MtTypeRule rule : MT_TYPE_RULES) {
+            String type = rule.apply(body);
+            if (type != null) return type;
+        }
         return null;
     }
 

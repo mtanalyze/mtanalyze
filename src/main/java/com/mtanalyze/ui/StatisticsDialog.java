@@ -36,6 +36,8 @@ import java.util.concurrent.ExecutionException;
  */
 public final class StatisticsDialog {
 
+    private static final String LOADING = "Loading…";
+
     private StatisticsDialog() {}
 
     public static void show(JFrame owner, MessageIndexService messageIndex, ElasticIndexService elasticIndex) {
@@ -47,8 +49,8 @@ public final class StatisticsDialog {
         GridBagConstraints lc = fp.lc;
         GridBagConstraints fc = fp.fc;
 
-        JLabel luceneCount  = new JLabel("Loading…");
-        JLabel elasticCount = new JLabel("Loading…");
+        JLabel luceneCount  = new JLabel(LOADING);
+        JLabel elasticCount = new JLabel(LOADING);
 
         addSectionSeparator(form, 0, "Lucene");
         FormPanel.addRow(form, lc, fc, 1, "Index directory:", new JLabel(messageIndex.indexDir().toString()));
@@ -60,8 +62,8 @@ public final class StatisticsDialog {
 
         dlg.add(form, BorderLayout.CENTER);
         dlg.add(buildButtons(dlg, () -> {
-            luceneCount.setText("Loading…");
-            elasticCount.setText("Loading…");
+            luceneCount.setText(LOADING);
+            elasticCount.setText(LOADING);
             loadCount(luceneCount, messageIndex::documentCount);
             loadCount(elasticCount, elasticIndex::documentCount);
         }), BorderLayout.SOUTH);

@@ -44,6 +44,9 @@ public final class DiffPanel extends JPanel implements EntrySelectionListener {
 
     private static final String PLACEHOLDER_TEXT = "Select 2 or more rows to compare";
 
+    private static final String HTML_OPEN = "<html>";
+    private static final String HTML_CLOSE = "</html>";
+
     /** Key of the synthetic "MT type" column in {@link Entry#data()}. */
     private static final String MT_COL_KEY = "\t_MT_\t\t1";
 
@@ -426,9 +429,9 @@ public final class DiffPanel extends JPanel implements EntrySelectionListener {
             setVerticalAlignment(TOP);
             String text = value != null ? value.toString() : "";
             if (!isSelected && col >= FIXED_COLS && hasDiff(table, row))
-                setText("<html>" + buildDiffHtml(table, row, col, text) + "</html>");
+                setText(HTML_OPEN + buildDiffHtml(table, row, col, text) + HTML_CLOSE);
             else if (text.contains("\n"))
-                setText("<html>" + escHtml(text) + "</html>");
+                setText(HTML_OPEN + escHtml(text) + HTML_CLOSE);
             setToolTipText(resolveTooltip(table, row, col, text));
             return this;
         }
@@ -450,7 +453,7 @@ public final class DiffPanel extends JPanel implements EntrySelectionListener {
             if ("Qualifier".equals(colName))
                 return blankToNull(dict.qualifierDescription(text));
             String desc = MtEntryPanel.HighlightCellRenderer.resolveValueTooltip(table, text, viewRow, dict);
-            return desc != null ? desc : "<html>" + escHtml(text) + "</html>";
+            return desc != null ? desc : HTML_OPEN + escHtml(text) + HTML_CLOSE;
         }
 
         /**

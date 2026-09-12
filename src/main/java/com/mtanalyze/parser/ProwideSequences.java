@@ -32,6 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class ProwideSequences {
 
     private static final String START_END_16RS_FIELD = "START_END_16RS";
+    private static final String SEQUENCE_PREFIX = "Sequence";
     private static final Map<Integer, Map<String, String>> BY_LETTER_PATH = new ConcurrentHashMap<>();
     private static final Map<Integer, Map<String, String>> BY_QUALIFIER = new ConcurrentHashMap<>();
 
@@ -68,10 +69,10 @@ public final class ProwideSequences {
         Map<String, String> blocks = new HashMap<>();
         for (Class<?> inner : mtClass.getDeclaredClasses()) {
             String simpleName = inner.getSimpleName();
-            if (!simpleName.startsWith("Sequence") || simpleName.length() == "Sequence".length()) continue;
+            if (!simpleName.startsWith(SEQUENCE_PREFIX) || simpleName.length() == SEQUENCE_PREFIX.length()) continue;
             try {
                 Field f = inner.getField(START_END_16RS_FIELD);
-                blocks.put(simpleName.substring("Sequence".length()), (String) f.get(null));
+                blocks.put(simpleName.substring(SEQUENCE_PREFIX.length()), (String) f.get(null));
             } catch (NoSuchFieldException | IllegalAccessException ignored) {
                 // Not every nested class necessarily carries this constant -- skip it.
             }

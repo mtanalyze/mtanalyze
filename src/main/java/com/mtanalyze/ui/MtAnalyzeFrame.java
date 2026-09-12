@@ -67,6 +67,8 @@ public class MtAnalyzeFrame extends JFrame {
     private static final String PASTE_MT_SNIPPET        = "Paste MT Snippet";
     private static final String MENU_PASTE              = "Paste";
     private static final String UNTITLED                = "Untitled";
+    private static final String SEARCH_MESSAGES         = "Search Messages";
+    private static final String UNKNOWN                 = "unknown";
 
     // -----------------------------------------------------------------------
     // Shared services (one instance for the whole window, used by every tab)
@@ -277,32 +279,44 @@ public class MtAnalyzeFrame extends JFrame {
                 bar.setString(n + " / " + count);
             }
             @Override protected void done() {
-                pd.dialog().dispose();
-                if (isCancelled()) { statusLabel.setText("Indexing cancelled."); return; }
-                try {
-                    int n = get();
-                    long total = messageIndex.documentCount();
-                    statusLabel.setText(n + (n == 1 ? MSG_SINGULAR : MSG_PLURAL)
-                        + " indexed (" + total + " in the Lucene index).");
-                    t.detailCtrl.notificationPanel().addNotification(
-                        NotificationPanel.Type.INFO, "Messages indexed",
-                        n + (n == 1 ? MSG_SINGULAR : MSG_PLURAL) + " indexed into the Lucene index at "
-                            + messageIndex.indexDir() + " (" + total + " total; a message already in the index is replaced).");
-                } catch (InterruptedException ex) {
-                    Thread.currentThread().interrupt();
-                } catch (ExecutionException | IOException ex) {
-                    Throwable cause = ex instanceof ExecutionException && ex.getCause() != null ? ex.getCause() : ex;
-                    JOptionPane.showMessageDialog(MtAnalyzeFrame.this, "Indexing failed:\n" + cause.getMessage(),
-                        ERROR_TITLE, JOptionPane.ERROR_MESSAGE);
-                }
+                finishIndexing(this, pd, t, messageIndex::documentCount, "the Lucene index",
+                    "the Lucene index at " + messageIndex.indexDir());
             }
         };
         pd.runWorker(worker);
     }
 
+    @FunctionalInterface
+    private interface CountSupplier {
+        long count() throws IOException;
+    }
+
+    /** Shared completion handler for the Lucene / Elasticsearch indexing background workers. */
+    private void finishIndexing(SwingWorker<Integer, Integer> worker, FrameLayout.ProgressDialog pd, EntryTab t,
+            CountSupplier documentCount, String indexDescription, String indexedIntoDescription) {
+        pd.dialog().dispose();
+        if (worker.isCancelled()) { statusLabel.setText("Indexing cancelled."); return; }
+        try {
+            int n = worker.get();
+            long total = documentCount.count();
+            statusLabel.setText(n + (n == 1 ? MSG_SINGULAR : MSG_PLURAL)
+                + " indexed (" + total + " in " + indexDescription + ").");
+            t.detailCtrl.notificationPanel().addNotification(
+                NotificationPanel.Type.INFO, "Messages indexed",
+                n + (n == 1 ? MSG_SINGULAR : MSG_PLURAL) + " indexed into "
+                    + indexedIntoDescription + " (" + total + " total; a message already in the index is replaced).");
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+        } catch (ExecutionException | IOException ex) {
+            Throwable cause = ex instanceof ExecutionException && ex.getCause() != null ? ex.getCause() : ex;
+            JOptionPane.showMessageDialog(this, "Indexing failed:\n" + cause.getMessage(),
+                ERROR_TITLE, JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
     /** Prompts for a Lucene query string and shows the matching messages in a new tab. */
     private void onSearchMessages() {
-        String query = promptQuery("Search Messages", lastLuceneQuery);
+        String query = promptQuery(SEARCH_MESSAGES, lastLuceneQuery);
         if (query == null || query.isBlank()) return;
         lastLuceneQuery = query;
         String trimmed = query.trim();
@@ -327,7 +341,7 @@ public class MtAnalyzeFrame extends JFrame {
             JOptionPane.showMessageDialog(this,
                 "No indexed messages match:\n" + trimmed
                     + "\n\n(Use Lucene ▸ Index Messages first if the index is empty.)",
-                "Search Messages", JOptionPane.INFORMATION_MESSAGE);
+                SEARCH_MESSAGES, JOptionPane.INFORMATION_MESSAGE);
             return;
         }
 
@@ -434,24 +448,8 @@ public class MtAnalyzeFrame extends JFrame {
                 bar.setString(n + " / " + count);
             }
             @Override protected void done() {
-                pd.dialog().dispose();
-                if (isCancelled()) { statusLabel.setText("Indexing cancelled."); return; }
-                try {
-                    int n = get();
-                    long total = elasticIndex.documentCount();
-                    statusLabel.setText(n + (n == 1 ? MSG_SINGULAR : MSG_PLURAL)
-                        + " indexed (" + total + " in the Elasticsearch index).");
-                    t.detailCtrl.notificationPanel().addNotification(
-                        NotificationPanel.Type.INFO, "Messages indexed",
-                        n + (n == 1 ? MSG_SINGULAR : MSG_PLURAL) + " indexed into "
-                            + elasticIndex.connectionLabel() + " (" + total + " total; a message already in the index is replaced).");
-                } catch (InterruptedException ex) {
-                    Thread.currentThread().interrupt();
-                } catch (ExecutionException | IOException ex) {
-                    Throwable cause = ex instanceof ExecutionException && ex.getCause() != null ? ex.getCause() : ex;
-                    JOptionPane.showMessageDialog(MtAnalyzeFrame.this, "Indexing failed:\n" + cause.getMessage(),
-                        ERROR_TITLE, JOptionPane.ERROR_MESSAGE);
-                }
+                finishIndexing(this, pd, t, elasticIndex::documentCount, "the Elasticsearch index",
+                    elasticIndex.connectionLabel());
             }
         };
         pd.runWorker(worker);
@@ -459,7 +457,7 @@ public class MtAnalyzeFrame extends JFrame {
 
     /** Prompts for a query_string search and shows the matching messages in a new tab. */
     private void onSearchMessagesElastic() {
-        String query = promptQuery("Search Messages", lastElasticQuery);
+        String query = promptQuery(SEARCH_MESSAGES, lastElasticQuery);
         if (query == null || query.isBlank()) return;
         lastElasticQuery = query;
         String trimmed = query.trim();
@@ -484,7 +482,7 @@ public class MtAnalyzeFrame extends JFrame {
             JOptionPane.showMessageDialog(this,
                 "No indexed messages match:\n" + trimmed
                     + "\n\n(Use Elasticsearch ▸ Index Messages first if the index is empty.)",
-                "Search Messages", JOptionPane.INFORMATION_MESSAGE);
+                SEARCH_MESSAGES, JOptionPane.INFORMATION_MESSAGE);
             return;
         }
 
@@ -954,7 +952,7 @@ public class MtAnalyzeFrame extends JFrame {
     /** Main-window title: the app name, plus the release version when it is known. */
     private static String windowTitle() {
         String v = loadVersion();
-        return (v == null || v.isBlank() || "unknown".equals(v) || v.contains("${"))
+        return (v == null || v.isBlank() || UNKNOWN.equals(v) || v.contains("${"))
                 ? APP_NAME
                 : APP_NAME + " " + v;
     }
@@ -964,12 +962,12 @@ public class MtAnalyzeFrame extends JFrame {
             if (in != null) {
                 Properties p = new Properties();
                 p.load(in);
-                return p.getProperty("version", "unknown");
+                return p.getProperty("version", UNKNOWN);
             }
         } catch (IOException e) {
             // fall through
         }
-        return "unknown";
+        return UNKNOWN;
     }
 
     private void showAboutDialog() {

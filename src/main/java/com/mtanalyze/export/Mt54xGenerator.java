@@ -70,7 +70,7 @@ public final class Mt54xGenerator {
     private static final String FALLBACK_RCV = "RECVRBICXXXX";
 
     /** Whether settlement parties that are mere {@code //UNKNOWN} placeholders are dropped. */
-    private static final boolean noUnknownParty = false;
+    private static final boolean NO_UNKNOWN_PARTY = false;
 
     private final LocalDateTime now;
 
@@ -193,7 +193,7 @@ public final class Mt54xGenerator {
         // E1 - SETPRTY: carry over the settlement parties from the MT 536.
         // Pure placeholder blocks (only :95Q::...//UNKNOWN) are dropped.
         for (SwiftTagListBlock party : MT536.getSequenceSETPRTYList(td)) {
-            if (noUnknownParty && isUnknownPlaceholderParty(party)) {
+            if (NO_UNKNOWN_PARTY && isUnknownPlaceholderParty(party)) {
                 continue;
             }
             b4.addAll(party.getTags());

@@ -34,6 +34,7 @@ public final class MtExport {
 
     private static final String FALLBACK_BIC  = "BANKBEBBAXXX";
     private static final String BLOCK_CLOSE   = "}\r\n";
+    private static final String ERROR_TITLE   = "Error";
 
     /** Block1 value produced by MtFileIO.buildSwiftWrapper for content without an original header. */
     private static final String SYNTHETIC_BLOCK1_VALUE = "F01" + FALLBACK_BIC + "0000000000";
@@ -80,7 +81,7 @@ public final class MtExport {
             writeRje(file, msgText);
         } catch (IOException ex) {
             JOptionPane.showMessageDialog(owner, "Error during export:\n" + ex.getMessage(),
-                    "Error", JOptionPane.ERROR_MESSAGE);
+                    ERROR_TITLE, JOptionPane.ERROR_MESSAGE);
             return null;
         }
         status.accept("Exported to: " + file.getAbsolutePath());
@@ -131,7 +132,7 @@ public final class MtExport {
             writeRje(file, messages.stream().map(mt -> buildMessage(mt, snd, rcv)).toList());
         } catch (IOException ex) {
             JOptionPane.showMessageDialog(owner, "Error during save:\n" + ex.getMessage(),
-                    "Error", JOptionPane.ERROR_MESSAGE);
+                    ERROR_TITLE, JOptionPane.ERROR_MESSAGE);
             return null;
         }
 
@@ -172,7 +173,7 @@ public final class MtExport {
             }
         } catch (IOException ex) {
             JOptionPane.showMessageDialog(owner, "Error during export:\n" + ex.getMessage(),
-                    "Error", JOptionPane.ERROR_MESSAGE);
+                    ERROR_TITLE, JOptionPane.ERROR_MESSAGE);
             return;
         }
 

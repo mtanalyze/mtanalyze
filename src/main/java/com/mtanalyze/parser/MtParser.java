@@ -144,70 +144,83 @@ public class MtParser {
      * every row; tags inside a row are labelled by their nearest enclosing 16R (TRANSDET, LINK,
      * SETPRTY, STAT, REAS, SECMOVE, CASHMOVE...).
      */
-    private void parseTransMode(SwiftTagListBlock b4) {
-        List<Tag>             headerTags     = new ArrayList<>();
-        Map<String, String>   headerData     = new LinkedHashMap<>();
-        Map<String, Integer>  headerCounts   = new LinkedHashMap<>();
-        Deque<String>         headerSeqStack = new ArrayDeque<>();
+    /** Mutable working state threaded through {@link #parseTransMode} while it walks block4. */
+    private static final class TransParseState {
+        final List<Tag>            headerTags     = new ArrayList<>();
+        final Map<String, String>  headerData     = new LinkedHashMap<>();
+        final Map<String, Integer> headerCounts   = new LinkedHashMap<>();
+        final Deque<String>        headerSeqStack = new ArrayDeque<>();
 
-        Map<String, String>   currentRow   = null;
-        List<Tag>             currentTags  = null;
-        Map<String, Integer>  rowCounts    = null;
-        Deque<String>         rowSeqStack  = new ArrayDeque<>();
-        int rowDepth = 0;
-        int rowNum   = 0;
+        Map<String, String>  currentRow;
+        List<Tag>            currentTags;
+        Map<String, Integer> rowCounts;
+        final Deque<String>  rowSeqStack = new ArrayDeque<>();
+        int rowDepth;
+        int rowNum;
+    }
+
+    private void parseTransMode(SwiftTagListBlock b4) {
+        TransParseState st = new TransParseState();
 
         for (Tag t : b4.getTags()) {
             String name = t.getName() != null ? t.getName() : "";
-            if (currentRow == null) {
-                if ("16R".equals(name) && rowSeqName.equals(nvl(t.getValue()))) {
-                    rowNum++;
-                    currentRow  = new LinkedHashMap<>(headerData);
-                    rowCounts   = new LinkedHashMap<>();
-                    currentTags = new ArrayList<>();
-                    currentRow.put(SEQ_KEY, rowSeqName + " (" + rowNum + ")");
-                    rowSeqStack.clear();
-                    rowDepth = 1;
-                    currentTags.add(t);
-                } else if ("16R".equals(name)) {
-                    headerSeqStack.push(nvl(t.getValue()));
-                    headerTags.add(t);
-                } else if ("16S".equals(name)) {
-                    if (!headerSeqStack.isEmpty()) headerSeqStack.pop();
-                    headerTags.add(t);
-                } else {
-                    String seq = headerSeqStack.isEmpty() ? "" : headerSeqStack.peek();
-                    registerTag(seq, t, headerData, headerCounts);
-                    headerTags.add(t);
-                }
+            if (st.currentRow == null) {
+                handleTransHeaderTag(t, name, st);
             } else {
-                currentTags.add(t);
-                if ("16R".equals(name)) {
-                    rowDepth++;
-                    rowSeqStack.push(nvl(t.getValue()));
-                } else if ("16S".equals(name)) {
-                    rowDepth--;
-                    if (!rowSeqStack.isEmpty()) rowSeqStack.pop();
-                    if (rowDepth == 0) {
-                        entries.add(new Entry(currentRow, new SwiftTagListBlock(currentTags),
-                                new SwiftTagListBlock(new ArrayList<>(headerTags))));
-                        currentRow = null;
-                        currentTags = null;
-                        rowCounts = null;
-                    }
-                } else {
-                    String seq = rowSeqStack.isEmpty() ? "" : rowSeqStack.peek();
-                    registerTag(seq, t, currentRow, rowCounts);
-                }
+                handleTransRowTag(t, name, st);
             }
         }
 
         // No row sequence occurred at all (e.g. an MT 564 notification with no CAOPTN block):
         // show the whole message as a single row instead of an empty table.
-        if (rowNum == 0 && !headerData.isEmpty()) {
-            headerData.put(SEQ_KEY, "MSG (1)");
-            entries.add(new Entry(headerData, new SwiftTagListBlock(new ArrayList<>(headerTags)),
+        if (st.rowNum == 0 && !st.headerData.isEmpty()) {
+            st.headerData.put(SEQ_KEY, "MSG (1)");
+            entries.add(new Entry(st.headerData, new SwiftTagListBlock(new ArrayList<>(st.headerTags)),
                     new SwiftTagListBlock(new ArrayList<>())));
+        }
+    }
+
+    private void handleTransHeaderTag(Tag t, String name, TransParseState st) {
+        if ("16R".equals(name) && rowSeqName.equals(nvl(t.getValue()))) {
+            st.rowNum++;
+            st.currentRow  = new LinkedHashMap<>(st.headerData);
+            st.rowCounts   = new LinkedHashMap<>();
+            st.currentTags = new ArrayList<>();
+            st.currentRow.put(SEQ_KEY, rowSeqName + " (" + st.rowNum + ")");
+            st.rowSeqStack.clear();
+            st.rowDepth = 1;
+            st.currentTags.add(t);
+        } else if ("16R".equals(name)) {
+            st.headerSeqStack.push(nvl(t.getValue()));
+            st.headerTags.add(t);
+        } else if ("16S".equals(name)) {
+            if (!st.headerSeqStack.isEmpty()) st.headerSeqStack.pop();
+            st.headerTags.add(t);
+        } else {
+            String seq = st.headerSeqStack.isEmpty() ? "" : st.headerSeqStack.peek();
+            registerTag(seq, t, st.headerData, st.headerCounts);
+            st.headerTags.add(t);
+        }
+    }
+
+    private void handleTransRowTag(Tag t, String name, TransParseState st) {
+        st.currentTags.add(t);
+        if ("16R".equals(name)) {
+            st.rowDepth++;
+            st.rowSeqStack.push(nvl(t.getValue()));
+        } else if ("16S".equals(name)) {
+            st.rowDepth--;
+            if (!st.rowSeqStack.isEmpty()) st.rowSeqStack.pop();
+            if (st.rowDepth == 0) {
+                entries.add(new Entry(st.currentRow, new SwiftTagListBlock(st.currentTags),
+                        new SwiftTagListBlock(new ArrayList<>(st.headerTags))));
+                st.currentRow = null;
+                st.currentTags = null;
+                st.rowCounts = null;
+            }
+        } else {
+            String seq = st.rowSeqStack.isEmpty() ? "" : st.rowSeqStack.peek();
+            registerTag(seq, t, st.currentRow, st.rowCounts);
         }
     }
 
