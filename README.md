@@ -140,6 +140,7 @@ supported OS keyring backend.
 - **[Apache Lucene](https://lucene.apache.org/)** 9.12.3 — local message index and full-text search (Apache 2.0)
 - **[Elasticsearch Java API Client](https://github.com/elastic/elasticsearch-java)** 9.5.3 — remote message index and full-text search (Apache 2.0)
 - **[java-keyring](https://github.com/javakeyring/java-keyring)** 1.0.4 — OS credential store access for the Elasticsearch password (BSD-style)
+- **[SLF4J](https://www.slf4j.org/)** 2.0.7 (`slf4j-nop`) — silences transitive libraries' logging output; MT Analyze doesn't use SLF4J logging itself (MIT)
 
 The full transitive dependency graph (SBOM), including versions pulled in indirectly, is visible on GitHub's [Dependency graph](https://github.com/mtanalyze/mtanalyze/network/dependencies). A standalone [CycloneDX](https://cyclonedx.org/) SBOM file can be generated locally with the optional `sbom` profile:
 

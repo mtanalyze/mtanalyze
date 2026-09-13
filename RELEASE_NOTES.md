@@ -37,6 +37,15 @@ dialog that shows how many messages are currently indexed in each backend. The t
 are fetched independently, so a slow or unreachable Elasticsearch cluster never delays the
 (near-instant) Lucene count from showing.
 
+### Isolate Entry in New Tab
+
+The MT Entries row context menu gained **Isolate Entry in New Tab**. It copies the row's
+message into a new tab, keeping only that one entry and dropping every other entry
+belonging to the same message — e.g. every other transaction of a multi-entry MT 536
+statement, along with any unrelated financial-instrument blocks that don't carry a
+transaction of their own. The original tab and message are left untouched. Useful for
+pulling a single entry out of a large statement to inspect, export or share on its own.
+
 ### Elasticsearch password stored in the OS keyring
 
 The Elasticsearch password is no longer saved in plain text alongside the other settings.
@@ -49,6 +58,13 @@ macOS Keychain, or the Freedesktop Secret Service/KWallet on Linux — via
   preference — no re-entry needed.
 - On a system without any supported OS keyring backend, MT Analyze falls back to the same
   plain-text storage used before, so the app keeps working everywhere.
+
+### Startup warning silenced
+
+Removed the harmless but confusing `SLF4J: No SLF4J providers were found` message printed
+to the console on every startup (an SLF4J-based library, pulled in transitively, had no
+logging backend configured). MT Analyze doesn't surface logs of its own, so a no-op
+provider is now bundled.
 
 ---
 

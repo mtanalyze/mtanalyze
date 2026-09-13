@@ -294,7 +294,7 @@ public class MtAnalyzeFrame extends JFrame {
 
         SwingWorker<Integer, Integer> worker = new SwingWorker<>() {
             @Override protected Integer doInBackground() throws IOException {
-                return indexer.indexMessages(messages, t.title, n -> publish(n), this::isCancelled);
+                return indexer.indexMessages(messages, t.title, this::publish, this::isCancelled);
             }
             @Override protected void process(List<Integer> progress) {
                 int n = progress.get(progress.size() - 1);
@@ -356,7 +356,7 @@ public class MtAnalyzeFrame extends JFrame {
     /** Shared query-and-load flow for the Lucene / Elasticsearch "Search Messages" items. */
     private <H> void runSearch(String indexLabel, String lastQuery, Consumer<String> saveQuery,
             QueryRunner<H> runner, IntSupplier maxHits, Function<H, String> rawMessage) {
-        String query = promptQuery(SEARCH_MESSAGES, lastQuery);
+        String query = promptQuery(lastQuery);
         if (query == null || query.isBlank()) return;
         saveQuery.accept(query);
         String trimmed = query.trim();
@@ -399,7 +399,7 @@ public class MtAnalyzeFrame extends JFrame {
      * Multi-line query dialog shared by the Lucene and Elasticsearch "Search Messages" items.
      * Returns the entered query, or {@code null} if cancelled. Ctrl+Enter confirms.
      */
-    private String promptQuery(String dialogTitle, String initialText) {
+    private String promptQuery(String initialText) {
         JTextArea area = new JTextArea(8, 48);
         area.setLineWrap(true);
         area.setWrapStyleWord(true);
@@ -416,7 +416,7 @@ public class MtAnalyzeFrame extends JFrame {
 
         JOptionPane optionPane = new JOptionPane(panel, JOptionPane.PLAIN_MESSAGE,
             JOptionPane.OK_CANCEL_OPTION);
-        JDialog dialog = optionPane.createDialog(this, dialogTitle);
+        JDialog dialog = optionPane.createDialog(this, MtAnalyzeFrame.SEARCH_MESSAGES);
         // Ctrl+Enter = OK
         area.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER,
             Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()), "submit");
@@ -727,6 +727,25 @@ public class MtAnalyzeFrame extends JFrame {
         if (idx >= 0) tabs.setSelectedIndex(idx);
         target.setStatus(parsed + (parsed == 1 ? MSG_SINGULAR : MSG_PLURAL)
             + " copied from " + source.title + ".");
+    }
+
+    /**
+     * Context-menu action: copies the row's message into a new tab, keeping only that
+     * row's entry and dropping every other entry of the same message (e.g. every other
+     * TRAN/TRANSDET block of an MT 536 statement).
+     */
+    private void isolateEntryInNewTab(EntryTab source, int modelRow) {
+        String isolated = source.entryPanel.buildIsolatedMessageText(modelRow);
+        if (isolated == null || isolated.isBlank()) {
+            source.setStatus("Nothing to isolate: this entry is already alone in its message.");
+            return;
+        }
+        EntryTab target = openNewTab();
+        int parsed = target.importer.appendFromContent(List.of(isolated), null, null, MessageOrigin.CLIPBOARD);
+        int idx = openTabs.indexOf(target);
+        if (idx >= 0) tabs.setSelectedIndex(idx);
+        target.setStatus(parsed + (parsed == 1 ? MSG_SINGULAR : MSG_PLURAL)
+            + " isolated from " + source.title + ".");
     }
 
     // -----------------------------------------------------------------------
@@ -1224,6 +1243,9 @@ public class MtAnalyzeFrame extends JFrame {
                 @Override public void setStatus(String message) { setStatusText(message); }
                 @Override public void copyVisibleMessagesToTab() {
                     MtAnalyzeFrame.this.copyVisibleMessagesToTab(EntryTab.this);
+                }
+                @Override public void isolateEntryInNewTab(int modelRow) {
+                    MtAnalyzeFrame.this.isolateEntryInNewTab(EntryTab.this, modelRow);
                 }
             };
         }

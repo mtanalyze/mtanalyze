@@ -69,6 +69,9 @@ public class MtEntryPanel extends JPanel {
         void setStatus(String message);
         /** Copy the messages currently visible in this table into another (user-chosen) tab. */
         void copyVisibleMessagesToTab();
+        /** Copy the row's message into a new tab, keeping only that row's entry and
+         *  dropping every other entry of the same message (e.g. other TRAN/TRANSDET blocks). */
+        void isolateEntryInNewTab(int modelRow);
     }
 
     // -----------------------------------------------------------------------
@@ -399,6 +402,11 @@ public class MtEntryPanel extends JPanel {
         JMenuItem copyVisibleToTab = new JMenuItem("Copy Visible Messages to Tab…", ToolbarIcons.menuCopyTable());
         copyVisibleToTab.addActionListener(ae -> host.copyVisibleMessagesToTab());
         popup.add(copyVisibleToTab);
+        if (model.canIsolateRow(modelRow)) {
+            JMenuItem isolateItem = new JMenuItem("Isolate Entry in New Tab", ToolbarIcons.menuNewTab());
+            isolateItem.addActionListener(ae -> host.isolateEntryInNewTab(modelRow));
+            popup.add(isolateItem);
+        }
         JMenuItem appendItem = new JMenuItem("Paste", ToolbarIcons.menuPaste());
         appendItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_V, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()));
         appendItem.addActionListener(ae -> host.showAppendTextDialog());
@@ -990,6 +998,7 @@ public class MtEntryPanel extends JPanel {
     public SwiftMessage              getMessageForRow(int r)                { return model.getMessageForRow(r); }
     public com.mtanalyze.model.Entry getEntryForRow(int r)                 { return model.getEntryForRow(r); }
     public String                    getRowValue(int r, String key)         { return model.getRowValue(r, key); }
+    public String                    buildIsolatedMessageText(int r)        { return model.buildIsolatedMessageText(r); }
 
     // -----------------------------------------------------------------------
     // Static helpers

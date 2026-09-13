@@ -166,6 +166,109 @@ final class EntryPanelModel {
         if (owner.entries().isEmpty()) project.removeMessage(msgIdx);
     }
 
+    /** True when the row's message carries more than one entry, i.e. there is something
+     *  for {@link #buildIsolatedMessageText} to isolate. */
+    public boolean canIsolateRow(int modelRow) {
+        SwiftMessage owner = getMessageForRow(modelRow);
+        return owner != null && owner.entries().size() > 1;
+    }
+
+    /**
+     * Builds the FIN text of a standalone copy of the row's message, keeping only the
+     * branch of the {@code :16R:}/{@code :16S:} sequence tree that leads to the row's own
+     * entry and pruning every sibling occurrence along the way that does not (e.g. every
+     * other TRAN/TRANSDET of an MT 536, but also every other FIN — financial instrument —
+     * block that has no bearing on this entry, even though those aren't table rows of
+     * their own). Non-repeating wrapper sequences (e.g. the single GENL header) are never
+     * pruned. The original, in-memory message is left untouched. Returns {@code null}
+     * when there is nothing to isolate.
+     */
+    public String buildIsolatedMessageText(int modelRow) {
+        Entry target = getEntryForRow(modelRow);
+        SwiftMessage owner = getMessageForRow(modelRow);
+        if (target == null || owner == null || owner.entries().size() <= 1) return null;
+
+        Set<Tag> keepSet = Collections.newSetFromMap(new IdentityHashMap<>());
+        keepSet.addAll(target.sequence().getTags());
+
+        List<Tag> original = owner.raw().getSwiftMessage().getBlock4().getTags();
+        List<Tag> keptTags = pruneSiblings(original, 0, original.size(), keepSet);
+
+        com.prowidesoftware.swift.model.SwiftMessage source = owner.raw().getSwiftMessage();
+        com.prowidesoftware.swift.model.SwiftMessage isolated = new com.prowidesoftware.swift.model.SwiftMessage();
+        isolated.setBlock1(source.getBlock1());
+        isolated.setBlock2(source.getBlock2());
+        isolated.setBlock3(source.getBlock3());
+        isolated.setBlock4(new com.prowidesoftware.swift.model.SwiftBlock4(keptTags));
+        isolated.setBlock5(source.getBlock5());
+
+        AbstractMT isolatedMt = isolated.toMT();
+        return isolatedMt != null ? isolatedMt.message() : null;
+    }
+
+    /**
+     * Walks the flat tag range {@code [start, end)} one nesting level at a time. Any
+     * {@code :16R:}/{@code :16S:} block that repeats among its siblings in that range is
+     * dropped in its entirety unless its subtree contains at least one tag from
+     * {@code keep}; kept blocks are recursed into so deeper sibling groups get the same
+     * treatment. Plain (non-wrapper) tags and non-repeating wrapper blocks always survive.
+     */
+    private static List<Tag> pruneSiblings(List<Tag> tags, int start, int end, Set<Tag> keep) {
+        List<int[]> spans = new ArrayList<>();       // {spanStart, spanEndExclusive}
+        Map<String, Integer> occurrences = new LinkedHashMap<>();
+        int i = start;
+        while (i < end) {
+            Tag t = tags.get(i);
+            if ("16R".equals(t.getName())) {
+                String name = nvl(t.getValue());
+                int close = matchingClose(tags, i, end, name);
+                spans.add(new int[]{i, close + 1});
+                occurrences.merge(name, 1, Integer::sum);
+                i = close + 1;
+            } else {
+                spans.add(new int[]{i, i + 1});
+                i++;
+            }
+        }
+
+        List<Tag> result = new ArrayList<>();
+        for (int[] span : spans) {
+            boolean isBlock = "16R".equals(tags.get(span[0]).getName());
+            if (!isBlock) { result.add(tags.get(span[0])); continue; }
+
+            String name = nvl(tags.get(span[0]).getValue());
+            boolean repeating = occurrences.get(name) > 1;
+            boolean intersectsTarget = rangeIntersects(tags, span[0], span[1], keep);
+            if (repeating && !intersectsTarget) continue; // prune this whole occurrence
+
+            result.add(tags.get(span[0])); // opening 16R
+            result.addAll(pruneSiblings(tags, span[0] + 1, span[1] - 1, keep));
+            result.add(tags.get(span[1] - 1)); // closing 16S
+        }
+        return result;
+    }
+
+    /** Index of the {@code :16S:name} that closes the {@code :16R:name} at {@code openIdx}. */
+    private static int matchingClose(List<Tag> tags, int openIdx, int end, String name) {
+        int depth = 1;
+        for (int j = openIdx + 1; j < end; j++) {
+            Tag t = tags.get(j);
+            if ("16R".equals(t.getName()) && name.equals(nvl(t.getValue()))) depth++;
+            else if ("16S".equals(t.getName()) && name.equals(nvl(t.getValue()))) {
+                depth--;
+                if (depth == 0) return j;
+            }
+        }
+        return end - 1; // unterminated (truncated message) - treat the range end as the close
+    }
+
+    private static boolean rangeIntersects(List<Tag> tags, int start, int end, Set<Tag> keep) {
+        for (int k = start; k < end; k++) if (keep.contains(tags.get(k))) return true;
+        return false;
+    }
+
+    private static String nvl(String s) { return s != null ? s.trim() : ""; }
+
     /**
      * Removes every entry belonging to each message in {@code toRemove}, and the messages
      * themselves, from all backing structures. Entries are matched by identity rather than

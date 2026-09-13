@@ -134,6 +134,16 @@
             <artifactId>java-keyring</artifactId>
             <version>1.0.4</version>
         </dependency>
+
+        <!-- Silences "No SLF4J providers were found" at startup. slf4j-api itself only
+             comes in transitively (via jna); this app has no logging UI of its own, so a
+             no-op provider is enough - nothing is meant to reach the console via SLF4J. -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-nop</artifactId>
+            <version>2.0.7</version>
+            <scope>runtime</scope>
+        </dependency>
     </dependencies>
 
     <build>
