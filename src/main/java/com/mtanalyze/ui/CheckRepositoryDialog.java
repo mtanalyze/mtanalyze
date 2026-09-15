@@ -21,7 +21,6 @@ import com.mtanalyze.model.SwiftMessage;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.KeyEvent;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -40,7 +39,6 @@ import java.util.concurrent.ExecutionException;
 public final class CheckRepositoryDialog {
 
     private static final String CHECKING = "Checking…";
-    private static final String DISABLED = "Disabled (see Settings ▸ Advanced)";
 
     private CheckRepositoryDialog() {}
 
@@ -62,16 +60,16 @@ public final class CheckRepositoryDialog {
         GridBagConstraints lc = fp.lc;
         GridBagConstraints fc = fp.fc;
 
-        JLabel luceneResult  = new JLabel(luceneEnabled ? CHECKING : DISABLED);
-        JLabel elasticResult = new JLabel(elasticEnabled ? CHECKING : DISABLED);
+        JLabel luceneResult  = new JLabel(luceneEnabled ? CHECKING : DialogSupport.DISABLED);
+        JLabel elasticResult = new JLabel(elasticEnabled ? CHECKING : DialogSupport.DISABLED);
 
         JLabel totalLabel = new JLabel(total + (total == 1 ? " message" : " messages"));
         FormPanel.addRow(form, lc, fc, 0, "Entries in this tab:", totalLabel);
 
-        addSectionSeparator(form, 1, "Lucene");
+        DialogSupport.addSectionSeparator(form, 1, "Lucene");
         FormPanel.addRow(form, lc, fc, 2, "Already indexed:", luceneResult);
 
-        addSectionSeparator(form, 3, "Elasticsearch");
+        DialogSupport.addSectionSeparator(form, 3, "Elasticsearch");
         FormPanel.addRow(form, lc, fc, 4, "Already indexed:", elasticResult);
 
         dlg.add(form, BorderLayout.CENTER);
@@ -80,7 +78,7 @@ public final class CheckRepositoryDialog {
         dlg.pack();
         dlg.setMinimumSize(dlg.getSize());
         dlg.setLocationRelativeTo(owner);
-        registerEscapeKey(dlg);
+        DialogSupport.registerEscapeKey(dlg);
 
         if (luceneEnabled) {
             checkAgainst(luceneResult, total, () -> messageIndex.countAlreadyIndexed(messages));
@@ -107,14 +105,11 @@ public final class CheckRepositoryDialog {
                     int newCount = total - alreadyIndexed;
                     label.setText(alreadyIndexed + " of " + total
                         + (total == 1 ? " message" : " messages")
-                        + " (" + newCount + (newCount == 1 ? " new)" : " new)"));
+                        + " (" + newCount + (" new)"));
                 } catch (InterruptedException ex) {
                     Thread.currentThread().interrupt();
                 } catch (ExecutionException ex) {
-                    Throwable cause = ex.getCause();
-                    String msg = cause != null ? cause.getMessage() : ex.getMessage();
-                    label.setText("Unavailable" + (msg != null && !msg.isBlank() ? " (" + msg + ")" : ""));
-                    label.setForeground(UIManager.getColor("Label.disabledForeground"));
+                    DialogSupport.showUnavailable(label, ex);
                 }
             }
         }.execute();
@@ -127,28 +122,6 @@ public final class CheckRepositoryDialog {
     private static JPanel buildButtons(JDialog dlg) {
         JButton closeBtn = new JButton("Close");
         closeBtn.addActionListener(e -> dlg.dispose());
-        JPanel south = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 8));
-        south.add(closeBtn);
-        dlg.getRootPane().setDefaultButton(closeBtn);
-        return south;
-    }
-
-    private static void registerEscapeKey(JDialog dlg) {
-        dlg.getRootPane().registerKeyboardAction(
-            e -> dlg.dispose(),
-            KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
-            JComponent.WHEN_IN_FOCUSED_WINDOW);
-    }
-
-    private static void addSectionSeparator(JPanel form, int row, String title) {
-        GridBagConstraints sc = new GridBagConstraints();
-        sc.gridx = 0; sc.gridy = row; sc.gridwidth = 2;
-        sc.fill = GridBagConstraints.HORIZONTAL;
-        sc.insets = new Insets(row == 0 ? 0 : 10, 0, 2, 0);
-        JLabel sep = new JLabel(title);
-        sep.setFont(sep.getFont().deriveFont(Font.BOLD));
-        sep.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0,
-                UIManager.getColor("Separator.foreground")));
-        form.add(sep, sc);
+        return DialogSupport.buildButtonBar(dlg, closeBtn);
     }
 }

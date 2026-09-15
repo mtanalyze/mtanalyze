@@ -20,7 +20,6 @@ import com.mtanalyze.lucene.MessageIndexService;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.KeyEvent;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 
@@ -37,7 +36,6 @@ import java.util.concurrent.ExecutionException;
 public final class StatisticsDialog {
 
     private static final String LOADING  = "Loading…";
-    private static final String DISABLED = "Disabled (see Settings ▸ Advanced)";
 
     private StatisticsDialog() {}
 
@@ -51,14 +49,14 @@ public final class StatisticsDialog {
         GridBagConstraints lc = fp.lc;
         GridBagConstraints fc = fp.fc;
 
-        JLabel luceneCount  = new JLabel(luceneEnabled ? LOADING : DISABLED);
-        JLabel elasticCount = new JLabel(elasticEnabled ? LOADING : DISABLED);
+        JLabel luceneCount  = new JLabel(luceneEnabled ? LOADING : DialogSupport.DISABLED);
+        JLabel elasticCount = new JLabel(elasticEnabled ? LOADING : DialogSupport.DISABLED);
 
-        addSectionSeparator(form, 0, "Lucene");
+        DialogSupport.addSectionSeparator(form, 0, "Lucene");
         FormPanel.addRow(form, lc, fc, 1, "Index directory:", new JLabel(messageIndex.indexDir().toString()));
         FormPanel.addRow(form, lc, fc, 2, "Indexed messages:", luceneCount);
 
-        addSectionSeparator(form, 3, "Elasticsearch");
+        DialogSupport.addSectionSeparator(form, 3, "Elasticsearch");
         FormPanel.addRow(form, lc, fc, 4, "Cluster:", new JLabel(elasticIndex.connectionLabel()));
         FormPanel.addRow(form, lc, fc, 5, "Indexed messages:", elasticCount);
 
@@ -77,7 +75,7 @@ public final class StatisticsDialog {
         dlg.pack();
         dlg.setMinimumSize(dlg.getSize());
         dlg.setLocationRelativeTo(owner);
-        registerEscapeKey(dlg);
+        DialogSupport.registerEscapeKey(dlg);
 
         if (luceneEnabled) loadCount(luceneCount, messageIndex::documentCount);
         if (elasticEnabled) loadCount(elasticCount, elasticIndex::documentCount);
@@ -106,10 +104,7 @@ public final class StatisticsDialog {
                 } catch (InterruptedException ex) {
                     Thread.currentThread().interrupt();
                 } catch (ExecutionException ex) {
-                    Throwable cause = ex.getCause();
-                    String msg = cause != null ? cause.getMessage() : ex.getMessage();
-                    label.setText("Unavailable" + (msg != null && !msg.isBlank() ? " (" + msg + ")" : ""));
-                    label.setForeground(UIManager.getColor("Label.disabledForeground"));
+                    DialogSupport.showUnavailable(label, ex);
                 }
             }
         }.execute();
@@ -124,29 +119,6 @@ public final class StatisticsDialog {
         refreshBtn.addActionListener(e -> onRefresh.run());
         JButton closeBtn = new JButton("Close");
         closeBtn.addActionListener(e -> dlg.dispose());
-        JPanel south = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 8));
-        south.add(refreshBtn);
-        south.add(closeBtn);
-        dlg.getRootPane().setDefaultButton(closeBtn);
-        return south;
-    }
-
-    private static void registerEscapeKey(JDialog dlg) {
-        dlg.getRootPane().registerKeyboardAction(
-            e -> dlg.dispose(),
-            KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
-            JComponent.WHEN_IN_FOCUSED_WINDOW);
-    }
-
-    private static void addSectionSeparator(JPanel form, int row, String title) {
-        GridBagConstraints sc = new GridBagConstraints();
-        sc.gridx = 0; sc.gridy = row; sc.gridwidth = 2;
-        sc.fill = GridBagConstraints.HORIZONTAL;
-        sc.insets = new Insets(row == 0 ? 0 : 10, 0, 2, 0);
-        JLabel sep = new JLabel(title);
-        sep.setFont(sep.getFont().deriveFont(Font.BOLD));
-        sep.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0,
-                UIManager.getColor("Separator.foreground")));
-        form.add(sep, sc);
+        return DialogSupport.buildButtonBar(dlg, refreshBtn, closeBtn);
     }
 }
