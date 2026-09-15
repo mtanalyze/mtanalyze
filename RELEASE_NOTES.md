@@ -1,11 +1,11 @@
-# MT Analyze v2.0.0
+# MT Analyze v2.0.2
 
 ## Download & Run
 
 **Requirements:** Java 17 or higher
 
 ```bash
-java -jar MT-Analyze-2.0.0.jar
+java -jar MT-Analyze-2.0.2.jar
 ```
 
 ---
@@ -58,6 +58,14 @@ macOS Keychain, or the Freedesktop Secret Service/KWallet on Linux — via
   preference — no re-entry needed.
 - On a system without any supported OS keyring backend, MT Analyze falls back to the same
   plain-text storage used before, so the app keeps working everywhere.
+
+### Enable/disable Lucene or Elasticsearch independently
+
+**Settings ▸ Advanced** now has an **Enable Lucene Search** / **Enable Elasticsearch**
+checkbox for each engine. Turning one off hides its menu entirely — including its
+keyboard shortcut (`Ctrl+Shift+F` / `Ctrl+Shift+E`) — so a user who only needs one of the
+two search backends no longer sees menu items or accelerators for the other. Both are
+enabled by default.
 
 ### Startup warning silenced
 

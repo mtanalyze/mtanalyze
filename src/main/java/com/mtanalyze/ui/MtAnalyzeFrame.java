@@ -110,6 +110,8 @@ public class MtAnalyzeFrame extends JFrame {
     private JMenu              exportMenu;
     private JSeparator         importExportLeadingSeparator;
     private JSeparator         importExportMiddleSeparator;
+    private JMenu              luceneMenu;
+    private JMenu              elasticMenu;
 
     private static final Preferences PREFS = Preferences.userNodeForPackage(MtAnalyzeFrame.class);
     private static final String PREF_COL_ORDER  = "col_order";
@@ -126,6 +128,8 @@ public class MtAnalyzeFrame extends JFrame {
     private static final String PREF_CSV_DECIMAL_SEP      = "csv_decimal_sep";
     private static final String PREF_USER_DICT             = "user_qualifier_values";
     private static final String PREF_POWER_USER            = "power_user";
+    private static final String PREF_LUCENE_ENABLED        = "lucene_enabled";
+    private static final String PREF_ELASTIC_ENABLED       = "elastic_enabled";
     private static final String PREF_LUCENE_DIR            = "lucene_index_dir";
     private static final String PREF_LUCENE_MAX_HITS       = "lucene_max_hits";
     private static final String PREF_ELASTIC_HOST          = "elastic_host";
@@ -210,6 +214,8 @@ public class MtAnalyzeFrame extends JFrame {
         menuCompare          = items.menuCompare();
         menuSource           = items.menuSource();
         menuComponents       = items.menuComponents();
+        luceneMenu           = items.luceneMenu();
+        elasticMenu          = items.elasticMenu();
     }
 
     private FrameMenuBar.Callbacks createMenuCallbacks() {
@@ -485,10 +491,11 @@ public class MtAnalyzeFrame extends JFrame {
                 config::getMaxEntries, config::getLogSwiftStart, config::getLogNewlineToken,
                 config::saveSettings),
             new SettingsDialog.Config.PowerUserConfig(PREF_POWER_USER, this::applyPowerUserMode),
-            new SettingsDialog.Config.LuceneConfig(PREF_LUCENE_DIR, PREF_LUCENE_MAX_HITS,
+            new SettingsDialog.Config.LuceneConfig(PREF_LUCENE_ENABLED, PREF_LUCENE_DIR, PREF_LUCENE_MAX_HITS,
                 MessageIndexService.defaultIndexDir().toString(),
                 MessageIndexService.DEFAULT_MAX_HITS, this::applyLuceneConfig),
             new SettingsDialog.Config.ElasticConfig(
+                PREF_ELASTIC_ENABLED,
                 PREF_ELASTIC_HOST, PREF_ELASTIC_PORT, PREF_ELASTIC_SCHEME,
                 PREF_ELASTIC_USERNAME,
                 () -> ElasticSecretStore.get(PREFS), password -> ElasticSecretStore.save(PREFS, password),
@@ -504,6 +511,7 @@ public class MtAnalyzeFrame extends JFrame {
         messageIndex.configure(
             PREFS.get(PREF_LUCENE_DIR, ""),
             PREFS.getInt(PREF_LUCENE_MAX_HITS, MessageIndexService.DEFAULT_MAX_HITS));
+        setMenuEnabled(luceneMenu, isLuceneEnabled());
     }
 
     /** Re-applies the persisted Elasticsearch connection settings to the running service. */
@@ -516,6 +524,26 @@ public class MtAnalyzeFrame extends JFrame {
             ElasticSecretStore.get(PREFS),
             PREFS.get(PREF_ELASTIC_INDEX, ElasticIndexService.DEFAULT_INDEX),
             PREFS.getInt(PREF_ELASTIC_MAX_HITS, ElasticIndexService.DEFAULT_MAX_HITS));
+        setMenuEnabled(elasticMenu, isElasticEnabled());
+    }
+
+    private boolean isLuceneEnabled() {
+        return PREFS.getBoolean(PREF_LUCENE_ENABLED, true);
+    }
+
+    private boolean isElasticEnabled() {
+        return PREFS.getBoolean(PREF_ELASTIC_ENABLED, true);
+    }
+
+    /** Hides {@code menu} and disables its items when {@code enabled} is false, so neither the
+     *  menu nor its keyboard accelerators (e.g. Ctrl+Shift+F) remain reachable while off. */
+    private void setMenuEnabled(JMenu menu, boolean enabled) {
+        if (menu == null) return;
+        menu.setVisible(enabled);
+        for (Component c : menu.getMenuComponents())
+            if (c instanceof JMenuItem mi) mi.setEnabled(enabled);
+        JMenuBar bar = getJMenuBar();
+        if (bar != null) { bar.revalidate(); bar.repaint(); }
     }
 
     private void populateEditMenu(JMenu menu) {

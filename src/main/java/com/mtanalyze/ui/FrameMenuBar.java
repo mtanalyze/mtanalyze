@@ -50,7 +50,9 @@ public final class FrameMenuBar {
         JRadioButtonMenuItem  menuTags,
         JRadioButtonMenuItem  menuCompare,
         JRadioButtonMenuItem  menuSource,
-        JRadioButtonMenuItem  menuComponents
+        JRadioButtonMenuItem  menuComponents,
+        JMenu                 luceneMenu,
+        JMenu                 elasticMenu
     ) {}
 
     // -----------------------------------------------------------------------
@@ -244,7 +246,8 @@ public final class FrameMenuBar {
             removeDuplicatesItem,
             importMenu, exportMenu, importExportLeadingSeparator, importExportMiddleSeparator,
             searchBtn,
-            menuNotifications, menuTags, menuCompare, menuSource, menuComponents);
+            menuNotifications, menuTags, menuCompare, menuSource, menuComponents,
+            luceneMenu, elasticMenu);
     }
 
     // -----------------------------------------------------------------------

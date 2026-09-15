@@ -19,7 +19,7 @@ MT Analyze is a single self-contained JAR — no installation, no admin rights.
 2. Double-click it, or run:
 
 ```bash
-java -jar MT-Analyze-2.0.0.jar
+java -jar MT-Analyze-2.0.2.jar
 ```
 
 *(Optional)* Each [Releases](https://github.com/mtanalyze/mtanalyze/releases) page shows a SHA256 digest next to the JAR asset, if you'd like to verify the download — compare it against the output of:
@@ -55,7 +55,9 @@ MT Analyze parses 29 message types from SWIFT categories 5 (securities markets) 
 The **Lucene** and **Elasticsearch** menus each provide a full-text index of parsed
 messages, in two independent engines you can use side by side — pick whichever fits the
 volume at hand. Both menus offer the same four actions and are shared across all tabs and
-sessions.
+sessions. Each engine can also be turned off independently under **Settings ▸ Advanced**
+(**Enable Lucene Search** / **Enable Elasticsearch**, both on by default) — disabling one
+hides its menu and keyboard shortcut entirely.
 
 ### Lucene
 
@@ -180,10 +182,10 @@ MT Analyze is published on [Maven Central](https://central.sonatype.com/artifact
 
 ```bash
 mvn org.apache.maven.plugins:maven-dependency-plugin:3.6.1:copy \
-  -Dartifact=com.mtanalyze:mtanalyze:2.0.0:jar:all \
+  -Dartifact=com.mtanalyze:mtanalyze:2.0.2:jar:all \
   -DoutputDirectory=.
 
-java -jar mtanalyze-2.0.0-all.jar
+java -jar mtanalyze-2.0.2-all.jar
 ```
 ---
 
