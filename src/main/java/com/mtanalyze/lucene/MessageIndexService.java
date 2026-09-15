@@ -19,7 +19,10 @@ import com.mtanalyze.model.SwiftMessage;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.BooleanSupplier;
 import java.util.function.IntConsumer;
 
@@ -43,6 +46,19 @@ public final class MessageIndexService {
     /** {@code ~/.mtanalyze/swift-index} — the default index location. */
     public static Path defaultIndexDir() {
         return Path.of(System.getProperty("user.home"), ".mtanalyze", MtLucene.DEFAULT_INDEX_DIR);
+    }
+
+    /** Directory name of the dedicated MT 536 transaction index (see {@link #defaultMt536IndexDir()}). */
+    public static final String MT536_INDEX_DIR = "swift-index-mt536";
+
+    /**
+     * {@code ~/.mtanalyze/swift-index-mt536} — default location of the MT 536 transaction
+     * index populated by "Index MT 536 Entries". Kept separate from the general-purpose
+     * index ({@link #defaultIndexDir()}) because each document there is a single isolated
+     * transaction (one {@code TRAN}/{@code TRANSDET} sequence) rather than a whole message.
+     */
+    public static Path defaultMt536IndexDir() {
+        return Path.of(System.getProperty("user.home"), ".mtanalyze", MT536_INDEX_DIR);
     }
 
     private Path indexDir = defaultIndexDir();
@@ -114,12 +130,62 @@ public final class MessageIndexService {
     }
 
     /**
+     * Indexes already-serialized FIN message texts directly, e.g. the single-transaction
+     * messages produced by {@code EntryPanelModel.buildIsolatedMessageText} for "Index MT
+     * 536 Entries" -- skipping the {@link SwiftMessage} round-trip {@link #indexMessages}
+     * needs. Otherwise behaves exactly like {@link #indexMessages}: progress/cancel
+     * callbacks, one commit at the end, and idempotent re-indexing by content hash.
+     */
+    public int indexRawTexts(List<String> finTexts, String sourceLabel,
+                             IntConsumer onProgress, BooleanSupplier cancelled) throws IOException {
+        String label = (sourceLabel == null || sourceLabel.isBlank()) ? "mt-entries" : sourceLabel;
+        int total = finTexts.size();
+        int processed = 0;
+        int indexed = 0;
+        try (MtLucene client = new MtLucene(indexDir, maxHits)) {
+            client.ensureIndex();
+            for (String fin : finTexts) {
+                if (cancelled != null && cancelled.getAsBoolean()) {
+                    break;
+                }
+                if (fin != null && !fin.isBlank()) {
+                    indexed += client.addRaw(label, fin.strip()).size();
+                }
+                processed++;
+                if (onProgress != null && (processed % 25 == 0 || processed == total)) {
+                    onProgress.accept(processed);
+                }
+            }
+            client.commit();
+        }
+        return indexed;
+    }
+
+    /**
      * Runs a classic Lucene query string; default field is {@code raw_message}.
      * Returns at most {@link #maxHits()} hits.
      */
     public List<MtLucene.SwiftHit> search(String queryString) throws IOException {
         try (MtLucene client = new MtLucene(indexDir, maxHits)) {
             return client.searchByQueryString(queryString);
+        }
+    }
+
+    /**
+     * Structured search for the "Search MT 536 Entries" mask: an optional Logical Terminal
+     * (BIC, sender OR receiver, prefix match), any given tag values (e.g.
+     * {@code {"20C":"SEME123", "35B":"US0378331005"}}) and an optional free-text Lucene
+     * query (classic {@link org.apache.lucene.queryparser.classic.QueryParser} syntax, same
+     * as the "Search Messages" query box) -- all ANDed together, restricted to MT 536. At
+     * least one of {@code lt} / {@code tagValues} / {@code extraQuery} must carry a
+     * non-blank criterion, otherwise the result is empty (see {@link MtLucene#search}).
+     *
+     * @throws IllegalArgumentException if {@code extraQuery} cannot be parsed
+     */
+    public List<MtLucene.SwiftHit> searchMt536(String lt, Map<String, String> tagValues, String extraQuery)
+            throws IOException {
+        try (MtLucene client = new MtLucene(indexDir, maxHits)) {
+            return client.search(lt, List.of("536"), tagValues, extraQuery);
         }
     }
 
@@ -134,6 +200,24 @@ public final class MessageIndexService {
     public long documentCount() throws IOException {
         try (MtLucene client = new MtLucene(indexDir, maxHits)) {
             return client.documentCount();
+        }
+    }
+
+    /**
+     * Of {@code messages}, how many already have a document in the index -- identified by
+     * the same content hash used for indexing (see {@link MtLucene#contentId}), so a message
+     * counts as "already indexed" no matter which tab or file it was originally loaded from.
+     */
+    public int countAlreadyIndexed(List<SwiftMessage> messages) throws IOException {
+        Set<String> contentIds = new HashSet<>();
+        for (SwiftMessage msg : messages) {
+            String fin = toFin(msg);
+            if (fin != null && !fin.isBlank()) {
+                contentIds.add(MtLucene.contentId(fin.strip()));
+            }
+        }
+        try (MtLucene client = new MtLucene(indexDir, maxHits)) {
+            return client.existingContentIds(contentIds).size();
         }
     }
 

@@ -518,6 +518,15 @@ public final class ToolbarIcons {
         });
     }
 
+    public static Icon menuCheckRepository() {
+        return makeMenuIcon((g, c) -> {
+            g.setColor(c);
+            g.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            g.drawOval(1, 1, 14, 14);
+            g.drawPolyline(new int[]{4, 7, 12}, new int[]{8, 11, 5}, 3);
+        });
+    }
+
     private static Icon menuFilledCircleLetter(String letter, Color fill) {
         return makeMenuIcon((g, c) -> {
             g.setColor(fill);

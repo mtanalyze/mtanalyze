@@ -999,6 +999,7 @@ public class MtEntryPanel extends JPanel {
     public com.mtanalyze.model.Entry getEntryForRow(int r)                 { return model.getEntryForRow(r); }
     public String                    getRowValue(int r, String key)         { return model.getRowValue(r, key); }
     public String                    buildIsolatedMessageText(int r)        { return model.buildIsolatedMessageText(r); }
+    public List<String>              buildMt536IsolatedTexts()               { return model.buildMt536IsolatedTexts(); }
 
     // -----------------------------------------------------------------------
     // Static helpers

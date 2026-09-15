@@ -34,12 +34,13 @@ public final class MtFileIO {
 
     private static final String[] MT_TYPE_ITEMS = {
         "Auto-detect",
+        "MT 500", "MT 501",
         "MT 509", "MT 514", "MT 515", "MT 517", "MT 518",
         "MT 527", "MT 530", "MT 535", "MT 536", "MT 537",
         "MT 540", "MT 541", "MT 542", "MT 543",
         "MT 544", "MT 545", "MT 546", "MT 547", "MT 548",
         "MT 558", "MT 564", "MT 565", "MT 566", "MT 567", "MT 568", "MT 569",
-        "MT 578", "MT 940", "MT 950"
+        "MT 578", "MT 599", "MT 940", "MT 950"
     };
 
     public static String[] getMtTypeItems() { return MT_TYPE_ITEMS.clone(); }
@@ -53,6 +54,44 @@ public final class MtFileIO {
     /** 0-based index of the first content character in append-text lines (column 31). */
     private static final int APPEND_TEXT_CONTENT_COL = 30;
     private static final int APPEND_TEXT_MIN_TAG_LINES = 3;
+
+    /**
+     * MT 536 sequence boundaries inferred from field identity, since an append-text
+     * printout carries no explicit {@code :16R:}/{@code :16S:} markers of its own.
+     * Sequence order is fixed (GENL -&gt; SUBSAFE -&gt; FIN -&gt; TRAN) and state only ever
+     * advances forward, so a tag that is also valid earlier or later in a different
+     * sequence (e.g. {@code 20C}, reused inside TRAN's LINK/SETPRTY subsequences) is
+     * never mistaken for a boundary once that later state has been reached.
+     * <p>
+     * Sequence B (SUBSAFE) has no reliable trigger of its own: its fields (97a/94a/17B)
+     * are all optional and, in practice, real single-account extracts carry the
+     * safekeeping account at GENL level instead and leave SUBSAFE empty -- so it is
+     * always opened and closed empty, immediately before FIN, rather than guessed at
+     * from field identity.
+     */
+    private static final String APPEND_TEXT_536_FIN_TAG = "35B";
+    private static final Set<String> APPEND_TEXT_536_FIN_CONTINUATION_TAGS =
+        Set.of("35B", "90A", "90B", "94B", "94S", "98A", "98C", "93B", "93F");
+
+    /**
+     * Tags valid inside one TRAN's LINK (B1a1) subsequence -- an optional {@code 13A}/{@code 13B}
+     * followed by a mandatory {@code 20C}/{@code 20U}. Consumed as repeating (13a?, 20a) pairs
+     * right after TRAN opens: a bare {@code 20C}/{@code 20U} with no {@code 13a} immediately
+     * before it still gets its own LINK occurrence, matching real messages where a first LINK
+     * carries both fields and a second carries only the reference.
+     */
+    private static final Set<String> APPEND_TEXT_536_LINK_TAGS = Set.of("13A", "13B", "20C", "20U");
+
+    /**
+     * Tags that start a new SETPRTY (B1a2A) occurrence within TRANSDET: SETPRTY's Fieldset 95
+     * is mandatory and always the first field of an occurrence, so any of its primary variants
+     * marks a fresh party -- any {@code 97a}/{@code 20C} that follows, up to the next such tag,
+     * is that party's own safekeeping account / reference and stays inside the same SETPRTY
+     * (e.g. a Receiving/Delivering Agent's account). {@code 95L} (secondary LEI alongside the
+     * primary identifier) deliberately is not a trigger, so it stays paired with its party too.
+     */
+    private static final Set<String> APPEND_TEXT_536_SETPRTY_START_TAGS =
+        Set.of("95P", "95Q", "95R", "95C", "95D");
 
     private static final Pattern SWIFT_TAG_PAT = Pattern.compile("^:([A-Z0-9]{2,5}):");
     private static final Pattern APPEND_MT_HDR_PAT = Pattern.compile("^(\\d{3}):");
@@ -92,7 +131,9 @@ public final class MtFileIO {
         String effectiveMtOverride = mtTypeOverride;
         String nvCandidate = crlfNormalized.trim();
         if (isAppendTextContent(trimmed)) {
-            block4Body = convertAppendTextToBlock4(trimmed);
+            String appendTextMt = detectMtTypeFromAppendText(trimmed);
+            block4Body = convertAppendTextToBlock4(trimmed, appendTextMt);
+            if (appendTextMt != null) effectiveMtOverride = appendTextMt;
         } else if (isMultiLineNameValueContent(nvCandidate)) {
             block4Body = convertMultiLineNameValueToBlock4(nvCandidate);
             String chunkMt = extractMtTypeFromMultiLineNameValue(nvCandidate);
@@ -717,36 +758,172 @@ public final class MtFileIO {
     }
 
     /**
-     * A line qualifies as an append-text tag line when it carries a SWIFT tag,
-     * is long enough to contain content at column 31, and has a space at index 29
-     * (end of the description column) followed by a non-space content character.
+     * True when {@code line} has real content starting exactly at column 31 -- long
+     * enough to reach it, with a space at index 29 (end of the description column)
+     * followed by a non-space character. Shared by tag lines ({@code :TAG:} at the
+     * start) and continuation lines (a wrapped multi-line value with no tag of its own).
      */
-    private static boolean isAppendTextTagLine(String line) {
-        if (line.length() <= APPEND_TEXT_CONTENT_COL) return false;
-        if (!SWIFT_TAG_PAT.matcher(line).find()) return false;
-        return line.charAt(APPEND_TEXT_CONTENT_COL - 1) == ' '
+    private static boolean hasAppendTextContentColumn(String line) {
+        return line.length() > APPEND_TEXT_CONTENT_COL
+            && line.charAt(APPEND_TEXT_CONTENT_COL - 1) == ' '
             && line.charAt(APPEND_TEXT_CONTENT_COL) != ' ';
     }
 
+    /** A line qualifies as an append-text tag line when it also carries a SWIFT tag. */
+    private static boolean isAppendTextTagLine(String line) {
+        return hasAppendTextContentColumn(line) && SWIFT_TAG_PAT.matcher(line).find();
+    }
+
     /**
-     * Converts an append-text block into SWIFT block4 content.
-     * Only tag lines are processed; description columns are discarded;
-     * the content starting at column 31 becomes the tag value.
+     * Splits an append-text block into its {@code [tag, value]} fields, in order.
+     * A value spanning several physical lines (e.g. a multi-line {@code 35B} or
+     * {@code 70E}) is joined with {@code \n}: besides its own tag line, any later line
+     * that reaches column 31 with content there -- but carries no tag of its own, i.e.
+     * the wrapped remainder of the description column -- is treated as a continuation
+     * of the value and appended, up to the next real tag line.
      */
-    public static String convertAppendTextToBlock4(String content) {
-        StringBuilder sb = new StringBuilder();
+    private static List<String[]> parseAppendTextFields(String content) {
+        List<String[]> fields = new ArrayList<>();
+        String tag = null;
+        StringBuilder value = null;
         for (String line : content.split(NEWLINE_PATTERN)) {
-            if (!isAppendTextTagLine(line)) continue;
-            Matcher m = SWIFT_TAG_PAT.matcher(line);
-            if (m.find()) {
-                String tag   = m.group(1);
-                String value = line.substring(APPEND_TEXT_CONTENT_COL).trim();
-                if (!value.isEmpty()) {
-                    sb.append(':').append(tag).append(':').append(value).append('\n');
-                }
+            if (isAppendTextTagLine(line)) {
+                flushAppendTextField(fields, tag, value);
+                Matcher m = SWIFT_TAG_PAT.matcher(line);
+                m.find();
+                tag = m.group(1);
+                value = new StringBuilder(line.substring(APPEND_TEXT_CONTENT_COL).trim());
+            } else if (value != null && hasAppendTextContentColumn(line)) {
+                value.append('\n').append(line.substring(APPEND_TEXT_CONTENT_COL).trim());
             }
         }
+        flushAppendTextField(fields, tag, value);
+        return fields;
+    }
+
+    private static void flushAppendTextField(List<String[]> fields, String tag, StringBuilder value) {
+        if (tag != null && !value.isEmpty()) fields.add(new String[]{tag, value.toString()});
+    }
+
+    /**
+     * Converts an append-text block into SWIFT block4 content, using {@link #convertAppendTextToBlock4}
+     * with no known MT type (flat fields, no {@code :16R:}/{@code :16S:} wrapping).
+     */
+    public static String convertAppendTextToBlock4(String content) {
+        return convertAppendTextToBlock4(content, null);
+    }
+
+    /**
+     * Converts an append-text block into SWIFT block4 content. For MT 536 the result is
+     * wrapped into the GENL/SUBSAFE/FIN/TRAN sequence structure ({@link #wrapMt536AppendTextFields}),
+     * inferred from field identity since the printout carries no {@code :16R:}/{@code :16S:}
+     * markers of its own; every other (or unknown) MT type gets a flat, unwrapped field list,
+     * same as before.
+     */
+    public static String convertAppendTextToBlock4(String content, String mtType) {
+        List<String[]> fields = parseAppendTextFields(content);
+        if ("536".equals(mtType)) return wrapMt536AppendTextFields(fields);
+        StringBuilder sb = new StringBuilder();
+        for (String[] field : fields) appendBlock4Field(sb, field[0], field[1]);
         return sb.toString();
+    }
+
+    /**
+     * Wraps a flat append-text field list into MT 536's GENL/SUBSAFE/FIN/TRAN sequence
+     * structure (Sequences A/B/B1/B1a, with TRAN's own LINK/TRANSDET/SETPRTY subsequences
+     * -- B1a1/B1a2/B1a2A). The block names themselves are not hand-maintained:
+     * {@link ProwideSequences#byLetterPath} reads them via reflection from Prowide's
+     * generated {@code MT536$SequenceX} classes, same as {@link NameValueConverter}, so
+     * this stays correct even if a future SRU renamed a block. What Prowide does
+     * <em>not</em> expose is which fields belong to which sequence -- that boundary is
+     * inferred from field identity: GENL runs until the first {@link #APPEND_TEXT_536_FIN_TAG}
+     * (35B), at which point SUBSAFE is opened and closed empty (see the field's javadoc)
+     * immediately before FIN; any tag outside {@link #APPEND_TEXT_536_FIN_CONTINUATION_TAGS}
+     * then ends FIN and starts TRAN, whose own fields are nested by
+     * {@link #appendTranInterior}.
+     */
+    private static String wrapMt536AppendTextFields(List<String[]> fields) {
+        Map<String, String> sequences = ProwideSequences.byLetterPath(536);
+        String genl    = sequences.getOrDefault("A", "GENL");
+        String subsafe = sequences.getOrDefault("B", "SUBSAFE");
+        String fin     = sequences.getOrDefault("B1", "FIN");
+        String tran    = sequences.getOrDefault("B1a", "TRAN");
+
+        StringBuilder sb = new StringBuilder();
+        int seq = 0; // 0=GENL 2=FIN (TRAN fields are buffered separately once reached)
+        List<String[]> tranFields = null;
+        sb.append(":16R:").append(genl).append('\n');
+        for (String[] field : fields) {
+            String tag = field[0];
+            if (seq == 0 && APPEND_TEXT_536_FIN_TAG.equals(tag)) {
+                sb.append(":16S:").append(genl).append('\n');
+                sb.append(":16R:").append(subsafe).append('\n');
+                sb.append(":16R:").append(fin).append('\n');
+                seq = 2;
+            }
+            if (seq == 2 && tranFields == null && !APPEND_TEXT_536_FIN_CONTINUATION_TAGS.contains(tag)) {
+                tranFields = new ArrayList<>();
+            }
+            if (tranFields != null) tranFields.add(field);
+            else appendBlock4Field(sb, tag, field[1]);
+        }
+        if (tranFields != null) {
+            sb.append(":16R:").append(tran).append('\n');
+            appendTranInterior(sb, tranFields, sequences);
+            sb.append(":16S:").append(tran).append('\n');
+        }
+        if (seq == 2) { sb.append(":16S:").append(fin).append('\n').append(":16S:").append(subsafe).append('\n'); }
+        else sb.append(":16S:").append(genl).append('\n');
+        return sb.toString();
+    }
+
+    /**
+     * Nests one TRAN's fields into LINK (repeating (13a?, 20a) pairs, see
+     * {@link #APPEND_TEXT_536_LINK_TAGS}), then TRANSDET, with SETPRTY (repeating, one
+     * occurrence per {@link #APPEND_TEXT_536_SETPRTY_START_TAGS} tag) nested inside it for
+     * whatever follows. Both LINK and SETPRTY are optional and only emitted when a
+     * triggering tag actually occurs.
+     */
+    private static void appendTranInterior(StringBuilder sb, List<String[]> tranFields,
+                                            Map<String, String> sequences) {
+        String link     = sequences.getOrDefault("B1a1", "LINK");
+        String transdet = sequences.getOrDefault("B1a2", "TRANSDET");
+        String setprty  = sequences.getOrDefault("B1a2A", "SETPRTY");
+
+        int i = 0;
+        int n = tranFields.size();
+        while (i < n && APPEND_TEXT_536_LINK_TAGS.contains(tranFields.get(i)[0])) {
+            sb.append(":16R:").append(link).append('\n');
+            String tag = tranFields.get(i)[0];
+            if ("13A".equals(tag) || "13B".equals(tag)) {
+                appendBlock4Field(sb, tag, tranFields.get(i)[1]);
+                i++;
+            }
+            if (i < n && ("20C".equals(tranFields.get(i)[0]) || "20U".equals(tranFields.get(i)[0]))) {
+                appendBlock4Field(sb, tranFields.get(i)[0], tranFields.get(i)[1]);
+                i++;
+            }
+            sb.append(":16S:").append(link).append('\n');
+        }
+        if (i >= n) return;
+
+        sb.append(":16R:").append(transdet).append('\n');
+        boolean setprtyOpen = false;
+        for (; i < n; i++) {
+            String tag = tranFields.get(i)[0];
+            if (APPEND_TEXT_536_SETPRTY_START_TAGS.contains(tag)) {
+                if (setprtyOpen) sb.append(":16S:").append(setprty).append('\n');
+                sb.append(":16R:").append(setprty).append('\n');
+                setprtyOpen = true;
+            }
+            appendBlock4Field(sb, tag, tranFields.get(i)[1]);
+        }
+        if (setprtyOpen) sb.append(":16S:").append(setprty).append('\n');
+        sb.append(":16S:").append(transdet).append('\n');
+    }
+
+    private static void appendBlock4Field(StringBuilder sb, String tag, String value) {
+        sb.append(':').append(tag).append(':').append(value).append('\n');
     }
 
     // -----------------------------------------------------------------------

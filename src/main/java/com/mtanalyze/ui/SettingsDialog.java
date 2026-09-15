@@ -41,7 +41,7 @@ final class SettingsDialog {
     private SettingsDialog() {}
 
     record Config(CsvKeys csv, ThemeConfig theme, SystemKeys system, PowerUserConfig powerUser,
-                  LuceneConfig lucene, ElasticConfig elastic) {
+                  MaskingConfig masking, MaskingConfig quantityMasking, LuceneConfig lucene, ElasticConfig elastic) {
         record CsvKeys(String fieldSep, String decimalSep) {
         }
 
@@ -88,6 +88,16 @@ final class SettingsDialog {
         record PowerUserConfig(String prefKey, Runnable onChange) {
         }
 
+        /**
+         * Import-time masking of tags sharing a prefix -- {@code 19} (e.g. {@code 19A},
+         * {@code 19B}) for {@code masking}, {@code 36} (e.g. {@code 36B}, {@code 36D}) for
+         * {@code quantityMasking} -- stored directly in {@link Preferences}. {@code onChange}
+         * re-applies the setting to the running {@link ImportService}. Only affects messages
+         * parsed after the setting is turned on; already-imported entries are left untouched.
+         */
+        record MaskingConfig(String prefKey, Runnable onChange) {
+        }
+
     }
 
     private record FormFields(JTextField fieldSep, JTextField decimalSep, JTextField sender, JTextField receiver,
@@ -107,6 +117,10 @@ final class SettingsDialog {
         String currentTheme = prefs.get(cfg.theme.prefKey, "Dark");
         JCheckBox darkModeCheck  = new JCheckBox("Dark Mode",       MtAnalyzeFrame.isDarkTheme(currentTheme));
         JCheckBox powerUserCheck = new JCheckBox("Power User Mode", prefs.getBoolean(cfg.powerUser.prefKey, false));
+        JCheckBox maskAmountsCheck = new JCheckBox("Mask 19xx tag values (digits → 9)",
+                prefs.getBoolean(cfg.masking.prefKey, false));
+        JCheckBox maskQuantitiesCheck = new JCheckBox("Mask 36xx tag values (digits → 9)",
+                prefs.getBoolean(cfg.quantityMasking.prefKey, false));
 
         JTextField fieldSepField = new JTextField(
                 prefs.get(cfg.csv.fieldSep, CsvExport.DEFAULT_FIELD_SEP), 4);
@@ -123,14 +137,14 @@ final class SettingsDialog {
         JTextField logNewlineTokenField = new JTextField(
                 cfg.system.getLogNewlineToken.get(), 10);
         JCheckBox luceneEnabledCheck = new JCheckBox("Enable Lucene Search",
-                prefs.getBoolean(cfg.lucene.enabledPrefKey, true));
+                prefs.getBoolean(cfg.lucene.enabledPrefKey, false));
         JTextField luceneDirField = new JTextField(
                 prefs.get(cfg.lucene.dirPrefKey, cfg.lucene.defaultDir), 24);
         luceneDirField.setToolTipText("Leave empty for the default: " + cfg.lucene.defaultDir);
         JTextField luceneMaxHitsField = new JTextField(
                 String.valueOf(prefs.getInt(cfg.lucene.maxHitsPrefKey, cfg.lucene.defaultMaxHits)), 6);
         JCheckBox elasticEnabledCheck = new JCheckBox("Enable Elasticsearch",
-                prefs.getBoolean(cfg.elastic.enabledPrefKey, true));
+                prefs.getBoolean(cfg.elastic.enabledPrefKey, false));
         JTextField elasticHostField = new JTextField(
                 prefs.get(cfg.elastic.hostPrefKey, cfg.elastic.defaultHost), 14);
         JTextField elasticPortField = new JTextField(
@@ -154,7 +168,7 @@ final class SettingsDialog {
                 elasticUsernameField, elasticPasswordField, elasticIndexField, elasticMaxHitsField);
 
         JPanel generalPanel  = buildGeneralPanel(darkModeCheck, powerUserCheck, fields);
-        JPanel advancedPanel = buildAdvancedPanel(fields, cfg.lucene, cfg.elastic);
+        JPanel advancedPanel = buildAdvancedPanel(fields, maskAmountsCheck, maskQuantitiesCheck, cfg.lucene, cfg.elastic);
 
         // ---- User Dictionary tab ----
         DefaultTableModel dictModel = new DefaultTableModel(
@@ -199,6 +213,10 @@ final class SettingsDialog {
             cfg.theme.onChange.accept(newTheme);
             prefs.putBoolean(cfg.powerUser.prefKey, powerUserCheck.isSelected());
             cfg.powerUser.onChange.run();
+            prefs.putBoolean(cfg.masking.prefKey, maskAmountsCheck.isSelected());
+            cfg.masking.onChange.run();
+            prefs.putBoolean(cfg.quantityMasking.prefKey, maskQuantitiesCheck.isSelected());
+            cfg.quantityMasking.onChange.run();
             dlg.dispose();
         });
         cancel.addActionListener(e -> dlg.dispose());
@@ -254,8 +272,9 @@ final class SettingsDialog {
     // Advanced tab
     // -----------------------------------------------------------------------
 
-    private static JPanel buildAdvancedPanel(FormFields fields, Config.LuceneConfig lucene,
-                                              Config.ElasticConfig elastic) {
+    private static JPanel buildAdvancedPanel(FormFields fields, JCheckBox maskAmountsCheck,
+                                              JCheckBox maskQuantitiesCheck,
+                                              Config.LuceneConfig lucene, Config.ElasticConfig elastic) {
         FormPanel fp = new FormPanel();
         JPanel form = fp.panel;
         GridBagConstraints lc = fp.lc;
@@ -264,9 +283,17 @@ final class SettingsDialog {
         addSectionSeparator(form, 0, "Import Limits");
         FormPanel.addRow(form, lc, fc, 1, "Max. entries:", fields.maxEntries);
 
-        addSectionSeparator(form, 2, "Log File Import");
-        FormPanel.addRow(form, lc, fc, 3, "SWIFT start marker:", fields.logSwiftStart);
-        FormPanel.addRow(form, lc, fc, 4, "Newline token:",      fields.logNewlineToken);
+        addSectionSeparator(form, 2, "Masking");
+        maskAmountsCheck.setToolTipText(
+                "Applies to messages imported after this is turned on; already-open entries are unaffected.");
+        FormPanel.addRow(form, lc, fc, 3, "", maskAmountsCheck);
+        maskQuantitiesCheck.setToolTipText(
+                "Applies to messages imported after this is turned on; already-open entries are unaffected.");
+        FormPanel.addRow(form, lc, fc, 4, "", maskQuantitiesCheck);
+
+        addSectionSeparator(form, 5, "Log File Import");
+        FormPanel.addRow(form, lc, fc, 6, "SWIFT start marker:", fields.logSwiftStart);
+        FormPanel.addRow(form, lc, fc, 7, "Newline token:",      fields.logNewlineToken);
 
         JButton resetLogTokens = new JButton(RESET_TO_DEFAULTS);
         resetLogTokens.addActionListener(e -> {
@@ -276,9 +303,9 @@ final class SettingsDialog {
         });
         JPanel resetWrap = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         resetWrap.add(resetLogTokens);
-        FormPanel.addRow(form, lc, fc, 5, "", resetWrap);
+        FormPanel.addRow(form, lc, fc, 8, "", resetWrap);
 
-        int row = 6;
+        int row = 9;
         addSectionSeparator(form, row++, "Lucene Search");
         FormPanel.addRow(form, lc, fc, row++, "", fields.luceneEnabled);
 

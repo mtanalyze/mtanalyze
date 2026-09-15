@@ -19,6 +19,8 @@ import com.mtanalyze.model.MessageOrigin;
 import com.mtanalyze.model.SwiftMessage;
 import com.mtanalyze.parser.MtFileIO;
 import com.mtanalyze.parser.NameValueConverter;
+import com.prowidesoftware.swift.model.SwiftTagListBlock;
+import com.prowidesoftware.swift.model.Tag;
 import com.prowidesoftware.swift.model.mt.AbstractMT;
 
 import java.io.BufferedReader;
@@ -31,7 +33,25 @@ import java.util.Locale;
 
 final class ImportService {
 
+    /** Prefix shared by every SWIFT tag that amount-masking scrubs, e.g. {@code 19A}. */
+    private static final String MASKED_AMOUNT_TAG_PREFIX = "19";
+    /** Prefix shared by every SWIFT tag that quantity-masking scrubs, e.g. {@code 36B}, {@code 36D}. */
+    private static final String MASKED_QUANTITY_TAG_PREFIX = "36";
+
+    private boolean maskAmountsEnabled;
+    private boolean maskQuantitiesEnabled;
+
     ImportService() {}
+
+    /** Enables/disables replacing every digit in a {@code 19}-prefixed tag's value with {@code 9} on import. */
+    void setMaskAmountsEnabled(boolean enabled) {
+        this.maskAmountsEnabled = enabled;
+    }
+
+    /** Enables/disables replacing every digit in a {@code 36}-prefixed tag's value with {@code 9} on import. */
+    void setMaskQuantitiesEnabled(boolean enabled) {
+        this.maskQuantitiesEnabled = enabled;
+    }
 
     static boolean isLogFile(File file) {
         return file.getName().toLowerCase(Locale.ROOT).endsWith(".log");
@@ -103,6 +123,8 @@ final class ImportService {
         try {
             AbstractMT mt = parseWithTruncationRecovery(chunk, mtOverride);
             if (mt == null) return;
+            if (maskAmountsEnabled) maskTagsStartingWith(mt, MASKED_AMOUNT_TAG_PREFIX);
+            if (maskQuantitiesEnabled) maskTagsStartingWith(mt, MASKED_QUANTITY_TAG_PREFIX);
             if (!batch.mtTypeFilter.isEmpty()) {
                 com.prowidesoftware.swift.model.SwiftBlock2 b2 = mt.getSwiftMessage().getBlock2();
                 String type = b2 != null ? b2.getMessageType() : null;
@@ -123,6 +145,25 @@ final class ImportService {
     /** Wraps the first parse failure Prowide reports while retrying with a shortened candidate. */
     private static final class SwiftParseException extends Exception {
         SwiftParseException(Throwable cause) { super(cause); }
+    }
+
+    /**
+     * Replaces every digit in the value of each block-4 tag whose name starts with
+     * {@code tagPrefix} (e.g. {@value #MASKED_AMOUNT_TAG_PREFIX} for {@code 19A} Sum of
+     * Amount / {@code 19B} Amount, or {@value #MASKED_QUANTITY_TAG_PREFIX} for {@code 36B} /
+     * {@code 36D} Quantity of Financial Instrument) with {@code 9}, so the shape/format of
+     * the field is preserved but the figure itself is not. Applied once at import time, so
+     * it reaches the table, exports, the source/raw view and the search indexes alike.
+     */
+    private static void maskTagsStartingWith(AbstractMT mt, String tagPrefix) {
+        SwiftTagListBlock b4 = mt.getSwiftMessage().getBlock4();
+        if (b4 == null) return;
+        for (Tag t : b4.getTags()) {
+            String name = t.getName();
+            if (name == null || !name.startsWith(tagPrefix)) continue;
+            String value = t.getValue();
+            if (value != null) t.setValue(value.replaceAll("\\d", "9"));
+        }
     }
 
     /**

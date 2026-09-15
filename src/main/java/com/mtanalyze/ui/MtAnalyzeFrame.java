@@ -83,6 +83,7 @@ public class MtAnalyzeFrame extends JFrame {
     private final transient ExcelExport         excelExport = new ExcelExport();
     private final transient ImportService       importService = new ImportService();
     private final transient MessageIndexService messageIndex  = new MessageIndexService();
+    private final transient MessageIndexService mt536Index    = new MessageIndexService();
     private final transient ElasticIndexService elasticIndex  = new ElasticIndexService();
     private final transient HintDictionary      dict          = new HintDictionary();
     private final transient MtEntryPanel.PrefKeys prefKeys;
@@ -128,6 +129,8 @@ public class MtAnalyzeFrame extends JFrame {
     private static final String PREF_CSV_DECIMAL_SEP      = "csv_decimal_sep";
     private static final String PREF_USER_DICT             = "user_qualifier_values";
     private static final String PREF_POWER_USER            = "power_user";
+    private static final String PREF_MASK_AMOUNTS_ENABLED  = "mask_amounts_enabled";
+    private static final String PREF_MASK_QUANTITIES_ENABLED = "mask_quantities_enabled";
     private static final String PREF_LUCENE_ENABLED        = "lucene_enabled";
     private static final String PREF_ELASTIC_ENABLED       = "elastic_enabled";
     private static final String PREF_LUCENE_DIR            = "lucene_index_dir";
@@ -145,6 +148,7 @@ public class MtAnalyzeFrame extends JFrame {
     /** Last Lucene / Elasticsearch query string, pre-filled into the "Search Messages" dialog. */
     private String lastLuceneQuery = "";
     private String lastElasticQuery = "";
+    private String lastMt536Query = "";
 
     private JRadioButtonMenuItem menuNotifications;
     private JRadioButtonMenuItem menuTags;
@@ -182,6 +186,7 @@ public class MtAnalyzeFrame extends JFrame {
         setupStatusBar();
         applyLuceneConfig();
         applyElasticConfig();
+        applyMaskingConfig();
         assembleMainLayout();
         openNewTab();
         applyPowerUserMode();
@@ -251,10 +256,14 @@ public class MtAnalyzeFrame extends JFrame {
             this::onIndexMessages,
             this::onSearchMessages,
             this::onClearLuceneIndex,
+            this::onIndexMt536Entries,
+            this::onSearchMt536Entries,
+            this::onClearMt536Index,
             this::onIndexMessagesElastic,
             this::onSearchMessagesElastic,
             this::onClearElasticIndex,
-            this::onShowStatistics
+            this::onShowStatistics,
+            this::onCheckRepository
         );
     }
 
@@ -447,6 +456,105 @@ public class MtAnalyzeFrame extends JFrame {
     }
 
     // -----------------------------------------------------------------------
+    // Lucene: MT 536 transaction index (Index MT 536 Entries / Search MT 536 Entries)
+    // -----------------------------------------------------------------------
+
+    /**
+     * Isolates every MT 536 entry of the active tab to its own transaction (via the same
+     * pruning "Isolate Entry in New Tab" uses) and indexes each resulting single-transaction
+     * message into the dedicated MT 536 index, separate from the general-purpose index.
+     */
+    private void onIndexMt536Entries() {
+        EntryTab t = activeTab();
+        if (t == null) return;
+        List<String> finTexts = t.entryPanel.buildMt536IsolatedTexts();
+        if (finTexts.isEmpty()) {
+            statusLabel.setText("Nothing to index – this tab has no MT 536 entries.");
+            return;
+        }
+        final int count = finTexts.size();
+
+        JProgressBar bar = new JProgressBar(0, count);
+        bar.setStringPainted(true);
+        bar.setString("0 / " + count);
+        FrameLayout.ProgressDialog pd = FrameLayout.buildProgressDialog(this, "Index MT 536 Entries",
+            "Indexing " + count + (count == 1 ? " transaction" : " transactions")
+                + " into the MT 536 index…", bar);
+
+        SwingWorker<Integer, Integer> worker = new SwingWorker<>() {
+            @Override protected Integer doInBackground() throws IOException {
+                return mt536Index.indexRawTexts(finTexts, t.title, this::publish, this::isCancelled);
+            }
+            @Override protected void process(List<Integer> progress) {
+                int n = progress.get(progress.size() - 1);
+                bar.setValue(n);
+                bar.setString(n + " / " + count);
+            }
+            @Override protected void done() {
+                finishIndexing(this, pd, t, mt536Index::documentCount,
+                    "the MT 536 index", "the MT 536 index at " + mt536Index.indexDir());
+            }
+        };
+        pd.runWorker(worker);
+    }
+
+    /** Opens the MT 536 search mask and loads the matching isolated transactions into a new tab. */
+    private void onSearchMt536Entries() {
+        Mt536SearchDialog.Result query = Mt536SearchDialog.show(this, lastMt536Query);
+        if (query == null) return;
+        lastMt536Query = query.query() != null ? query.query() : "";
+
+        List<MtLucene.SwiftHit> hits;
+        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        try {
+            hits = mt536Index.searchMt536(query.lt(), query.tagValues(), query.query());
+        } catch (IllegalArgumentException ex) {
+            setCursor(Cursor.getDefaultCursor());
+            JOptionPane.showMessageDialog(this, ex.getMessage(),
+                "Invalid Query", JOptionPane.WARNING_MESSAGE);
+            return;
+        } catch (IOException ex) {
+            JOptionPane.showMessageDialog(this, "Search failed:\n" + ex.getMessage(),
+                ERROR_TITLE, JOptionPane.ERROR_MESSAGE);
+            return;
+        } finally {
+            setCursor(Cursor.getDefaultCursor());
+        }
+
+        String criteria = describeMt536Query(query);
+        if (hits.isEmpty()) {
+            JOptionPane.showMessageDialog(this,
+                "No indexed MT 536 transactions match:\n" + criteria
+                    + "\n\n(Use Lucene ▸ Index MT 536 Entries first if the index is empty.)",
+                "Search MT 536 Entries", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        List<String> chunks = hits.stream().map(MtLucene.SwiftHit::rawMessage).toList();
+        EntryTab tab = openNewTab();
+        int parsed = tab.importer.appendFromContent(chunks, null, null, MessageOrigin.CLIPBOARD);
+        tab.updateTitle("MT 536: " + criteria);
+        boolean capped = hits.size() >= mt536Index.maxHits();
+        tab.setStatus(parsed + " of " + hits.size() + " search hit"
+            + (hits.size() == 1 ? "" : "s") + (capped ? " (hit limit reached)" : "")
+            + " loaded for: " + criteria);
+    }
+
+    /** Human-readable summary of an MT 536 search mask query, e.g. for the result tab's title. */
+    private static String describeMt536Query(Mt536SearchDialog.Result query) {
+        List<String> parts = new ArrayList<>();
+        if (query.lt() != null && !query.lt().isBlank()) parts.add("BIC=" + query.lt());
+        query.tagValues().forEach((tag, value) -> parts.add(tag + "=" + value));
+        if (query.query() != null && !query.query().isBlank()) parts.add(query.query().trim());
+        return String.join(", ", parts);
+    }
+
+    private void onClearMt536Index() {
+        onClearIndex(mt536Index::documentCount, mt536Index::clearIndex,
+            "MT 536", "the MT 536 index?\n" + mt536Index.indexDir());
+    }
+
+    // -----------------------------------------------------------------------
     // Elasticsearch: Index Messages / Search Messages
     // -----------------------------------------------------------------------
 
@@ -479,7 +587,20 @@ public class MtAnalyzeFrame extends JFrame {
     }
 
     private void onShowStatistics() {
-        StatisticsDialog.show(this, messageIndex, elasticIndex);
+        StatisticsDialog.show(this, messageIndex, elasticIndex, isLuceneEnabled(), isElasticEnabled());
+    }
+
+    /** Checks the active tab's MT Entries messages against the Lucene/Elasticsearch repositories. */
+    private void onCheckRepository() {
+        EntryTab t = activeTab();
+        if (t == null) return;
+        List<SwiftMessage> messages = t.entryPanel.getLoadedMessages();
+        if (messages.isEmpty()) {
+            statusLabel.setText("Nothing to check – this tab has no MT entries.");
+            return;
+        }
+        CheckRepositoryDialog.show(this, messages, messageIndex, elasticIndex,
+            isLuceneEnabled(), isElasticEnabled());
     }
 
     private void showSettings() {
@@ -491,6 +612,8 @@ public class MtAnalyzeFrame extends JFrame {
                 config::getMaxEntries, config::getLogSwiftStart, config::getLogNewlineToken,
                 config::saveSettings),
             new SettingsDialog.Config.PowerUserConfig(PREF_POWER_USER, this::applyPowerUserMode),
+            new SettingsDialog.Config.MaskingConfig(PREF_MASK_AMOUNTS_ENABLED, this::applyMaskingConfig),
+            new SettingsDialog.Config.MaskingConfig(PREF_MASK_QUANTITIES_ENABLED, this::applyMaskingConfig),
             new SettingsDialog.Config.LuceneConfig(PREF_LUCENE_ENABLED, PREF_LUCENE_DIR, PREF_LUCENE_MAX_HITS,
                 MessageIndexService.defaultIndexDir().toString(),
                 MessageIndexService.DEFAULT_MAX_HITS, this::applyLuceneConfig),
@@ -508,9 +631,11 @@ public class MtAnalyzeFrame extends JFrame {
 
     /** Re-applies the persisted Lucene index directory and hit limit to the running service. */
     private void applyLuceneConfig() {
-        messageIndex.configure(
-            PREFS.get(PREF_LUCENE_DIR, ""),
-            PREFS.getInt(PREF_LUCENE_MAX_HITS, MessageIndexService.DEFAULT_MAX_HITS));
+        int maxHits = PREFS.getInt(PREF_LUCENE_MAX_HITS, MessageIndexService.DEFAULT_MAX_HITS);
+        messageIndex.configure(PREFS.get(PREF_LUCENE_DIR, ""), maxHits);
+        // The MT 536 transaction index always lives at its own fixed location -- it is not
+        // user-configurable, only the shared hit limit is re-applied here.
+        mt536Index.configure(MessageIndexService.defaultMt536IndexDir().toString(), maxHits);
         setMenuEnabled(luceneMenu, isLuceneEnabled());
     }
 
@@ -527,12 +652,26 @@ public class MtAnalyzeFrame extends JFrame {
         setMenuEnabled(elasticMenu, isElasticEnabled());
     }
 
+    /** Re-applies the persisted "mask 19xx/36xx tag values" import settings to the import service. */
+    private void applyMaskingConfig() {
+        importService.setMaskAmountsEnabled(isMaskAmountsEnabled());
+        importService.setMaskQuantitiesEnabled(isMaskQuantitiesEnabled());
+    }
+
+    private boolean isMaskAmountsEnabled() {
+        return PREFS.getBoolean(PREF_MASK_AMOUNTS_ENABLED, false);
+    }
+
+    private boolean isMaskQuantitiesEnabled() {
+        return PREFS.getBoolean(PREF_MASK_QUANTITIES_ENABLED, false);
+    }
+
     private boolean isLuceneEnabled() {
-        return PREFS.getBoolean(PREF_LUCENE_ENABLED, true);
+        return PREFS.getBoolean(PREF_LUCENE_ENABLED, false);
     }
 
     private boolean isElasticEnabled() {
-        return PREFS.getBoolean(PREF_ELASTIC_ENABLED, true);
+        return PREFS.getBoolean(PREF_ELASTIC_ENABLED, false);
     }
 
     /** Hides {@code menu} and disables its items when {@code enabled} is false, so neither the

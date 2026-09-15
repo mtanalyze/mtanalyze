@@ -12,6 +12,42 @@ java -jar MT-Analyze-2.0.2.jar
 
 ## Changes
 
+### 36xx tag masking (quantity fields)
+
+**Settings ▸ Advanced ▸ Masking** gained a second checkbox, **Mask 36xx tag values (digits
+→ 9)**, alongside the existing 19xx one — same digit-to-`9` replacement, applied instead to
+tags whose name starts with `36` (`36B` Quantity of Financial Instrument, `36D` Quantity
+(Digital Asset)). Off by default, only affects messages parsed after it's turned on, and
+reaches everywhere the masked value is used (Entries table, exports, raw/source view,
+Lucene/Elasticsearch indexes) — same behavior as 19xx masking, controlled independently.
+
+### MT 536 Append-Text (Depotumsatz) import now structured, not flat
+
+The fixed-width "Append-Text" printout format (tag + description in columns 6–30 + value
+from column 31, no `:16R:`/`:16S:` markers of its own — the shape of many German
+custodians' Depotumsatz reports) previously converted to a completely flat block 4, which
+collapsed the whole statement into a single, unstructured row (or numbered duplicate
+columns) instead of a proper transaction row. For MT 536 (detected from the printout's own
+`536: ...` header line), the converter now infers the GENL/SUBSAFE/FIN/TRAN sequence
+boundaries from field identity and wraps the content accordingly, so it parses into the
+same one-row-per-transaction shape as a native MT 536. GENL runs up to the first `35B`;
+Sequence B (SUBSAFE) is opened and closed empty right before FIN, matching how real
+single-account extracts carry the safekeeping account at GENL level rather than under
+SUBSAFE. Within TRAN, its own LINK (repeating `13a`/`20a` reference pairs), TRANSDET and
+SETPRTY (repeating — one occurrence per settlement party, each carrying its own optional
+account/reference) subsequences are nested the same way a native MT 536 would, rather than
+left flat, so multiple parties and multiple linkage references stay distinguishable
+instead of colliding into numbered duplicate columns. Every other MT type keeps the
+previous flat conversion, unchanged. None of the GENL/SUBSAFE/FIN/TRAN/LINK/TRANSDET/SETPRTY
+block names are hand-maintained: they're read via reflection from Prowide's generated
+MT 536 sequence classes (`ProwideSequences`, the same mechanism the Name-Value importer
+uses), so this stays correct even across future SRU changes.
+
+Separately, a value spanning several physical lines (e.g. a multi-line `35B` or `70E`) is
+no longer truncated to its first line — continuation lines (content reaching column 31 but
+carrying no tag of their own) are now appended to the previous field's value instead of
+being discarded. This applies to Append-Text import generally, not just MT 536.
+
 ### Elasticsearch support — indexed search at scale
 
 MT Analyze now scales from a handful of files up to large message archives. Alongside the
@@ -30,12 +66,78 @@ desktop's file-based Lucene index comfortably handles. Both menus offer matching
 - Connection (host, port, scheme, credentials) and index name are configured under
   **Settings ▸ Advanced ▸ Elasticsearch**.
 
+### Index MT 536 Entries — a dedicated transaction index with its own search mask
+
+The **Lucene** menu gained three more actions, alongside the existing general-purpose
+index: **Index MT 536 Entries**, **Search MT 536 Entries...** and **Clear MT 536 Index...**.
+Where **Index Messages** indexes each *message* as one document, **Index MT 536 Entries**
+indexes each *transaction*: it reuses the existing "Isolate Entry in New Tab" pruning to
+split every MT 536 row in the active tab's Entries table down to its own single-transaction
+message (dropping every other `TRAN`/`TRANSDET` block of the statement, exactly as Isolate
+Entry does), then indexes each isolated transaction into its own index, kept separate from
+the general-purpose one so a transaction-level search never mixes with whole-message hits.
+**Search MT 536 Entries...** adds a structured mask — Reference (`20C`), ISIN (`35B`),
+Settlement/Trade Date (`98A`), Safekeeping Account (`97A`), Narrative (`70E`) and
+Sender/Receiver BIC — on top of the same free-form Lucene query box **Search Messages**
+has, for anything the structured fields don't cover; any combination of fields and/or
+query can be filled in, all ANDed together. Matching transactions load into a new tab the
+same way **Search Messages** does.
+
 ### Index Statistics
 
 Both the **Lucene** and **Elasticsearch** menus gained a **Statistics...** item, opening a
 dialog that shows how many messages are currently indexed in each backend. The two counts
 are fetched independently, so a slow or unreachable Elasticsearch cluster never delays the
-(near-instant) Lucene count from showing.
+(near-instant) Lucene count from showing. A backend turned off under **Settings ▸
+Advanced** shows as **Disabled** instead of attempting a count.
+
+### MT 500 / MT 501 support
+
+Added parsing support for **MT 500** (Instruction to Register) and **MT 501**
+(Confirmation of Registration or Modification of Registration Details). Each **Client
+Details** (`CLTDET`) block becomes one row in the Entries table, with the General
+Information and Registration Details sequences carried into every row — the same pattern
+already used for MT 530, MT 564, MT 567 and MT 569. Selectable from the MT type dropdown
+(**MT 500**, **MT 501**) for content without its own SWIFT header; the two message types
+share an identical tag structure, so — like MT 540-548 — auto-detection from content alone
+isn't possible and the type must come from the message header or an explicit selection.
+
+### ISO 15022 tooltip dictionary greatly expanded
+
+The built-in dictionary behind ISO 15022 tooltips (Tags/Components view, column headers,
+Column Chooser) was completed from SWIFT's official *ISO15022 Data Field Dictionary
+SR2025*, filtered to qualifiers and coded values actually reachable by this app's
+supported MT types: qualifier descriptions grew from 87 to 563 entries, and coded-value
+descriptions (e.g. every `CAEV`, `ADDB`, `STAT` code word) from 291 to 1,662. A handful of
+previously-undocumented tags used by MT 500/501/599 (`11A`, `12A`, `12B`, `20D`, `36D`,
+`92A`, `94D`, `94G`, `95U`) also gained tag-level descriptions.
+
+### MT 599 support
+
+Added **MT 599** (Free Format Message) — the simplest message type in the standard: just
+Transaction Reference (`20`), an optional Related Reference (`21`), and a free-text
+Narrative (`79`), no sequences at all. Selectable from the MT type dropdown for content
+without its own SWIFT header.
+
+### Check Repository
+
+Both the **Lucene** and **Elasticsearch** menus gained a **Check Repository...** item. It
+checks every message in the active MT Entries tab against that backend's index — by the
+same content-hash identity **Index Messages** uses to stay idempotent — and reports how
+many are already indexed versus new, without indexing anything itself. A backend turned
+off under **Settings ▸ Advanced** shows as **Disabled**; results for Lucene and
+Elasticsearch are fetched independently.
+
+### Mask 19xx tag values on import
+
+**Settings ▸ Advanced ▸ Masking** gained a **Mask 19xx tag values (digits → 9)** checkbox,
+off by default. When turned on, every digit in the value of a tag whose name starts with
+`19` (e.g. `19A` Sum of Amount, `19B` Amount) is replaced with `9` at import time — the
+field's format is preserved but the actual figure is not. The masking is applied once,
+while a message is parsed, so it carries through everywhere that message is used
+afterwards: the Entries table, Excel/CSV export, the raw/source view, and the Lucene and
+Elasticsearch indexes. Already-open tabs are unaffected by a later change to the setting;
+only messages imported after it's turned on are masked.
 
 ### Isolate Entry in New Tab
 
@@ -62,10 +164,10 @@ macOS Keychain, or the Freedesktop Secret Service/KWallet on Linux — via
 ### Enable/disable Lucene or Elasticsearch independently
 
 **Settings ▸ Advanced** now has an **Enable Lucene Search** / **Enable Elasticsearch**
-checkbox for each engine. Turning one off hides its menu entirely — including its
-keyboard shortcut (`Ctrl+Shift+F` / `Ctrl+Shift+E`) — so a user who only needs one of the
-two search backends no longer sees menu items or accelerators for the other. Both are
-enabled by default.
+checkbox for each engine. Both are **disabled by default**; turning one off (or leaving
+it off) hides its menu entirely — including its keyboard shortcut (`Ctrl+Shift+F` /
+`Ctrl+Shift+E`) — so the menu bar doesn't offer full-text search until it's switched on
+for the engine you actually want to use.
 
 ### Startup warning silenced
 

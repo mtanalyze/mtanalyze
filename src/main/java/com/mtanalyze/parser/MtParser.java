@@ -76,7 +76,8 @@ public class MtParser {
             parse61Mode(b4);
         } else if ("TRANS".equals(rowSeqName) || "CAOPTN".equals(rowSeqName)
                 || "REQD".equals(rowSeqName) || "STAT".equals(rowSeqName)
-                || "SECDET".equals(rowSeqName) || "VALDET".equals(rowSeqName) || "TRANSDET".equals(rowSeqName)) {
+                || "SECDET".equals(rowSeqName) || "VALDET".equals(rowSeqName) || "TRANSDET".equals(rowSeqName)
+                || "CLTDET".equals(rowSeqName)) {
             parseTransMode(b4);
         } else {
             ParseState state = new ParseState();
@@ -149,7 +150,7 @@ public class MtParser {
 
     /**
      * Wrapper-less row mode (MT 537: TRANS, MT 564: CAOPTN, MT 530: REQD, MT 567: STAT,
-     * MT 569: SECDET/VALDET/TRANSDET depending on message content): each
+     * MT 569: SECDET/VALDET/TRANSDET depending on message content, MT 500/501: CLTDET): each
      * :16R:{rowSeqName}...:16S:{rowSeqName} block is one row. Unlike
      * MT 535/536 there is no SUBSAFE/FIN wrapper around the row sequence, so the row is
      * recognised wherever it occurs in block4 (right after GENL, or nested inside repeated

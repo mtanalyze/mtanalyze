@@ -90,12 +90,17 @@ public final class FrameMenuBar {
         Runnable          onIndexMessages,
         Runnable          onSearchMessages,
         Runnable          onClearIndex,
+        // Lucene menu – dedicated MT 536 transaction index
+        Runnable          onIndexMt536Entries,
+        Runnable          onSearchMt536Entries,
+        Runnable          onClearMt536Index,
         // Elasticsearch menu
         Runnable          onIndexMessagesElastic,
         Runnable          onSearchMessagesElastic,
         Runnable          onClearIndexElastic,
         // Shared by both menus
-        Runnable          onShowStatistics
+        Runnable          onShowStatistics,
+        Runnable          onCheckRepository
     ) {}
 
     // -----------------------------------------------------------------------
@@ -203,6 +208,11 @@ public final class FrameMenuBar {
         luceneMenu.addSeparator();
         luceneMenu.add(item("Clear Index...", ToolbarIcons.menuDelete(), null, cb.onClearIndex()));
         luceneMenu.addSeparator();
+        luceneMenu.add(item("Index MT 536 Entries", ToolbarIcons.menuImportFile(), null, cb.onIndexMt536Entries()));
+        luceneMenu.add(item("Search MT 536 Entries...", ToolbarIcons.menuSearch(), null, cb.onSearchMt536Entries()));
+        luceneMenu.add(item("Clear MT 536 Index...", ToolbarIcons.menuDelete(), null, cb.onClearMt536Index()));
+        luceneMenu.addSeparator();
+        luceneMenu.add(item("Check Repository...", ToolbarIcons.menuCheckRepository(), null, cb.onCheckRepository()));
         luceneMenu.add(item("Statistics...", ToolbarIcons.menuStatistics(), null, cb.onShowStatistics()));
 
         // ── Elasticsearch menu ─────────────────────────────────────────────
@@ -212,6 +222,7 @@ public final class FrameMenuBar {
         elasticMenu.addSeparator();
         elasticMenu.add(item("Clear Index...", ToolbarIcons.menuDelete(), null, cb.onClearIndexElastic()));
         elasticMenu.addSeparator();
+        elasticMenu.add(item("Check Repository...", ToolbarIcons.menuCheckRepository(), null, cb.onCheckRepository()));
         elasticMenu.add(item("Statistics...", ToolbarIcons.menuStatistics(), null, cb.onShowStatistics()));
 
         // ── Help menu ─────────────────────────────────────────────────────

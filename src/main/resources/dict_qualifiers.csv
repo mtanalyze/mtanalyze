@@ -87,3 +87,477 @@ TRCA;Party Capacity Indicator – specifies the capacity or role of the party in
 TRCI;Triparty Agent Collateral Instruction Reference – triparty agent's reference for the collateral instruction
 TRDE;Transaction Details Narrative – free-text additional details on the transaction (70E)
 TRRF;Transaction Reference – unique reference assigned by the sender to identify this instruction
+
+# -----------------------------------------------------------------------
+# SR2025 ISO 15022 Data Field Dictionary additions
+# Generated from doc/ISO15022_Data_Field_Dictionary_SR2025.xlsx (SWIFT's
+# official SR2025 field catalogue), filtered to qualifiers used by this
+# app's supported MT types. Descriptions are "Business Element - Business
+# Element Description" from that source, truncated with "..." where long.
+# -----------------------------------------------------------------------
+ACCA;Accrued Capitalisation – Amount of unpaid interest (on interest bearing instruments which have defaulted and have subsequently...
+ACIN;Accrued Interest Indicator – Indicates whether the holder is entitled to accrued interest.
+ACPL;Acceptance Priority Level – Level of priority of the given offer which will be accepted by the issuer/agent within the tiered structure of...
+ACTV;Active Reason – Provides the reason why a penalty is active. The penalty can be new or can become active again, for example, as the result...
+ADDB;Additional Business Process Indicator – Specifies the additional business process linked to a corporate action event such as a claim...
+ADDR;Address – Street name and number in a mailing address.
+ADJS;Adjusted Subscription Amount – Amount of money debited or credited to adjust for the difference between the estimated and the final...
+ADMT;Type of Admittance – Specifies whether the appropriate form was signed by the beneficial owner or investor and whether the admittance was...
+ADTX;Additional Text – Provides additional information or specifies in more detail the content of a message. This field may only be used when...
+AFCA;Cancelled Amount – Amount of money effectively cancelled (for CPRC status only).
+AFFM;Affirmation Status – Provides the affirmation status of the confirmation at the time the settlement instruction was sent. ETC Electronic...
+AGCR;Aggregated Credit Amount – The sum of all the net bilateral amounts, in the relevant currency, that the party is entitled to receive.
+AGDE;Aggregated Debit Amount – The sum of all the net bilateral amounts, in the relevant currency, that were imposed to the party.
+AGNT;Bilateral Net Amount – The bilateral net amount for a party and counterpart will be the sum of all cash penalties in this currency that...
+AKTI;Aktiengewinn – Aktiengewinn.
+ALAM;Collateralised Amount – Amount which is collateralised.
+ALLO;Current Allocation Number – Current allocation number.
+ALMR;Allocation Matching Reference – Reference of the linked message at the Detail/Allocation Level which identifies a centrally matched...
+ALOC;Allocation Status – Provides the status of allocation of collateral to cover the instruction.
+ALRP;Related Party Alternate Identification – Alternate identification for the related party.
+ALTA;Account Owner Alternate Identification – Alternate identification for an account owner.
+AMCO;Amount Computed – Amount of the penalty calculated based on the security and instruction characteristics and the reason for the fail. For a...
+ANTO;Net Gain/Loss Amount – Total net trade amount of all the trade transactions.
+APLI;Applied Option Flag – Indicates whether the option, different from the default one, shall be applied by the account owner.
+ARRE;Tax Arrear Amount – Amount of money paid by the Tax Authorities in addition to the payment of the tax refund itself.
+ASDP;Account Servicer/Depository – Party that services the account.
+ATAX;Additional Tax Amount – Amount of additional taxes that cannot be categorised.
+AUDT;Audited Statement – Indicates whether the statement is audited.
+AUTA;Automatic Allocation Indicator – Specifies whether the allocation of the collateral is manual or automatic.
+BAIN;Basket or Index Information – Provides additional information on the basket or index underlying a security, for example a warrant.
+BAKL;Backload Fees Amount – Amount of sales charge paid by the investor when redeeming an investment such as an investment fund.
+BASK;Basket Reference – Reference identifying a basket trade.
+BCAM;Cash Compensation Amount – Amount of money that has to be paid by the failing trading party in case of an unsuccessful or partially...
+BCCW;Blockchain Cash Wallet – Blockchain wallet where digital currencies are maintained. This is the equivalent of cash account for digital...
+BDEF;Buy-in Deferral Indicator – Specifies that the buy-in transaction was deferred or not.
+BDEV;Business Day Event – Code identifying the event that is responsible for the relevant cut-off.
+BENT;Type of Beneficial Owner – Specifies the type of beneficial owner.
+BIRI;Bid Range Type Indicator – Specifies the type of acceptable bid range values.
+BIRT;Country of Birth – Country where a person was born.
+BMRB;Block Matching Reference – Reference of the linked message at the Trade/Block Level which identifies a centrally matched transaction.
+BOOK;Book Value – The cost of all securities. This is needed for tax purposes in some countries.
+BORR;Automatic Borrowing Indicator – Specifies the condition for automatic borrowing.
+BPAR;Business Partner Number – Reference number assigned to identify a financial institution with a clearing agent.
+BREF;Bank Reference Number – Reference number assigned by a financial institution when opening an account to identify one or more investors or...
+BUSE;Buy/Sell Indicator – Specifies whether the transaction relates to the sale or purchase of financial instruments.
+BUYU;Buy Up Amount – Amount of cash debited in the context of a buy up option.
+BWIT;Back Up Withholding Tax Amount – Amount of tax related to back up withholding.
+BYIY;Buy-in Indicator – Specifies the state of the buy-in transaction.
+CABF;Cash Amount Brought Forward – Indicate cash retained from previous dividend.
+CACF;Cash Amount Carried Forward – Indicate the balance carried forward to next dividend.
+CACK;Repo Call Acknowledgement Reason – Specifies additional information on the repo call request acknowledgement.
+CACN;Case Number – Reference assigned by a court to a class action.
+CADE;Transaction Call Delay – Minimum number of days' notice a counterparty needs for terminating the transaction.
+CAEP;Corporate Action Event Processing – Type of processing involved by a Corporate Action.
+CALD;Call Date – Date on which a financial instrument is called away/redeemed before its schedules maturity date.
+CALL;Callable Flag – Indicates whether the issuer has the right to repay the financial instrument prior to maturity.
+CALM;Calculation Method – Indicates the calculation rule used to compute the penalty.
+CAMV;Mandatory/Voluntary Indicator – Specifies whether the event is mandatory, mandatory with options or voluntary.
+CAND;Cancellation Reason – Specifies the reason why the instruction is cancelled.
+CANP;Pending Cancellation Reason – Specifies the reason why a cancellation request sent for the related instruction is pending.
+CAON;CA Option Number – Number identifying the available corporate action options.
+CAOP;Corporate Action Option Code Indicator – Specifies the corporate action options available to the account owner.
+CAPG;Capital Gains Amount – Amount of money distributed as the result of a capital gain.
+CAPP;Collateral Approved Flag – Indicates whether the proposed collateral movements can be accepted.
+CASH;Cash Side – Penalty based on the amount of cash failed to be delivered and the discount rate of the relevant currency. A positive amount...
+CATB;Charges/Tax Basis Indicator – Specifies the method used to calculate a charge/tax.
+CAVA;Cash Value for Tax – Cash value of resulting securities proceeds for tax calculation and/or reporting.
+CBCH;Correspondent Bank Charges – Amount of charges of correspondent bank for transferring money (Funds industry).
+CBON;Corporate Bonds – Security penalty rate applied to financial instruments that are classified as corporate bonds.
+CCMV;Client's Cash Movement Reference – Reference assigned by party A to the cash movement.
+CCTR;Counterparty's Collateral Transaction Reference – Unique collateral transaction reference assigned by counterparty.
+CDFI;Foreign Income Amount – Amount relating to a foreign income such as a conduit foreign income.
+CEFI;Certification Format Indicator – Specifies the certification format required, that is, physical or electronic format.
+CERT;Certificate Number – Unique and unambiguous number of a financial instrument certificate or other document of title.
+CETI;Certification/Breakdown Type Indicator – Specifies the type of certification/breakdown.
+CFRE;Variable Rate Change Frequency Indicator – Specifies the frequency of change to the variable rate of an interest bearing instrument.
+CGEN;Generated Reason – Specifies the reason why the transaction was generated.
+CHAN;Change Type Indicator – Specifies the type of change announced.
+CHAR;Charges/Fees – Amount of money paid for the provision of financial services that cannot be categorised by another qualifier.
+CINL;Cash in Lieu of Shares – Cash disbursement in lieu of a fractional quantity of, for example, equity.
+CINS;Collateral Instruction Narrative – Provides additional information on the collateral instruction.
+CITY;City – City or town.
+CLAS;Classification Type – Classification type of the financial instrument, for example, ISO Classification of Financial instrument (CFI).
+CLPR;Clean Price Amount – Price amount excluding the accrued interest.
+CMAF;Cash Movements Approved Flag – Indicates whether the proposed cash movements can be accepted.
+CMPU;Amount Considered For Aggregation Flag – Indicates whether or not the amount calculated for the reported penalty will be added to the...
+CNTI;Continuation Flag – Indicates whether or not the penalty is a continuation of the one on the previous page and all prior information, for...
+COAF;Official Corporate Action Event Reference – Official and unique reference assigned by the official central body/entity within each market...
+COAX;Consumption Tax – Amount of consumption tax.
+COIN;Country of Income Source – Indicates the country from which the income originates.
+COLA;Exposure Type Indicator – Specifies the underlying business area/type of trade causing the collateral movement.
+COLE;Collateral Pool Indicator – Specifies whether securities should be included in the pool of securities eligible for collateral purposes.
+COLL;Collateral Flag – Specifies whether the amount is delivered/received as part of collateral or not.
+COLR;Collateral Reference – Reference of the piece of valued collateral.
+COMP;Information to be Complied With – Indicates whether restrictions apply to the event.
+COMT;Collateral Monitor Amount – Value of the collateral available for the delivery settlement process at the account level.
+CONC;Concentration Limit Flag – Indicates whether a concentration limit applies to the transaction; if no limit applies, there is no constraint...
+CONF;Type of Confirmation Indicator – Indicates what kind of original instruction is confirmed with this message.
+CONP;Retain Indicator – Specifies whether a failed instruction due to expire should be retained.
+CONT;Contractual Payment – <x:p class=stem>Whether posting to account is: the result of funds actually collected from issuer. anticipation of...
+CONV;Conversion Date – Deadline by which a convertible security must be converted, according to the terms of the issue.
+CORA;Commission Rate Applied – Commission rate applied after waiving.
+COST;Commission Type Indicator – Specifies the commission sharing type under which the order is to be executed.
+COUN;Country, National, Federal Tax – Amount of country, national or federal tax charged by the jurisdiction in which the account servicer is...
+COUP;Coupon Date – Next payment date of an interest bearing financial instrument.
+COVA;Eligible Collateral Value – Value of the position eligible for collateral purposes.
+COVE;Covered Flag – Indicates whether the underlying financial instrument of an option is owned by the writer of the option.
+COWA;Percentage Commission Waived – Percentage of the commission that is waived.
+CPRC;Cancellation Processing Status – Provides the status of a cancellation request.
+CPRF;Cash Penalty Reference – Reference of the penalty payment.
+CRDB;Credit/Debit Indicator – Specifies whether the value is a debit or credit.
+CREB;Rebate/Bonification – Discount on the subscription fee that would normally be paid to Fund Administrator to enter the Fund. (Funds...
+CRYD;Crystallisation Day Flag – Identifies the penultimate accrual date of the transaction to the final (repurchase) date. Crystallising the...
+CSAC;Compound Simple Accrual Calculation Indicator – Specifies whether the interest calculation method is simple or compounding.
+CSBT;Cash Sub Balance Type Indicator – Specifies the cash sub balance type indicator (example restriction type for a market infrastructure.
+CSMV;Client's Securities Movement Reference – Reference assigned by the party A to the financial instrument movement.
+CUFC;Current Factor – Rate expressed as a decimal between 0 and 1 defining the outstanding principal of the financial instrument (for factored...
+CUTS;Cut-Off Timestamp – Effective time for the cut-off event.
+DBAM;Debit Blocked Amount – Application amount blocked or segregated for acquiring securities offered by issuers under new or additional...
+DBNM;Settlement Standing Instruction Database Indicator – Specifies what settlement standing instruction database is to be used to derive the...
+DDTE;Dated Date – Date on which an interest bearing financial instrument begins to accrue interest.
+DECL;Declaration Details – Provides declaration details narrative relative to the party.
+DEDI;Deemed Dividend Amount – Deemed amount resulting from the difference between the rate of dividend proceeds attributed to the security...
+DEEM;Deemed Amount – Amount of proceeds which is not actually paid to the security holder but on which withholding tax is applicable.
+DEFP;Deemed Fund Amount – Deemed amount resulting from the difference between the rate of the proceeds components comprising a fund payment...
+DEIT;Deemed Interest Amount – Deemed amount resulting from the difference between the rate of interest proceeds attributed to the security...
+DENC;Denomination Choice – Provides the denominations to be delivered/received.
+DEND;Denied Reason – Specifies the reason why the request was denied.
+DENO;Currency of Denomination – Currency in which a financial instrument is currently denominated.
+DERY;Deemed Royalties Amount – Deemed amount resulting from the difference between the rate of royalty proceeds attributed to the security...
+DFLT;Default Processing Flag – Indicates whether the option, for example, currency option, will be selected by default if no instruction is...
+DISC;Disclaimer – Provides a disclaimer relative to the information provided in the message. It may be ignored for automated processing.
+DISF;Disposition of Fractions – Specifies how fractions resulting from derived securities will be processed or how prorated decisions will be...
+DIST;Distribution Form – Specifies the level of confidentiality that should be used when sending the correspondence to the mailing address.
+DITY;Occurrence Type Indicator – Specifies the conditions in which the instructions and/or payment of the proceeds occurs.
+DIVI;Dividend Type Indicator – Specifies the conditions in which a dividend is paid.
+DLVR;Delivery Details – Provides additional information on the delivery details of the out-turned (derived) securities. This narrative is only...
+DOMI;Country of Domicile – Country in which a person is permanently domiciled (the place of a person's permanent home).
+DSCA;Discount Amount – Amount of pre-arranged deduction to the trade amount based on the published net asset value (Funds industry).
+DTCH;Dutch Auction Type Indicator – Specifies whether a Dutch auction is modified or unmodified.
+EARL;Earliest Payment Date – Date at which a payment can be made, for example, if payment date is a non-business day or to indicate the first...
+ECIO;Capital Gain In/Out Indicator – Specifies whether the capital gain is in the scope of the EU Savings directive for the income realised upon...
+ELCT;Election Type Indicator – Specifies the effect on the holdings of electing a Corporate Action option.
+ELIG;Eligibility Set Profile Number – Number identifying the collateral eligibility set profile of the counterparty.
+EMAI;Email Address – Address for electronic mail (e-mail).
+ENTF;Entrance Fees Amount – Amount of sales charge paid immediately by the investor when subscribing to an investment such as an investment fund.
+ENTL;Entitled Amount – Cash amount based on terms of corporate action event and balance of underlying securities, entitled to/from account owner...
+EPRC;Corporate Action Event Processing Status – Provides the status of a corporate action or the status of a payment.
+EQUL;Equalisation/Depreciation Deposit – Part of an investor's subscription amount that is held by the Fund in order to pay...
+ERFE;Early Redemption Fee Amount – A fund/fund provider may charge redemption fees according to prospectus (that is, an early redemption fee may...
+ESTA;Corporate Action Event Stage – Stage in the corporate action event life cycle.
+ESTT;Settled Amount – Amount effectively settled and which will be credited to/debited from the account owner's position.
+ETYP;Type of Exemption – Specifies the basis for the reduced rate of withholding.
+EUTR;EU Tax Retention Amount – Total amount of tax withheld at source in conformance with the EU Savings Directive.
+EXBN;Exclusion Basket Identification Number – Number identifying the collateral basket to be excluded.
+EXCH;Exchange Rate – Exchange rate between the transaction currency and the reporting currency.
+EXEC;Executing Broker's Amount – Amount of money paid to an executing broker as a commission.
+EXPI;Expiry Date – Termination date of a privilege which may be exercised, according to the terms of a securities issue.
+FCOU;First Coupon Date – First payment date of an interest bearing financial instrument.
+FFRD;Frequency Fixing Rate Days – Specific number of days assigned for the frequency fixing of the rate.
+FIAN;Financial Instrument Attribute Narrative – Provides additional information about the financial instrument in narrative form.
+FISC;Fiscal Stamp – Amount of fiscal tax to apply.
+FLFR;Fully Franked Amount – Amount resulting from a fully franked dividend paid by Australian company; amount includes tax credit for companies...
+FORF;Forfeit Amount – Fixed amount of money that has to be paid (instead of interest) in the case of a recall or at the closing date.
+FORI;Forfeiture of Interest Flag – Indicates that bondholders who convert between record date and payable date will forfeit their interest.
+FRNF;Floating Rate Note Flag – Indicates whether the interest rate of an interest bearing instrument is reset periodically.
+FRNR;Floating Rate Note Reset Date – Date on which the interest rate of an interest bearing financial instrument will be/was calculated and...
+FSBN;Fallback Starting Basket Identification Number – Number identifying the fallback starting collateral basket.
+FSSA;Failed Settlement Salvation Indicator – Specifies whether the receiver is allowed to solve failure in the settlement by proposing other...
+FTCA;FATCA Tax Amount – FATCA (Foreign Account Tax Compliance Act) related tax amount.
+FXCX;Forex Order Cancellation Indicator – Specifies the action to be taken on the underlying FX.
+FXIB;Currency to Buy – Currency to buy in relation to the trade.
+FXIN;FX Instructions Narrative – Provides additional details pertaining to foreign exchange instructions.
+FXIS;Currency to Sell – Currency to sell in relation to the trade.
+GBNT;Global Net Amount – The global net amount for a party is the sum of all cash penalties in this currency that this party is entitled to...
+GBON;SME Growth Market (non-Bonds) – Security penalty rate applied in case of a settlement fail due to a lack of financial instruments that are...
+GCOS;Global Counterparty Status – Provides the status after comparing the total collateral required and the total collateral value of all...
+GCST;Global Collateral Status – Provides the status after comparing the total collateral required and the total collateral value of all...
+GETS;Global Exposure Type Status – Provides the status after comparing the total collateral required and the total collateral value of all...
+GIUP;Give-Up Number of Days – Number of days from the trade date that the trading party on the other side should divulge details of the...
+GOMB;Government and Municipal Bonds – Security penalty rate to be applied for a settlement fail due to a lack of government or municipal bonds.
+GRSS;Gross Amount – Amount of money before any tax deductions have been made.
+HOLD;Holding Value – Value of an individual financial instrument holding within a safekeeping account.
+HOLP;Total Holdings Value of Page – Total value of holdings reported in this message.
+HOLS;Total Holdings Value of Statement – Total value of holdings reported in this statement (might be one or more messages).
+IDFX;Issuer Declared Exchange Rate – Exchange rate (provided by the issuer) between the dividend or interest rate in the paid currency and the...
+ILSH;Illiquid Shares – Security penalty rate applicable to settlement fails due to a lack of shares that have an illiquid market.
+INCA;Investor Capacity Indicator – Role of the investor in the transaction.
+INCO;Income Portion – Amount relating to the underlying security for which income is distributed.
+INDM;Indemnity Amount – (Unique to France) amount due to a buyer of securities dealt prior to ex date which may be subject to different rate of...
+INDX;Index Factor – Public index rate used for inflation adjustment.
+INFO;Information Type Indicator – Specifies the type of information event.
+INMH;Inferred Matching Status – Provides the matching status of an instruction as per the account servicer based on an allegement. At this time...
+INOU;In/Out Indicator – Specifies whether the cash amount is to be delivered or received.
+INPD;Interest Payment Delay – Number of days after the accrual payment is due.
+INST;Type of Instruction Indicator – Specifies the type of instruction covered by the message.
+INTR;Interest Payment Indicator – Specifies whether the interest is to be paid to the collateral giver or taker.
+IPRC;Instruction Processing Status – Provides the status of an instruction.
+ISDI;Issue Discount/Allowance – Amount of money defined as a discount on a new issue or on a tranche of an existing issue.
+ISSU;Issue Date – Date on which the financial instrument is issued.
+ITYP;Type of Income – Specifies the type of income.
+LADT;Local Tax (Country specific 1) – Local tax as defined by the country in its market practice.
+LANG;Language Indicator – Specifies the language of the investor or nominee.
+LEGA;Legal Framework Indicator – Legal framework of the transaction.
+LEVY;Payment Levy Tax – Amount of payment levy tax.
+LICO;Exposure/Collateral in Transaction Currency – Amount of the exposure/collateral in the exposure/collateral currency.
+LIDT;Local Tax (Country specific 2) – Local tax as defined by the country in its market practice document.
+LIQU;Liquid – The Liquidity is a binary classification of securities that applies for shares, that is, when the Financial Instrument type of the...
+LISH;Liquid Shares – Security penalty rate to apply for a settlement fail due to a lack of shares that have a liquid market (excluding shares...
+LIST;List Reference – Reference identifying a list trade.
+LKBD;Look Back Days – Number of days prior to the current day to source the rate.
+LOCA;Location – State, province, district, or else.
+LOCL;Local Tax – Amount of tax charged by the jurisdiction in which the financial instrument settles.
+LOCO;Local Broker's Commission – Amount of commission paid to a local broker.
+LOTE;Local Tax (Country specific 3) – Local tax as defined by the country in its market practice document.
+LOTO;Lottery Type – Specifies the type of lottery announced.
+LOTS;Lot Number – Number identifying a lot constituting the financial instrument.
+LYDT;Local Tax (Country specific 4) – Local tax as defined by the country in its market practice document.
+MACO;Matching/Confirmation Fee – Amount of money charged for matching and/or confirmation.
+MAGV;Margined Value Amount – Value of the collateral position.
+MAIL;Mailing Address – Indicates whether the address is a mailing address.
+MARG;Margin – Amount of money deposited by the trading party in a margin account.
+MAST;Master Reference – Unique and unambiguous identifier used to link a group of individual transactions together.
+MATU;Maturity Date – The latest agreed maturity date, that is, the date on which the principal is to be returned and the interest due.
+MEET;Meeting Place – Place of the company's meeting for the scheduled meeting date.
+MET2;Meeting Place 2 – Place of the company's meeting for the scheduled second meeting date.
+MET3;Meeting Place 3 – Place of the company's meeting for the scheduled third meeting date.
+MFDV;Manufactured Dividend/Payment – Amount of money that the borrower pays to the lender as a compensation. It does not entitle the lender to...
+MKTB;Market Value Amount Before Valuation Factor – Actual market value before valuation factor expressed in the transaction currency. For cash...
+MKTC;Market Claim – Amount of money resulting from a market claim.
+MKTP;Market Value Amount Post Valuation Factor – Actual market value post valuation factor expressed in the transaction currency. For cash, it...
+MNPE;Minimum Notice Period – Identifies the number of days in which the cash investor and dealer can agree to revisit the terms of an agreement.
+MOPN;Pending Modification Reason – Specifies the reason why the modification request is pending.
+MPLE;Maximum Price Level Indicator – Allows an order to specify a maximum number of price levels to trade through.
+MRED;Missing Reference Data – Information provided for penalties where there is missing reference data on this business day. The flag is used to...
+MRKT;Market Price – Last reported/known price of a financial instrument in a market.
+MTAC;Main Trading Account Collateralisation Flag – Specifies if the main trading account is included in the pool of securities positions...
+MTCH;Matching Status – Provides the matching status of the instruction at the time the settlement instruction was sent. ETC - Electronic Trade...
+MVBF;Actual Market Value Before Valuation Factor – Actual market value before valuation factor expressed in the collateral currency. For cash...
+MVPF;Actual Market Value Post Valuation Factor – Actual market value post valuation factor expressed in the collateral currency. For cash, it is...
+NAFI;Unaffirmed Reason – Specifies the reason why the instruction has an unaffirmed status.
+NAME;Name – Provides the new name of a company following a name change.
+NATO;Country of Nationality – Nationality of the investor or nominee.
+NAVR;Net Asset Value Ratio – Net Asset Value Ratio (Funds Industry).
+NBON;SME Growth Market Bonds – Security penalty rate applied in case of a settlement fail due to a lack of debt instruments that are traded on...
+NCOM;Not Computed Reason – Provides the reason why a penalty was not computed.
+NDIP;Notional Dividend Payable – Amount of cash that would have been payable if the dividend had been taken in the form of cash rather than...
+NDOM;Country of NON-Domicile – The holder of the security has to certify, in line with the terms of the corporate action, that it is not...
+NELP;Non Eligible Proceeds Indicator – Specifies information regarding outturn resources that cannot be processed by the CSD. Special delivery...
+NESP;Netting Service Provider Reference – Identification assigned by the netting service provider to identify the net transaction resulting from...
+NMAT;Unmatched Reason – Specifies the reason why the instruction has an unmatched status.
+NONC;Nonce Identification – Unambigous identification of a random or semi-random number used once (NONCE) generated in the frame of a...
+NOTE;Note Narrative – Narrative information visible to other parties.
+NPLI;New Place of Incorporation – New company's place of incorporation.
+NRAT;NRA Tax Amount – Amount of tax related income subject to NRA (Non Resident Alien).
+NSER;Security Restriction – Provides restriction(s) on securities.
+NSIS;New Securities Issuance Indicator – Indicates whether the securities are newly issued or not.
+NTAX;Notional Tax – Where new securities are issued in lieu of a cash dividend, the notional tax is the tax on the amount of cash that would...
+NTSP;Netting Service Provider Reference – Identification assigned by the Netting Service Provider to identify the Nett transaction resulting...
+NTWK;Quantity of Digital Asset for the Network Fee – Quantity of digital asset for the network fee.
+NWFC;Next Factor – Rate expressed as a decimal between 0 and 1 that will be applicable as of the next factor date and defines the outstanding...
+NXRT;Next Interest Rate – Interest rate applicable to the next interest payment period in relation to variable rate instruments.
+OCCU;Occupation Type Indicator – Specifies the type of occupational group, branch of industry or business sector.
+OCMT;Original Currency and Ordered Amount – Posting/settlement amount in its original currency when conversion from/into another currency has...
+ODDC;Odd Coupon Flag – Indicates whether the payment of the coupon (interest) on an interest bearing instrument is off the normal schedule.
+ODDL;Odd-Lot Differentials Flag – Indicates whether any odd-lot differential or equivalent fee has been paid by the customer in connection with...
+OFFE;Offer Type Indicator – Specifies the conditions that apply to the offer.
+OFFO;Offeror – Provides the entity making the offer and is different from the issuing company.
+OFFR;Proposed Rate – Rate proposed in a remarketing of variable rate notes.
+OFRF;Overnight Frequency Rate Fixing Indicator – Indicates for a floating rate transaction if an overnight frequency rate fixing should be...
+OKPE;Security Subject To Penalties – This flag indicates if the security is subject to penalties. It is used to indicate an exceptional...
+OMAT;Maturity Date Modification Indicator – Specifies whether the maturity date of the securities financing transaction may be modified.
+OPST;Option Style – Specifies how an option can be exercised.
+OPTF;Option Features Indicator – Specifies the features that may apply to a corporate action option.
+OPTI;Option Type – Specifies whether it is a call option or a put option.
+OPTN;Currency Option – Currency in which cash proceeds are to be credited or debited.
+ORDR;Original Ordered Amount – Amount of money to be used to derive the appropriate quantity of financial instrument to be bought or sold.
+OSTA;Option Status – Specifies the status of the option.
+OTHR;Other Amount – Amount of money that cannot be categorised.
+OTYP;Other Type of Income – Type of income to be used under another tax regime.
+OVEP;Maximum Allowed Oversubscription Rate – A maximum percentage of shares available through the over subscription privilege, usually a...
+OWNT;Type of Ownership Indicator – Specifies how a beneficial owner or investor owns the financial instrument.
+PACK;Acknowledged/Accepted Reason – Specifies additional information about the processed instruction.
+PACO;Party Narrative – Provides additional information regarding the party, for example, the contact unit or person responsible for the...
+PAMM;Paying/Sub-paying Agent Commission – Amount of paying/sub-paying agent commission.
+PARS;Partial Settlement Indicator – Specifies partial settlement information.
+PAYD;Payment Date – Pre-advice payment date.
+PAYS;Payment Status Indicator – Specifies the status of the payment of a financial instrument at a particular time, as agreed with the issuer.
+PBOX;Post Box Number – Number identifying the post box of the mailing address.
+PCOM;Penalty Common Reference – Reference assigned by the market infrastructure (for example T2S) to the penalty and that is common for both the...
+PDRA;Penalty Discount Rate – It is the discount rate of the relevant currency for the business date.
+PECU;Currency of Penalties – Currency in which the penalties are expressed.
+PEND;Pending Reason – Specifies the reason why the instruction has a pending status.
+PENF;Pending/Failing Reason – Specifies the reason why the instruction has a failing settlement status.
+PERM;Permanent Address – Indicates whether the address is a permanent mailing address.
+PFRE;Payment Frequency Indicator – Specifies the frequency of a payment.
+PLIS;Place of Listing – Place where the referenced financial instrument is listed.
+PNST;Penalty Status – Provides the penalty status.
+PNTP;Penalty Type – Indicates the type of penalty.
+POST;Postal Code – Number identifying the postal code in a mailing address.
+PPCM;Previous Penalty Common Reference – If the penalty for which the details are provided was created from a re-allocation, this field provides...
+PPRC;Pending Processing Reason – Specifies the reason why the instruction has a pending processing status.
+PPRF;Previous Penalty Reference – If the penalty for which the details are provided was created from a re-allocation, this field provides the...
+PRBN;Preferential Basket Identification Number – Number identifying the preferred collateral basket.
+PRCM;Price Calculation Method Indicator – Specifies the method applied for the calculation of the price.
+PRDF;Difference in Price – Difference between the deal price and another reference price.
+PREA;Preadvice Message Reference – Message reference of the preadvice (:23G:PREA) previously sent.
+PREC;Pre-Confirmation Indicator – Specifies whether there exists a pre-confirmation.
+PREF;Penalty Reference – Reference assigned by the market infrastructure to the penalty and that is the individual identification of the penalty...
+PREX;Executed Amount – Amount of money already executed (for CPRC and RPRC Status only).
+PRFC;Previous Factor – Rate expressed as a decimal between 0 and 1 that was applicable before the current factor and defines the outstanding...
+PRIC;Type of Price Indicator – Specifies the type of transaction price.
+PRIN;Principal or Corpus – Amount of money representing a distribution of a bond's principal, for example, repayment of outstanding debt.
+PRIR;Priority Indicator – Specifies the priority with which the instruction needs to be executed.
+PRMA;Premium Amount – Pre-arranged addition to the trade amount based on the published net asset value (Funds industry).
+PRMN;Proration Below Minimum Quantity Indicator – Specifies how instructions prorated below the minimum quantity to instruct will be processed.
+PROG;Program Reference – Program reference which identifies a program trade.
+PROR;Pro-Ration Rate – Percentage of securities accepted by the offeror/issuer.
+PRSS;Process Indicator – Specifies the settlement process in which the collateral/principal will be settled.
+PRWI;Partial Redemption Withholding Amount – When units of hedge funds are redeemed, the fund often pays out just a portion of the proceeds...
+PSTT;Previously Settled Amount – Amount of money previously settled.
+PTNI;Processing Text for Next Intermediary – Provides additional information from the account servicer or a Service Provider solely intended for...
+PUTT;Put Date – Date on which a holder of a financial instrument has the right to request redemption of the principal amount prior to its...
+QAGE;Quotation Age – Number of days since the last pricing update.
+QCAS;Instructed Amount – Cash amount to be instructed.
+RALA;Remaining Collateralised Amount – Outstanding amount to be covered, collateralised.
+RATE;Rated Instrument Flag – Indicates whether the instrument is rated by a nationally recognized statistical rating organisation.
+RATS;Source of Rating – Agency, which provides rating services, for example, Moody's and S&amp;P.
+RCHG;Charges Flag – Indicates whether charges apply to the holder, for instance redemption charges.
+RCTR;Receiver's Collateral Transaction Reference – Unique reference identifying the collateral management transaction from the triparty agent's...
+RDIS;Reinvestment Discount Rate to Market – Rate of discount for securities purchased through a reinvestment scheme as compared to the current...
+REAS;Reason Narrative – Provides additional reason information.
+REDM;Redemption Affecting Yield Flag – Indicates whether, in the case of a debt security subject to redemption before maturity, such redemption...
+REDP;Redemption Premium Amount – Amount of money (not interest) in addition to the principal at the redemption of a bond.
+REFD;Expected Refund – Anticipated return of overpaid subscription money (Funds Industry).
+REFU;Refunded Subscription Amount – Amount of money refunded from the original subscription cost for a Rights Exercise event. This occurs when...
+REGF;Regulatory Amount – Amount of money charged by a regulatory authority, for example, Securities and Exchange fees.
+REGI;Registration Details – Provides information required for the registration.
+REIN;Reinvestment Amount – Amount of money reinvested in additional securities.
+REJT;Rejection Reason – Specifies the reason why the instruction/request has a rejected status.
+RELC;Exposure /Collateral in Reporting Currency – Amount of the exposure/collateral in the reporting currency.
+REMA;Replaced Amount – Amount of money effectively replaced (for RPRC Status only).
+REMO;Remove Reason – Specifies the reason why the penalty is removed.
+REMU;Remuneration Flag – Indicates whether other remuneration has been or will be received by the broker and that the source and amount of such...
+REPL;Requested To Be Replaced Amount – Amount of money requested to be replaced (for RPRC Status only).
+REPO;Transaction Reference – Reference common to all the collateral pieces (one or many).
+REPP;Premium Amount – Difference between the amount of money of the first leg and the amount of the second leg of the transaction.
+REPR;Repair Reason – Specifies the reason why the instruction is in repair.
+RERT;Rate Type – Specifies whether the rate is fixed or variable.
+RESU;Resulting Amount – Amount of money that results from a foreign exchange conversion.
+RETR;Returned Reason – Specifies the reason why the instructed units are returned or partially returned.
+REVA;Revaluation Indicator – Specifies whether the collateral position should be subject to automatic revaluation by the account servicer.
+REVR;Reversal Reason – Specifies the reason for the payment reversal.
+RHDI;Intermediate Securities Distribution Type Indicator – Intermediates securities distribution type.
+RMAG;Required Margin Amount – Margin amount needed when the instruction reported creates an exposure.
+RPOR;Reporting Indicator – Indicates information with regards to reporting.
+RPRC;Replacement Processing Status – Provides the processing status of the replacement request.
+RREA;Registration Reason Indicator – Specifies the reason for the registration processing.
+RSCH;Research Fee Flag – Indicates whether the net proceeds include research fees for the transaction.
+RSPR;Spread Rate – Margin rate over or under an index.
+RSTR;Restrictions – Provides information about potential restrictions linked to the fund confirmed (funds industry).
+RSTT;Remaining Settlement Amount – Amount of money remaining to be settled.
+RTRN;Delivery Return Types Indicator – Specifies the type of delivery return.
+RTUN;Intermediate Securities to Underlying – Quantity of intermediate securities awarded for a given quantity of underlying security.
+SAPP;Settlement Approved Flag – Indicates whether the proposed collateral movements have settled or not.
+SCTR;Sender's Collateral Transaction Reference – Unique reference identifying the collateral management transaction from the Sender's point of...
+SCTS;Scheduled Cut-Off Timestamp – Scheduled time for the cut-off event.
+SEBL;Settlement Amount of Block Trade – Settlement amount of the block trade.
+SECO;Second Leg Reference – Reference of the second leg of the transaction.
+SECU;Securities Side – Penalty based on the quantity of securities failed to be delivered and penalty rate of the ISIN (or the discount rate of...
+SETG;Settlement Instruction Generation Indicator – Specifies whether a settlement instruction must be generated by an Electronic Trade...
+SHAI;Securities Haircut – Haircut or valuation factor on the security expressed as a percentage.
+SHAR;Shareholder Number – Reference number assigned to identify an investor or a shareholder with the issuer or the registration provider.
+SHIP;Shipping Amount – All costs related to the physical delivery of documents such as stamps, postage, carrier fees, insurances or messenger...
+SLMG;Stock Loan Margin – Percentage mark-up on a loan consideration used to reflect the lender's risk.
+SLRS;Security Interest, Lien or Right of Set-Off – Indicates whether the holdings on the account are subject to security interest, lien or right...
+SMAF;Securities Movements Approved Flag – Indicates whether the proposed securities movements can be accepted.
+SMEM;SME Growth Market – Binary classification that specifies whether the security was traded in a SME Growth Market or not. According to the...
+SNUM;Street Number – Number identifying the street number in a mailing address.
+SODF;Solicitation Dealer Fee Indicator – Indicates whether there is a solicitation fee on the event. This fee is paid by the soliciting dealer.
+SOFE;Solicitation Fee – Cash premium made available if the securities holder consents or participates to an event, for example consent fees or...
+SOIC;Sundry/Other Income Amount – Amount of money related to taxable income that cannot be categorised.
+SPCN;Special Concessions Amount – Amount of drawdown or other reduction from or in addition to the deal price.
+SPIA;Split Amount – Split amount of the aggregate transaction amount (exposure).
+SPLT;Unilateral Split Processing Indicator – Specifies that the transaction is requested to be unilaterally split.
+SPRC;Request for Statement/Status Advice Status – Provides the status of an MT 549 - Request for Statement/Status Advice.
+SPRO;Settlement Instruction Processing Narrative – Provides additional settlement processing information which can not be included within the...
+SRDC;Shareholder Rights Directive Indicator – Indicates whether the announcement was initiated by the first intermediary in the custody chain in...
+SSBT;Securities Sub Balance Type Indicator – Specifies the securities sub balance type indicator (example restriction type for a market...
+STAC;Status Cash Amount – Amount of cash subscribed that has been assigned the status indicated.
+STAT;Statement Number – Sequential number assigned to the statement.
+STEX;Stock Exchange Tax – Amount of stock exchange tax.
+STIN;Standing Instruction Flag – Indicates whether an account owner has placed a standing order to select this corporate action option. The...
+STST;Statement Structure Type Indicator – Specifies whether the statement is sorted by status or transaction.
+STTP;Structure Type – Defines the structure of the options around a Tri-Party Repo.
+STTY;Statement Type – Specifies the usage purpose of the statement of holding.
+SUBB;Sub-balance Details Narrative – Provides additional balance information.
+SUBS;Subscription Interest – Amount of interest received when a subscription amount is paid in advance and then invested by the Fund...
+TACR;Total Accrued Interest Amount – Total amount of money accrued interest computed in the case of interest bearing financial instruments.
+TAPC;Termination Amount per Piece of Collateral – Amount of money to be settled per piece of collateral to terminate the transaction.
+TAVO;Tax Voucher Reference – A unique reference for the tax voucher required by the relevant tax authorities to ensure that any claim relating...
+TAXC;Amount of Tax Credit – Amount of taxes that have been previously paid in relation to the taxable event.
+TAXE;Taxation Conditions – Provides taxation conditions that cannot be included within the structured fields of this message.
+TAXR;Withholding Tax Amount – Amount of a cash distribution that will be withheld by the tax authorities of the jurisdiction of the issuer, for...
+TCFA;Total Cash Failed Amount – Total value of undelivered intended transaction cash amount.
+TCHA;Total Fees/Commissions – Total fees/commissions in the reporting currency.
+TCMV;Triparty-Agent's/Service-Provider's Cash Movement Reference – Reference assigned by the triparty-agent/service-provider to the cash...
+TCOP;Total Collateral Held Value of Page – Total value of collateral held reported in this message.
+TCOR;Total Collateral Required – Collateral is required to cover interest that accrues on the exposure. Margin amount would thus be the...
+TDMT;Taxable Income Per Dividend/Share – Amount included in the dividend/NAV that is identified as gains directly or indirectly derived from...
+TDTA;TID/TIS Calculated Indicator – Specifies whether the fund calculates the taxable income per dividend/taxable income per share.
+TEMP;Temporary Indicator – Specifies that the security identified is a temporary security identification used for processing reasons, for...
+TENO;Tenor Indicator – Specifies the tenor of the interest rate index.
+TEXA;Total Exposure Amount – Total exposure amount between the giver and the taker expressed in the transaction currency.
+TEXP;Total Exposure Value of Page – Total value of exposure reported in this message.
+TITL;Title of Correspondence – Specifies the title to be used for correspondence to the mailing address.
+TLDT;Tentative Listing Date – Tentative date on which the security will be listed.
+TNDP;Tax On Non-Distributed Proceeds Indicator – Specifies the tax regulation being attributed to the non-distributed proceeds event or to any...
+TOAL;Total Number of Allocations – Total number of allocations.
+TOCO;Total Number of Collateral Instructions – Total number of collateral instructions involved in the transaction.
+TOVA;Total Eligible Collateral Value – Total value of the holdings eligible for collateral purposes reported in this message.
+TPIN;Total Pending Collateral In – Value of incoming collateral, to be settled in the reporting currency.
+TPOU;Total Pending Collateral Out – Value of outgoing collateral, to be settled in the reporting currency.
+TPRC;Processing Change Command Status – Provides the status of a processing change command.
+TPRI;Total of Principals – Total of principals in the reporting currency.
+TPRO;Trade Instruction Processing Narrative – Provides additional details of the trade process not included within structured fields of this...
+TRAA;Transaction Amount – Transaction amount.
+TRAK;Tracking Indicator – Specifies whether the loan and/or collateral is tracked.
+TRAT;Transformation Rate – Rate used to determine the cash consideration split across outturn settlement transactions that are the result of a...
+TRAX;Transaction Tax – Amount of transaction tax.
+TRCN;Trade Regulatory Conditions Indicator – Specifies the trade regulatory conditions, for example, in the US under SEC regulation 10.b.10.
+TREX;Transaction Execution Status – Indicates whether the transaction is pending initiation or has been initiated.
+TRTE;Termination Transaction Amount – Total amount of money to be settled to terminate the transaction.
+TRTI;Transfer Title Flag – Change of title for the collateral. If N, then collateral is pledged.
+TRTR;Trade Transaction Type – Specifies the type of transaction of which the order is a component.
+TSMT;Taxable Income Per Share – Amount included in the NAV that corresponds, per share, to gains directly or indirectly derived from interest...
+TSMV;Triparty-Agent's/Service-Provider's Securities Movement Reference – Reference assigned by the triparty-agent/service-provider to the...
+TSTA;TIS Calculated Indicator – Specifies whether the fund calculates the TIS.
+TTCO;Trade Transaction Condition Indicator – Specifies the conditions under which the order/trade was executed.
+TVOC;Total Value of Own Collateral – Total value of own collateral in the reporting currency.
+TVRC;Total Value of Reused Collateral – Total value of reused/rehypotheticated collateral in the reporting currency.
+TXAP;Issuer/Offeror Taxability Indicator – Proceeds are taxable according to the information provided by the issuer/offeror.
+TXDF;Tax Deferred Amount – Amount of income eligible for deferred taxation.
+TXFR;Tax Free Amount – Amount of money that has not been subject to taxation.
+TXIN;Tax on Income Amount – Amount of overall tax withheld at source by fund managers prior to considering the tax obligation of each unit...
+TXNR;Narrative Version – Provides information that can be ignored for automated processing; - reiteration of information that has been included...
+TXPR;Tax on Profits – Taxation applied on an amount clearly identified as capital profits, capital gains.
+TXRC;Reclaim of Taxes – Amount that was paid in excess of actual tax obligation and was reclaimed.
+TYPP;Type of Position Flag – Indicates whether the position is fixed (post settlement).
+UNFR;Unfranked Amount – Amount resulting from an unfranked dividend paid by a company; the amount doesn't include tax credit and is subject to...
+UPDT;Update Reason – This reason for the status Active (ACTV) is provided when the penalty has been updated due to the change in the relevant...
+VAFC;Valuation Factor – Adjustment applied on the liability/collateral to calculate the position.
+VAHA;Valuation Haircut – Haircut percentage applied to the market value of underlying assets used as collateral as a risk control measure. The...
+VALU;Value Date – The date on which the cash movement is to take place.
+VASO;Value Sought Amount – Value of collateral offered or sought.
+VASU;Variable Rate Support – Index or support rate used together with the spread to calculate the repurchase rate.
+VATA;Value-Added Tax – Amount of value added tax.
+WAPA;Warrant Parity – Provides the ratio between the quantity of warrants and the quantity of underlying securities.
+WITH;Withholding Tax – Amount of money that will be withheld by a tax authority.
+WITL;Second Level Tax Amount – Amount of money withheld by the jurisdiction other than the jurisdiction of the issuerâ€™s country of tax...
+WRTS;Warrants Attached on Delivery Flag – Indicates whether the warrants on a financial instrument (which has been traded cum warrants) will be...
+WTHD;Withdrawal Allowed Flag – Indicates whether withdrawal of instruction is allowed.
+XCDT;Expected Confirmation Date – Date on which the confirmation is expected.
+YIEL;Yield Type Indicator – Specifies the type of yield at which the transaction was effected.
+YTMR;Yield To Maturity Rate – Rate of return anticipated on a bond when held until maturity date.
+ZWIS;Zwischengewinn – Zwischengewinn.

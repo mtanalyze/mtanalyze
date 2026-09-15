@@ -17,92 +17,97 @@ package com.mtanalyze.ui;
 
 import com.mtanalyze.elastic.ElasticIndexService;
 import com.mtanalyze.lucene.MessageIndexService;
+import com.mtanalyze.model.SwiftMessage;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 /**
- * Modal dialog showing how many messages are currently indexed in each Repository
- * backend -- the embedded Lucene index and the configured Elasticsearch index --
- * opened via Lucene &gt; Statistics... or Elasticsearch &gt; Statistics....
+ * Modal dialog reporting how many of the active tab's MT Entries messages already have a
+ * matching document in each Repository backend -- the embedded Lucene index and the
+ * configured Elasticsearch index -- opened via Lucene &gt; Check Repository... or
+ * Elasticsearch &gt; Check Repository....
  * <p>
- * Both document counts are fetched in the background: Lucene is a local directory and
- * returns almost instantly, while Elasticsearch is a real network call that can be slow
- * or fail if the cluster is unreachable. Fetching them independently means a slow/down
- * Elasticsearch cluster never delays the Lucene count from showing, and vice versa.
+ * A message counts as "already indexed" by the same content-hash identity {@code Index
+ * Messages} relies on for idempotent re-indexing (see {@code MtLucene#contentId} /
+ * {@code MtElastic#contentId}), so this reports what a fresh "Index Messages" run on this
+ * tab would add versus merely replace -- without indexing anything.
  */
-public final class StatisticsDialog {
+public final class CheckRepositoryDialog {
 
-    private static final String LOADING  = "Loading…";
+    private static final String CHECKING = "Checking…";
     private static final String DISABLED = "Disabled (see Settings ▸ Advanced)";
 
-    private StatisticsDialog() {}
+    private CheckRepositoryDialog() {}
 
-    public static void show(JFrame owner, MessageIndexService messageIndex, ElasticIndexService elasticIndex,
+    @FunctionalInterface
+    private interface AlreadyIndexedCount {
+        int count() throws IOException;
+    }
+
+    public static void show(JFrame owner, List<SwiftMessage> messages,
+                             MessageIndexService messageIndex, ElasticIndexService elasticIndex,
                              boolean luceneEnabled, boolean elasticEnabled) {
-        JDialog dlg = new JDialog(owner, "Index Statistics", true);
+        JDialog dlg = new JDialog(owner, "Check Repository", true);
         dlg.setLayout(new BorderLayout());
+
+        int total = messages.size();
 
         FormPanel fp = new FormPanel();
         JPanel form = fp.panel;
         GridBagConstraints lc = fp.lc;
         GridBagConstraints fc = fp.fc;
 
-        JLabel luceneCount  = new JLabel(luceneEnabled ? LOADING : DISABLED);
-        JLabel elasticCount = new JLabel(elasticEnabled ? LOADING : DISABLED);
+        JLabel luceneResult  = new JLabel(luceneEnabled ? CHECKING : DISABLED);
+        JLabel elasticResult = new JLabel(elasticEnabled ? CHECKING : DISABLED);
 
-        addSectionSeparator(form, 0, "Lucene");
-        FormPanel.addRow(form, lc, fc, 1, "Index directory:", new JLabel(messageIndex.indexDir().toString()));
-        FormPanel.addRow(form, lc, fc, 2, "Indexed messages:", luceneCount);
+        JLabel totalLabel = new JLabel(total + (total == 1 ? " message" : " messages"));
+        FormPanel.addRow(form, lc, fc, 0, "Entries in this tab:", totalLabel);
+
+        addSectionSeparator(form, 1, "Lucene");
+        FormPanel.addRow(form, lc, fc, 2, "Already indexed:", luceneResult);
 
         addSectionSeparator(form, 3, "Elasticsearch");
-        FormPanel.addRow(form, lc, fc, 4, "Cluster:", new JLabel(elasticIndex.connectionLabel()));
-        FormPanel.addRow(form, lc, fc, 5, "Indexed messages:", elasticCount);
+        FormPanel.addRow(form, lc, fc, 4, "Already indexed:", elasticResult);
 
         dlg.add(form, BorderLayout.CENTER);
-        dlg.add(buildButtons(dlg, () -> {
-            if (luceneEnabled) {
-                luceneCount.setText(LOADING);
-                loadCount(luceneCount, messageIndex::documentCount);
-            }
-            if (elasticEnabled) {
-                elasticCount.setText(LOADING);
-                loadCount(elasticCount, elasticIndex::documentCount);
-            }
-        }), BorderLayout.SOUTH);
+        dlg.add(buildButtons(dlg), BorderLayout.SOUTH);
 
         dlg.pack();
         dlg.setMinimumSize(dlg.getSize());
         dlg.setLocationRelativeTo(owner);
         registerEscapeKey(dlg);
 
-        if (luceneEnabled) loadCount(luceneCount, messageIndex::documentCount);
-        if (elasticEnabled) loadCount(elasticCount, elasticIndex::documentCount);
+        if (luceneEnabled) {
+            checkAgainst(luceneResult, total, () -> messageIndex.countAlreadyIndexed(messages));
+        }
+        if (elasticEnabled) {
+            checkAgainst(elasticResult, total, () -> elasticIndex.countAlreadyIndexed(messages));
+        }
 
         dlg.setVisible(true);
     }
 
     // -----------------------------------------------------------------------
-    // Background count loading
+    // Background check
     // -----------------------------------------------------------------------
 
-    @FunctionalInterface
-    private interface CountSupplier {
-        long get() throws IOException;
-    }
-
-    private static void loadCount(JLabel label, CountSupplier supplier) {
-        new SwingWorker<Long, Void>() {
-            @Override protected Long doInBackground() throws IOException {
-                return supplier.get();
+    private static void checkAgainst(JLabel label, int total, AlreadyIndexedCount supplier) {
+        new SwingWorker<Integer, Void>() {
+            @Override protected Integer doInBackground() throws IOException {
+                return supplier.count();
             }
             @Override protected void done() {
                 try {
-                    long count = get();
-                    label.setText(count + (count == 1 ? " message" : " messages"));
+                    int alreadyIndexed = get();
+                    int newCount = total - alreadyIndexed;
+                    label.setText(alreadyIndexed + " of " + total
+                        + (total == 1 ? " message" : " messages")
+                        + " (" + newCount + (newCount == 1 ? " new)" : " new)"));
                 } catch (InterruptedException ex) {
                     Thread.currentThread().interrupt();
                 } catch (ExecutionException ex) {
@@ -119,13 +124,10 @@ public final class StatisticsDialog {
     // Dialog chrome
     // -----------------------------------------------------------------------
 
-    private static JPanel buildButtons(JDialog dlg, Runnable onRefresh) {
-        JButton refreshBtn = new JButton("Refresh");
-        refreshBtn.addActionListener(e -> onRefresh.run());
+    private static JPanel buildButtons(JDialog dlg) {
         JButton closeBtn = new JButton("Close");
         closeBtn.addActionListener(e -> dlg.dispose());
         JPanel south = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 8));
-        south.add(refreshBtn);
         south.add(closeBtn);
         dlg.getRootPane().setDefaultButton(closeBtn);
         return south;

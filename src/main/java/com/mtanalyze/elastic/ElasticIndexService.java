@@ -18,7 +18,9 @@ package com.mtanalyze.elastic;
 import com.mtanalyze.model.SwiftMessage;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.BooleanSupplier;
 import java.util.function.IntConsumer;
 
@@ -144,6 +146,24 @@ public final class ElasticIndexService {
     public long documentCount() throws IOException {
         try (MtElastic client = open()) {
             return client.documentCount();
+        }
+    }
+
+    /**
+     * Of {@code messages}, how many already have a document in the index -- identified by
+     * the same content hash used for indexing (see {@link MtElastic#contentId}), so a message
+     * counts as "already indexed" no matter which tab or file it was originally loaded from.
+     */
+    public int countAlreadyIndexed(List<SwiftMessage> messages) throws IOException {
+        Set<String> contentIds = new HashSet<>();
+        for (SwiftMessage msg : messages) {
+            String fin = toFin(msg);
+            if (fin != null && !fin.isBlank()) {
+                contentIds.add(MtElastic.contentId(fin.strip()));
+            }
+        }
+        try (MtElastic client = open()) {
+            return client.existingContentIds(contentIds).size();
         }
     }
 

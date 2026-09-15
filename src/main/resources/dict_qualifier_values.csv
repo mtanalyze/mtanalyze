@@ -366,3 +366,1297 @@ XPST;AMOR;Amortised Value - quantity expressed as current amortised (book) value
 28E;MORE;Intermediate Page – more pages follow in this multi-page statement
 28E;ONLY;Only Page – single-page statement (no further pages)
 
+# -----------------------------------------------------------------------
+# SR2025 ISO 15022 Data Field Dictionary additions
+# Generated from doc/ISO15022_Data_Field_Dictionary_SR2025.xlsx (SWIFT's
+# official SR2025 field catalogue), filtered to (qualifier, code) pairs
+# used by this app's supported MT types and not already covered above.
+# Descriptions are "Code Name - Description of Code" from that source,
+# truncated with "..." where long.
+# -----------------------------------------------------------------------
+ACTV;NEWP;New Penalty - Penalty is new.
+ACTV;OTHR;Other - See narrative.
+ACTV;RALO;Reallocated Reason - Re-allocation of a Late Matching Fail Penalty (LMFP) from the instructing party to the delivering/receiving party, or from the failing party to the...
+ACTV;SWIC;Switch Reason - Switch between the failing and non-failing party of a cash penalty.
+ACTV;UPDT;Update Reason - The penalty has been updated due to the change in the relevant reference data or after the re-inclusion of the penalty.
+
+ADDB;ACLA;Automatic Market Claims - Will automatically give rise to market claims by the account servicer (typically, a CSD).
+ADDB;ATXF;Subject to Transformation - As a result of the Corporate Action, all transactions in the underlying security will be cancelled by the system and replaced with...
+ADDB;CAPA;Preliminary Advice of Payment - The message is a preliminary advice of payment.
+ADDB;CLAI;Claim or Compensation - Relates to a claim on the associated corporate action event.
+ADDB;CLFT;Full Transfer of Received Proceeds - Market Claim is to transfer proceeds received from the issuer to the entitled party.
+ADDB;CLNT;Partial Transfer of Received Proceeds - Market Claim is to transfer proceeds partially received from the issuer to the entitled party. Part is compensated in cash by the...
+ADDB;CLPT;No Transfer of Received Proceeds - Market Claim is to compensate the entitled party in cash by the party that failed to fulfil its obligation. No proceeds have been...
+ADDB;CNTR;Cancel Underlying Trades - As a result of the Corporate Action, all transactions in the underlying security will be cancelled by the system.
+ADDB;CONS;Consent - Relates to a consent within a corporate action event other than a Consent event (:22F::CAEV//CONS).
+ADDB;FPRE;Full Pre-Funding - Full pre-funding of a debt instrument by the issuer prior to original maturity when the issuer deposits assets in trust. Applicable only in the frame...
+ADDB;INCP;Incentive Premium Payment - The event is a payment of an incentive premium related to the voting conditions prescribed at a general meeting.
+ADDB;NAMC;No Automatic Market Claims and Transformations - The event will not automatically give rise to market claims and transformations by the account servicer (typically, a...
+ADDB;NPLE;No Split Election - The issuer only allows a single option to be selected per designated holding.
+ADDB;PPRE;Partial Pre-Funding - Partial pre-funding of a debt instrument prior to maturity drawn through a lottery process. One new security is issued with an earlier maturity...
+ADDB;PPUT;Partial Mandatory Put Redemption - Partial mandatory exchange of a portion of bonds where the exchanged securities are usually remarketed. The issuer may offer holders...
+ADDB;REAC;Required Action - Proceeds/entitlements of the mandatory event can only be paid if specified action is taken by the account owner.
+ADDB;REVR;Reversal - Notification of a reversal.
+ADDB;SCHM;Scheme/Plan of Arrangement - Component event of a scheme/plan of arrangement: a reorganisation of a company or a group of companies, and their capital.
+ADDB;TAXR;Tax Refund - Relates to a tax refund from the authorities on the associated corporate action event.
+
+ADMT;GIVE;Admittance Given - Admittance was given by the investor.
+ADMT;NGIV;No Admittance Given - Admittance was not given by the investor.
+ADMT;TIME;One Time Admittance - Admittance was given by the investor for one time registration.
+
+AFFM;AFFI;Affirmed - Confirmation of the trade has been affirmed.
+AFFM;FORC;Forced Affirmation - The message has been sent automatically by the service provider to notify that settlement will take place.
+AFFM;NAFI;Unaffirmed - Confirmation of the trade has not been affirmed.
+
+ALOC;AOLF;Fully Allocated - Instruction has been fully covered by collateral.
+ALOC;AOLP;Partially Allocated - Instruction has been partially covered by collateral.
+
+ALTE;ARNU;Alien Registration Number - Number assigned by a government agency to identify foreign nationals.
+ALTE;CCPT;Passport Number - Number assigned by a passport authority.
+ALTE;CHTY;Tax Exempt Identification Number - Number assigned to a tax exempt entity.
+ALTE;CORP;Corporate Identification - Number assigned to a corporate entity.
+ALTE;DRLC;Driver's Licence Number - Number assigned to a driver's licence.
+ALTE;FIIN;Foreign Investment Identity Number - Number assigned to a foreign investor (other than the alien number).
+ALTE;TXID;Tax Identification Number - Number assigned by a tax authority to an entity.
+
+AUTA;AUTO;Automatic Allocation - Allocation of the collateral is made automatically.
+AUTA;MANU;Manual Allocation - Allocation of the collateral is made manually.
+
+BDEF;DEFN;Buy-in Not Deferred - The buy-in is not deferred.
+BDEF;DEFY;Buy-in Deferred - The buy-in is deferred.
+
+BDEV;EBAT;End of BATM - End of the bilaterally agreed treasury management operations cut-off.
+BDEV;ECBO;End of CBO - End of Central Bank operations cut-off.
+BDEV;EDVP;End of DVP - End of the delivery versus payment cut-off.
+BDEV;EFOP;End of FOP - End of the free of payment cut-off.
+
+BENT;INDV;Individual - Individual or natural person.
+BENT;LEGL;Legal Entity - Legal Entity.
+
+BIRI;DIVI;Divisible - All values (including minimum and maximum prices) are divisible by the bid interval.
+BIRI;INCR;Incremental - No values within the bid range are divisible by the bid interval including the minimum and maximum prices. Each value between the minimum and maximum...
+BIRI;MULT;In Multiple - The minimum and maximum prices are not divisible by the bid interval. All successive values between the minimum and maximum prices are in multiples of the...
+
+BORR;LAMI;Last Resort Borrowing - Only last resort borrowing should be considered to make settlement occur.
+BORR;NBOR;No Automatic Borrowing - No automatic borrowing should take place.
+BORR;RTRN;Return - Return of stocks should take place.
+BORR;YBOR;Automatic Borrowing - Automatic borrowing took place to effect settlement in case of insufficient financial instruments.
+
+BUSE;BUYI;Buy - Transaction is a purchase of financial instrument by the instructing party.
+BUSE;CROF;Cross From - Transaction is a cross from (Funds Industry).
+BUSE;CROT;Cross To - Transaction is a cross to (Funds Industry).
+BUSE;DIVR;Reinvestment of Dividend Order - Transaction is a reinvestment of dividend order (Funds Industry. Not to be used for corporate actions).
+BUSE;FPOO;FPO Order - Transaction is an FPO (Follow on Public Offer) bid or order.
+BUSE;IPOO;IPO Order - Transaction is an IPO (Initial Public Offering) bid or order.
+BUSE;IPPO;IPP Order - Transaction is an IPP (Institutional Placement Programme) bid or order.
+BUSE;REDM;Redemption - Transaction is a redemption of funds.
+BUSE;SELL;Sell - Transaction is a sale of financial instrument by the instructing party.
+BUSE;SUBS;Subscription - Transaction is a subscription to funds.
+BUSE;SWIF;Switch From - Transaction is a change of an investment from one sub-fund to another sub-fund (redemption-leg).
+BUSE;SWIT;Switch To - Transaction is a change of an investment from one sub-fund to another sub-fund (subscription-leg).
+
+BYIY;BSSN;Unsuccessful - The buy-in was unsuccessful.
+BYIY;BSSP;Partially Successful - The buy-in was partially successful.
+BYIY;BSSY;Successful - The buy-in was successful.
+
+CACK;ADEA;Account Servicer Deadline Missed - Received after the account servicer's deadline. Processed on best effort basis.
+CACK;CALD;In Process - Repo call is in process.
+CACK;CALP;Processed - Repo call is processed.
+
+CAEP;DISN;CA Results in a Distribution - The holder of the relevant security on a certain date, for example, the record date, will receive a benefit without giving up the...
+CAEP;GENL;General - No debit or credit of resources.
+CAEP;REOR;CA Results in a Reorganisation - The underlying security will be debited and may be replaced by another resource (or resources).
+
+CALL;CACK;Acknowledged/Accepted - Repo call request is acknowledged/accepted.
+CALL;DEND;Denied - Repo call request is denied.
+
+CALM;BOTH;Sum of Penalties Based on Securities and Cash - That is the sum of the penalty based on the quantity of securities failed to be delivered and penalty rate of the ISIN...
+CALM;CASH;Penalty Based on Cash - Penalty is based on the amount of cash failed to be delivered and the penalty rate is the discount rate of the relevant currency.
+CALM;MIXE;Penalty Based on the Discount Rate - The penalty is based on the quantity of securities failed to be delivered and penalty rate is the discount rate of the relevant...
+CALM;SECU;Penalty Based on Securities - The penalty is based on the quantity of securities failed to be delivered and penalty rate of the ISIN.
+
+CAMV;CHOS;Mandatory CA Event; Instruction Required - Participation in the corporate action is mandatory and further instructions from the account owner are required, unless a...
+CAMV;MAND;Mandatory CA Event; No Instruction Required - Participation in CA event is mandatory. Further instructions from the account owner are not required.
+CAMV;VOLU;Voluntary CA Event; Instruction Required to Participate - Participation in the corporate action is voluntary. If the owner wishes to take part in the event, instructions...
+
+CAND;BYIY;Buy In - Instruction has been cancelled because a buy-in has been initiated.
+CAND;CANI;Cancelled By Yourselves - Instruction has been cancelled as per your request.
+CAND;CANO;Cancelled by Another Party - Instruction has been cancelled by another party than the instructing party, for example market infrastructure such as a Stock Exchange.
+CAND;CANS;Cancelled By System - Instruction has been cancelled by the system.
+CAND;CANT;Cancelled due to Transformation - Original instruction has been cancelled and replaced due to a Corporate Action.
+CAND;CANZ;Cancelled due to Split/Partial Settlement - Original instruction has been cancelled and replaced to allow a partial or split settlement.
+CAND;CORP;Cancelled Due to Corporate Action - Instruction has been cancelled due to a corporate action.
+CAND;CSUB;Cancelled By Subcustodian - Instruction has been cancelled by the agent, for example, due to an event deadline extension.
+CAND;CTHP;Cancelled By Third Party - Instruction has been cancelled by a third party.
+CAND;EXPI;Expired - Instruction has expired.
+CAND;NARR;Narrative Reason - See narrative field for reason.
+CAND;SCEX;Securities No Longer Eligible - Instruction has been cancelled; the security no longer exists or is no longer eligible on the market instructed. For corporate...
+
+CANP;ADEA;Account Servicer Deadline Missed - Instruction was received after the account servicer's deadline. Processed on best effort basis.
+CANP;CDAC;Conditional Delivery Cancellation Pending - Conditional Delivery is still pending awaiting the cancellation from at least another party.
+CANP;CONF;Awaiting Confirmation - Awaiting confirmation of cancellation from the counterparty.
+CANP;DQCS;Disagreement on Cash Amount - Unrecognised or invalid instructed cash amount.
+CANP;DQUA;Disagreement on Quantity - Unrecognised or invalid instructed quantity.
+CANP;INBC;Incomplete Number Count - Not all the instructions part of a pool have been received.
+CANP;LATE;Market Deadline Missed - Received after market deadline.
+CANP;NARR;Narrative Reason - See narrative field for reason.
+
+CAOP;ABST;Abstain - Vote expressed as abstain. In this case, the issuing company will add the number of shares to the quorum of the meeting. If the voting right is not executed...
+CAOP;AMGT;Vote Against Management - Vote against management.
+CAOP;BOBD;Beneficial Owner Breakdown Request - Breakdown of beneficial ownership required for withholding tax reclaim event.
+CAOP;BSPL;Bonus Share Plan - Receive equities from the Share Premium Reserve of the company and considered as a capital distribution rather than a disbursement of income with...
+CAOP;BUYA;Buy Up - Buy additional securities to round up position.
+CAOP;CASE;Cash and Securities - Corporate action option includes a distribution of both cash and securities to holders.
+CAOP;CASH;Cash - Distribution of cash to holders.
+CAOP;CEXC;Consent and Exchange - Vote to consent to change the terms of the securities agreement and to exchange securities.
+CAOP;CONN;Consent Denied - Vote not to approve the event or proposal.
+CAOP;CONY;Consent Granted - Vote to approve the event or proposal.
+CAOP;CTEN;Consent and Tender - Vote to consent to change the terms of the securities agreement and to tender securities for cash.
+CAOP;DRIP;Drip - Reinvestment proceeds into securities.
+CAOP;EXER;Exercise - Exercise intermediate securities or warrants.
+CAOP;LAPS;Lapse - Allow event or entitled security to expire.
+CAOP;MNGT;Vote With Management - Vote with management.
+CAOP;MPUT;Retain - An option that allows a holder to elect to retain their holding, for example, a putable bond.
+CAOP;NOAC;No Action - Option for the account owner not to take part in the event. This would include opt-out for class actions and lodging of dissenters' rights.
+CAOP;NOQU;Non Qualified Investor - The account owner is a Non-Qualified Investor.
+CAOP;OFFR;Proposed Rate - In a remarketing of variable notes, the margin that shareholders can propose in respect of the next interest period.
+CAOP;OTHR;Other - Generic corporate action option to be used in case that no other specific code is appropriate.
+CAOP;OVER;Oversubscribe - Subscribe to more equities than underlying securities position allows.
+CAOP;PROX;Proxy Card - Issue a proxy card in case of voting.
+CAOP;PRUN;Unknown Proceeds - Proceeds not known during election period. The option can result in cash and/or securities.
+CAOP;QINV;Qualified Investor - The account owner is a Qualified Investor.
+CAOP;SECU;Securities Option - Distribution of securities to holders.
+CAOP;SLLE;Sell Entitlement - Sell the intermediate securities.
+CAOP;SPLI;Split Instruction - Option to give a split instruction, for example, a split voting instruction on a meeting.
+
+CASY;BOKW;Bank of Korea Wire - Settle money through Bank of Korea Wire.
+CASY;CHEC;Cheque - Settle money through cheque.
+CASY;GBSC;UK Domestic - Settle money through UK domestic.
+CASY;USCH;CHIPS (US) - Settle money through CHIPS (US).
+CASY;USFW;Fedwire (US) - Settle money through Fedwire (US).
+
+CATB;FLAT;Charges/Tax Basis Flat or Absolute - Charges/tax basis is flat or absolute for the trade being allocated.
+CATB;PERU;Charges/Tax Basis per Unit - Charge/tax basis is per unit of financial instrument.
+
+CAVA;ACTU;Actual Amount - Price expressed as an amount of currency per unit or per share.
+
+CEFI;ELEC;Electronic Format - Certification must be provided in electronic format.
+CEFI;PHYS;Physical Format - Certification must be provided in physical format.
+
+CERT;NTBK;Not to Book - Certificate/title should not be booked in the shareholder account with the company and should be sent to the depository bank.
+CERT;TOBK;To Book - Certificate/title stays with the registrar/register and is booked in the shareholder account with the company.
+
+CETI;ACCI;Accredited Investor - The holder of the security has to irrevocably certify that it is an Accredited Investor as defined in US Securities and Exchange Commission...
+CETI;DIOR;Intermediary Documentation Required - Documentation required on or prior to the documentation deadline date.
+CETI;DOMI;Country of Domicile - The holder of the security has to certify his domicile.
+CETI;FRAC;Fraction Breakdown - Indicates that the rounding rule in the Fraction Disposition component at the option level can be offered at the beneficial owner level.
+CETI;FULL;Full Beneficial Owner Break Down - The holder of the security has to provide his beneficial owner details for disclosure/instruction purpose.
+CETI;NCOM;Non-Company Related Person - The holder of the security has to certify he is a Non-Company related person.
+CETI;NDOM;Country of Non-Domicile - The holder of the security has to certify, in line with the terms of the corporate action, that it is not domiciled in the country indicated.
+CETI;PABD;(I)CSD participant breakdown - The (I)CSD has to provide its participants' details for disclosure purpose to the issuer/issuer's agent.
+CETI;PAPW;Beneficial Owner's Paperwork - Indicates if the Beneficial Owner is responsible to fill in the paperwork.
+CETI;QIBB;QIB Certification - The holder of the security has to irrevocably certify that it is a Qualified Institutional Buyer as defined in US Securities and Exchange Commission...
+CETI;TRBD;Tax Rate Break Down - The holder of the security has to provide basic details on nominals and associated tax rate to be used by the account servicer.
+
+CFRE;ANNU;Annual - Annual payment cycle.
+CFRE;MNTH;Monthly - Monthly payment cycle.
+CFRE;QUTR;Quarterly - Quarterly payment cycle.
+CFRE;SEMI;Semi-Annual - Semi-annual payment cycle.
+CFRE;WEEK;Weekly - Weekly payment cycle.
+
+CGEN;CLAI;Market Claim - Transaction has been generated due to a market claim following a corporate action.
+CGEN;COLL;Collateral Management - Transaction has been generated for collateral management purposes.
+CGEN;NARR;Narrative Reason - See narrative field for reason.
+CGEN;RODE;Return of Refused Dump - Transaction has been generated to return a delivery previously instructed.
+CGEN;SPLI;Split/Shaping - Transaction has been generated to enable settlement following a shortage of position.
+CGEN;THRD;Third Party - Transaction has been generated by a third party, for example, a central counterparty.
+CGEN;TRAN;Transformation - Transaction has been generated due to transformation following a corporate action.
+
+CHAN;BERE;Bearer to Registered - Change from bearer into registered form.
+CHAN;CERT;Certificates - Change of all instruments into certificates.
+CHAN;DECI;Decimalisation - Process of changing the accounting method of a security, for example, mutual fund, from units to a quantity with decimals.
+CHAN;DEPH;Dematerialised to Physical - Change from dematerialised into physical form.
+CHAN;GPPH;Global Permanent to Physical - Change from global permanent to physical form.
+CHAN;GTGP;Global Temporary to Global Permanent - Change from global temporary to global permanent form.
+CHAN;GTPH;Global Temporary to Physical - Change from global temporary to physical form.
+CHAN;NAME;Name - Change of the issuing company's name. Event shows the change from old name to new name and may involve surrendering physical shares with the old name to the...
+CHAN;PHDE;Physical to Dematerialised - Change from physical into dematerialised form.
+CHAN;REBE;Registered to Bearer - Change from registered into bearer form.
+CHAN;TERM;Terms - Change in the terms of the security.
+
+CODE;CURR;Current - It is used by asset servicers or securities settlement systems that report the new penalties and the modified penalties in one single message/report.
+CODE;FWAM;ForwardAmend - The message reports a penalty list that contains only updated and/or removed penalties.
+CODE;FWIS;Forward Initial Submission - The message is used to report a penalty list that contains only new computed penalties.
+
+COLA;BFWD;Bond Forward - Any securities traded out beyond 3 days which include treasury notes, JGBs and Gilts.
+COLA;CBCO;Central Bank Credit Operations - Exposures related to activity with central banks.
+COLA;CCIR;Cross Currency IRS - Cross Currency Interest Rate Swap, indicating the exchange of fixed interest payments in one currency for those in another.
+COLA;CCPC;CCP Collateral - Collateral covering the initial margin requirements for OTC trades cleared through a CCP.
+COLA;COMM;Commodities - Commodities trades for example futures and options on gold, silver, wheat.
+COLA;CRDS;Credit Default Swap - Trading of credit default swap.
+COLA;CRPR;Cross Product - Combination of various types of trades.
+COLA;CRSP;Credit Support - Cash lending/borrowing; letter of Credit; signing of master agreement.
+COLA;CRTL;Credit Line - Opening of a credit line before trading.
+COLA;EQPT;Equity Option - Trading of equity option (Also known as stock options).
+COLA;EQUS;Equity Swap - Equity swap trades where the return of an equity is exchanged for either a fixed or a floating rate of interest.
+COLA;EXPT;Exotic Option - Trading of exotic option for example a non-standard option.
+COLA;EXTD;Exchange Traded Derivatives - Trading of exchanged traded derivatives in general (Opposite to Over the Counter (OTC)).
+COLA;FIXI;Fixed Income - Trading of fixed income instruments.
+COLA;FORW;Forward Foreign Exchange - FX trades with a value date in the future.
+COLA;FORX;Foreign Exchange - FX trades in general.
+COLA;FUTR;Futures - Related to futures trading activity.
+COLA;LIQU;Liquidity - In support of settlement via an RTGS or other clearing system.
+COLA;OPTN;FX Option - Trading of option on Foreign Exchange.
+COLA;OTCD;OTC Derivatives - Over-the-counter (OTC) Derivatives in general for example contracts which are traded and privately negotiated.
+COLA;PAYM;Cash Settlement - In support of any type of cash settlement.
+COLA;REPO;Repurchase Agreement - In support of a repurchase agreement transaction.
+COLA;RVPO;Reverse Repurchase Agreement - In support of a reverse repurchase agreement transaction.
+COLA;SBSB;Securities Buy Sell Back - Securities buy sell back.
+COLA;SCIE;Single Currency IRS Exotic - Exotic single currency interest rate swap.
+COLA;SCIR;Single Currency IRS - Single Currency Interest Rate Swap.
+COLA;SCRP;Securities Cross Product - Combination of securities-related exposure types.
+COLA;SHSL;Short Sale - Short sale exposure.
+COLA;SLEB;Securities Lending and Borrowing - Securities lending and borrowing.
+COLA;SLOA;Secured Loan - Secured loan.
+COLA;SWPT;Swaption - Option on interest rate swap.
+COLA;TBAS;To Be Announced - To Be Announced (TBA) related collateral.
+COLA;TCRP;Treasury Cross Product - Combination of treasury-related exposure types.
+COLA;UDMS;Uncleared Derivative Margin Segregation - Relates to uncleared derivative margin segregation for variation or initial margin.
+
+COLE;COLA;Eligible for Collateral Purposes - The securities are eligible for collateral purposes.
+COLE;COLN;Not Eligible for Collateral Purposes - The securities are not eligible for collateral purposes.
+
+COLL;PEND;Pending - Instruction is pending.
+
+CONF;DERI;Deregistration Instruction - Confirmation of a deregistration of positions in registration.
+CONF;REGI;Registration Instruction - Confirmation of registration of unregistered positions. Initial or first registration.
+CONF;RERE;Reregistration Instruction - Confirmation of reregistration of previously deregistered positions.
+
+CONP;YCON;Confirmed - The failing instruction due to expire is confirmed for settlement. Do not cancel automatically.
+
+CONS;CTRM;Change in Terms - This is a change in the terms and conditions of the bond.
+CONS;DUPY;Due and Payable - This is a change in the due and payable conditions.
+
+CONT;ACTU;Actual - Payment will be made upon actual receipt of funds.
+CONT;CONT;Contractual Payment - Anticipation of collection and is based on a contractual agreement with account servicer.
+
+CONV;FINL;Final - This is the final event in a series of successive events.
+CONV;INTE;Interim - This is an interim event in a series of successive events.
+
+COST;CLDI;Per Client Agreement - Commission is as per client agreement.
+COST;FLAT;Flat Fee - Commission is a flat fee.
+COST;PERN;Percentage of Principal in Basis Points - Commission is a percentage of principal.
+COST;PERU;Per Unit - Commission is per unit of financial instrument.
+COST;PWCD;Percentage Commission Waived as Cash Discount - Commission is a percentage commission waived as cash discount.
+COST;PWEU;Percentage Commission Waived as Additional Units - Commission is a percentage commission waived as additional units.
+COST;SOFT;Soft Dollar Commission Sharing - Commission is a soft dollar percentage commission.
+COST;STEP;Commission Sharing Type is for Step-out Trade - Commission is for a step-out trade.
+
+CPRC;CAND;Cancellation Completed - Cancellation request has been completed.
+CPRC;CANP;Pending Cancellation - Cancellation request is pending. It is not known at this time whether cancellation can be affected.
+CPRC;DEND;Denied - Cancellation will not be executed.
+CPRC;EXCH;Received at Stock Exchange - Cancellation has been received at the stock exchange.
+CPRC;INTE;Received at Intermediary - Cancellation has been received at the intermediary.
+CPRC;PACK;Accepted - Cancellation request has been accepted for further processing.
+CPRC;PARF;Partially Filled - Order is partially filled, cancellation processing accepted for the remainder.
+CPRC;REJT;Rejected - Cancellation request has been rejected for further processing due to system (data) reasons.
+CPRC;REPR;In Repair - Cancellation request is in repair.
+
+CRDB;CRED;Credit - Value is a credit.
+CRDB;DEBT;Debit - Value is a debit.
+
+CSAC;CMCO;Compounding - Calculation method by which interest is calculated each period on the original principal and all interest accumulated during past periods.
+CSAC;SIMP;Simple - Calculation method by which interest is calculated on the original principal only. Accumulated interest from prior periods is not used in calculations for the...
+
+DBNM;BRKR;Broker - Settlement standing instruction database to be used is the broker's database.
+DBNM;INTE;Internal - Settlement standing instruction database to be used is the receiver's internal database.
+DBNM;VEND;Vendor - Settlement standing instruction database to be used is the database of the vendor.
+
+DEND;ADEA;Account Servicer Deadline Missed - Received after the account servicer's deadline.
+DEND;DCAL;Call Denied Since Applied - Request was denied since another request applies.
+DEND;DCAN;Denied Since Cancelled - Request was denied since the instruction has been cancelled.
+DEND;DFOR;Denied Since not Allowed Request was denied - Call not allowed on the concerned repo, for example, out of delay.
+DEND;DPRG;Denied Since in Progress - Request was denied because the process of settlement or processing is already in progress.
+DEND;DREP;Denied Since Repo Ended - Request was denied because the transaction has already reached the end of its lifecycle.
+DEND;DSET;Denied Since Settled - Request was denied because the instruction was settled or executed.
+DEND;LATE;Market Deadline Missed - Received after market deadline.
+DEND;NARR;Narrative Reason - See narrative field for reason.
+
+DISF;BUYU;Buy Up - Buy securities up to next whole number.
+DISF;CINL;Fractional Part for Cash - Receive cash in lieu of fractions.
+DISF;DIST;Distributed - Take distribution of fractions in the form of securities.
+DISF;EXPI;Expire - Let fractions expire worthless.
+DISF;RDDN;Round Down - Round the entitlement down to the last full unit/minimum nominal quantity, fractions are discarded.
+DISF;RDUP;Round Up - Round up to the next full unit/minimum nominal quantity at no cost.
+DISF;STAN;Standard - If the fraction is greater than or equal to 0.5 of the resulting security then round up, else round down as specified in the respective RDUP and RDDN codes.
+DISF;UKWN;Unknown - Characteristics of the disposition of fractions are unknown.
+
+DIST;FIDE;Confidential - Correspondence is to be confidential.
+DIST;PERS;Personal - Correspondence is to be personal.
+
+DITY;FINL;Final - This is a final payment.
+DITY;INTE;Interim - This is an interim payment.
+DITY;ONGO;Ongoing - The event is ongoing for acceptance on an unsolicited basis.
+DITY;ROLL;Rolling - Event will have a number of acceptance and payment dates until further announcement by the Issuer or its agent.
+
+DIVI;FINL;Final - Payment of a dividend, less the amounts already paid through interim dividends.
+DIVI;INTE;Interim - Dividend declared and paid before annual earnings have been determined.
+DIVI;REGR;Regular - Dividend paid at regular interval, for example, quarterly.
+DIVI;REIN;Reinvestment - Reinvestment of Cash distributed.
+DIVI;SPEC;Special - Dividend in addition to the regular dividend being paid by the company.
+DIVI;SPRE;Special Dividend with Reinvestment - Special dividend with reinvestment component.
+
+DTCH;MDFD;Modified - All instructions are accepted at the same price (issuer bid).
+DTCH;UNMD;Unmodified - All instructions are accepted at the instructed price (offering bid).
+
+ECIO;EUSI;In Scope - Capital gain is in the scope of the directive.
+ECIO;EUSO;Not In Scope - Capital gain is out of the scope of the directive.
+ECIO;UKWN;Unknown - Unknown whether capital gain is in or out of the scope of the directive.
+
+ELCT;DRCT;Direct Election - Direct movement of resource, that is, cash or security that is directly credited to the paying agent account.
+ELCT;SEQD;Sequestered Election - Election results in a change of balance type that transfers control of the securities rather than the securities themselves.
+
+EPRC;COMP;Complete - Processing has been completed.
+EPRC;PEND;Pending - Processing has not been completed.
+EPRC;RECD;Reconciled - Indicates that the funds paid have been reconciled with the funds received from the Agent (meaning that there is no more risk of payment to be reversed).
+
+ESTA;APPD;Approved - Approved at the relevant meeting or through consent or according to the terms of the CA event, for example, dividend.
+ESTA;CLDE;Closed/Deactivated - The offer is closed for acceptance.
+ESTA;FULL;Cancellation and Re-Run - Cancellation and re-run of an original lottery or an original and supplemental lottery. A subsequent lottery will be performed under a new...
+ESTA;LAPS;Lapsed - The event/offer conditions have not been met and the event/offer is terminated or lapsed.
+ESTA;PART;Supplemental Cancellation and Re-Run - Cancellation and re-run of a supplemental lottery only. A subsequent new supplemental lottery will be performed under the original...
+ESTA;PWAL;Period of Action - Open for acceptance until the next specified deadline in the announcement (if any).
+ESTA;RESC;Supplemental Cancellation - A supplemental lottery is being cancelled by the issuer. No subsequent lottery will be performed.
+ESTA;SUAP;Subject to Approval - Subject to approval at the relevant meeting or through consent or according to the terms of the CA event, for example, dividend.
+ESTA;UNAC;Unconditional as to Acceptance - The required level of acceptances specified in the terms of the offer has been achieved but there are still outstanding conditions to...
+ESTA;WHOU;Wholly Unconditional - Wholly unconditional; all conditions specified in the offer document have been satisfied.
+
+FSSA;FSSN;No Salvation - Receiver is not allowed to solve failure in the settlement by proposing other collateral movements.
+FSSA;FSSY;Salvation - Receiver is allowed to solve failure in the settlement by proposing other collateral movements.
+
+FXCX;FXNO;FX not to be Cancelled - Forex instructed in the original instruction is not to be cancelled.
+FXCX;FXYE;FX to be Cancelled - Forex instructed in the original instruction is also to be cancelled.
+FXCX;SINO;SI does not Apply - Forex standing instruction in place does not apply. This instruction is an amendment to a previously cancelled instruction for which the FX order has...
+
+GCOS;DEFI;Deficit - Shortage of collateral.
+GCOS;EXCS;Excess - Excess of collateral.
+GCOS;FLAT;Flat - Collateral covers the exposure and there is no excess.
+
+GCST;DEFI;Deficit - Shortage of collateral.
+GCST;EXCS;Excess - Excess of collateral.
+GCST;FLAT;Flat - Collateral covers the exposure and there is no excess.
+
+GETS;DEFI;Deficit - Shortage of collateral.
+GETS;EXCS;Excess - Excess of collateral.
+GETS;FLAT;Flat - Collateral covers the exposure and there is no excess.
+
+INCA;ELIG;Eligible Counterparty - MiFID classification of counterparty. Eligible customers are the most sophisticated level of investor, able to opt out of some of the protections...
+INCA;PROF;Professional Client - MiFID classification of counterparty. Professional customers are, for example, investment firms, credit institutions, insurance companies.
+INCA;RETL;Retail Client - MiFID classification of counterparty. Retail customers are the least sophisticated level of investor.
+
+INFO;CONF;Conference Call - The information is about an informal call when an issuer, trustee, agent wishes to talk to note holders to discuss a certain issue or potential change...
+
+INMH;MACH;Matched - Instruction has been matched.
+INMH;NMAT;Unmatched - Instruction has not been matched.
+
+INOU;COLI;Delivered - Financial Instruments are to be delivered out of Party A's safekeeping account.
+INOU;COLO;Received - Financial Instruments are to be received in Party A's safekeeping account.
+
+INST;DERI;Deregistration Instruction - Deregistration of positions in registration.
+INST;REGI;Registration Instruction - Registration of unregistered positions. Initial or first registration.
+INST;RERE;Reregistration Instruction - Reregistration of previously deregistered positions.
+
+INTR;GIVE;Collateral Giver - Interest is paid to the collateral giver.
+INTR;TAKE;Collateral Taker - Interest is paid to the collateral taker.
+
+IPRC;CAN1;Cancellation1 - Pending cancellation; only one side has been input and a cancellation request has been sent.
+IPRC;CAN2;Cancellation2 - Pending cancellation; both sides have been input, the trade has not yet been matched, and one side has sent a cancellation request.
+IPRC;CAN3;Cancellation3 - Pending cancellation; both sides have been input, the trade is matched, and one side has sent a cancellation request.
+IPRC;CAND;Cancelled - Instruction has been cancelled (in an MT548, as an answer to an MT549 instruction status request).
+IPRC;CANO;Cancelled by Another Party - Instruction has been cancelled by another party than the instructing party, for example market infrastructure such as a Stock Exchange.
+IPRC;CANP;Pending Cancellation - A cancellation request from yourself for this instruction is pending waiting for further processing (in an MT548, as an answer to an MT549...
+IPRC;CGEN;Generated - The transaction was created by the account servicer or a third party. It was not instructed directly by the account owner.
+IPRC;COSE;Fully executed/Confirmation sent - Order is fully executed and the confirmation was sent.
+IPRC;CPRC;Cancellation Request - A cancellation request from your counterparty for this transaction is pending waiting for your cancellation request.
+IPRC;DFLA;Default Action - Default action is taken.
+IPRC;DONE;Done - Order is partially filled and no further executions forthcoming for the trading day.
+IPRC;DONF;Partially Filled Order - Order is partially filled and no further executions will take place.
+IPRC;EXCH;Received at Stock Exchange - Order has been received at the stock exchange.
+IPRC;EXSE;Fully executed/Execution sent - Order was fully executed and the execution sent.
+IPRC;FORC;Forced Rejection - The message has been sent automatically by the service provider to notify that settlement will not take place.
+IPRC;FRWD;Forwarded - Instruction has been accepted and forwarded to the next intermediary in the chain.
+IPRC;FUTU;Future - All checks relative to the instruction (except collateral) are successful.
+IPRC;INTE;Received at Intermediary - Order has been received at the intermediary.
+IPRC;MPRC;Modification Request - A modification request from your counterparty for this transaction is pending waiting for your modification request or your consent.
+IPRC;NOTC;Already Matched and Affirmed - Instruction cannot be cancelled as it has already been matched and affirmed.
+IPRC;OPOD;Open Order - Order is open.
+IPRC;OVER;Overallocated - Quantity of financial instrument of the block trade has been overallocated.
+IPRC;PACK;Accepted for Further Processing - Instruction has been accepted .This means that the instruction has been received, is processable and has been validated for further...
+IPRC;PAFI;Partial Fill - Order has been partially filled and the remaining quantity is warehoused.
+IPRC;PART;Partial Cancel - Order has been partially cancelled as requested.
+IPRC;PEND;Pending - Instruction's processing is pending.
+IPRC;PPRC;Pending Processing - Processing of the instruction is pending.
+IPRC;PPRE;Prepayment Confirmation Received - Confirmation of the prepayment has been received (Funds Industry).
+IPRC;RCIS;Received by Issuer or Offeror - Instruction has been received and accepted by the issuer or offeror.
+IPRC;REJT;Rejected - Instruction has been rejected for further processing due to system reasons.
+IPRC;REPR;Repair - Instruction is accepted but in repair.
+IPRC;RETR;Returned - Instructed units are returned or partially returned to the instructing party.
+IPRC;SESE;Settlement Instruction Sent - Settlement instruction has been sent to your custodian.
+IPRC;STIN;Standing Instruction - Standing instruction is applied.
+IPRC;SUSP;Trading Suspended by Stock Exchange - Trading is suspended by the stock exchange.
+IPRC;TREA;Treated - Transaction has been treated.
+IPRC;UNDE;Underallocated - Quantity of financial instrument of the block trade has been under allocated.
+
+LANG;DUTH;Dutch - Dutch.
+LANG;ENGL;English - English.
+LANG;FREN;French - French.
+LANG;GERM;German - German.
+LANG;ITAL;Italian - Italian.
+LANG;SPAN;Spanish - Spanish.
+
+LEGA;FRAN;Pension LivrÃ©e - Relates to the French legal framework for repos, that is, relates to a Pension LivrÃ©e.
+
+LINK;AFTE;After - Indicates that the message is to be processed after the linked message.
+LINK;BEFO;Before - Indicates that the message is to be processed before the linked message.
+LINK;INFO;Information - Indicates that the messages are linked for information purposes only.
+LINK;LINK;Link - Request is to link the reference in B to the reference(s) in B1.
+LINK;SOFT;Soft Link - Request is to soft link the reference in B to the reference(s) in B1.
+LINK;UNLK;Unlink - Request is to unlink the reference in B to the reference(s) in B1.
+LINK;WITH;With - Indicates that the message is to be processed with the linked message.
+
+LOTO;ORIG;Original Lottery Notification - Original lottery that has been announced for a specific amount and date.
+LOTO;SUPP;Supplemental Lottery Notification - Supplemental or additional quantity called on a previously announced original lottery.
+
+MICO;A001;30/360 (ISDA) or 30/360 (American Basic Rule) - Method whereby interest is calculated based on a 30-day month and a 360-day year. Accrued interest to a value date on the...
+MICO;A002;30/365 - Method whereby interest is calculated based on a 30-day month in a way similar to the 30/360 (basic rule) and a 365-day year. Accrued interest to a value date...
+MICO;A003;30/Actual - Method whereby interest is calculated based on a 30-day month in a way similar to the 30/360 (basic rule) and the assumed number of days in a year in a way...
+MICO;A004;Actual/360 - Method whereby interest is calculated based on the actual number of accrued days in the interest period and a 360-day year.
+MICO;A005;Actual/365 (Fixed) - Method whereby interest is calculated based on the actual number of accrued days in the interest period and a 365-day year.
+MICO;A006;Actual/Actual (ICMA) - Method whereby interest is calculated based on the actual number of accrued days and the assumed number of days in a year, that is, the actual...
+MICO;A007;30E/360 or Eurobond basis - Method whereby interest is calculated based on a 30-day month and a 360-day year. Accrued interest to a value date on the last day of a month...
+MICO;A008;Actual/Actual (ISDA) - Method whereby interest is calculated based on the actual number of accrued days of the interest period that fall on a normal year, divided by...
+MICO;A009;Actual/365L or Actual/Actual (basic rule) - Method whereby interest is calculated based on the actual number of accrued days and a 365-day year (if the coupon payment...
+MICO;A010;Actual/Actual (AFB) - Method whereby interest is calculated based on the actual number of accrued days and a 366-day year (if 29 Feb falls in the coupon period) or a...
+MICO;A011;30/360 (ICMA) or 30/360 (basic rule) - Method whereby interest is calculated based on a 30-day month and a 360-day year. Accrued interest to a value date on the last day...
+MICO;A012;30E2/360 or Eurobond basis model 2 - Method whereby interest is calculated based on a 30-day month and a 360-day year. Accrued interest to a value date on the last day...
+MICO;A013;30E3/360 or Eurobond basis model 3 - Method whereby interest is calculated based on a 30-day month and a 360-day year. Accrued interest to a value date on the last day...
+MICO;A014;Actual/365NL or Actual/365 No Leap - Method whereby interest is calculated based on the actual number of accrued days in the interest period, excluding any leap day from...
+MICO;OTHR;Other - Other method than A001-A014. See Narrative.
+
+MOPN;CONF;Awaiting Confirmation - Awaiting confirmation of modification from the counterparty or the market.
+MOPN;NARR;Narrative Reason - See narrative field for reason.
+
+MOVE;AMT1;Amount - Checks on the amount of the securities have failed for at least one security.
+MOVE;CASH;Cash - Instruction is meant to cure a cash fail, but no cash fail position exists in the transaction.
+MOVE;CURR;Currency - At least one security in the message does not have the same currency as the transaction and this is a requirement in the triparty agreement or in the...
+MOVE;EXCL;Excluded - At least one security has been excluded from use as collateral for all transactions in the triparty agreement (or in the eligibility set).
+MOVE;FUTU;Future - Security satisfies all validation checks and can therefore be accepted for the related transaction.
+MOVE;LIMB;Limbo - Validation checks on the security have not yet started or are still ongoing.
+MOVE;MANU;Manually Accepted - Security does not satisfy the eligibility criteria stipulated in the triparty agreement. However the bank has manually accepted this security.
+MOVE;NLEG;Eligibility - At least one security does not satisfy the eligibility criteria as defined in the triparty agreement (or in the eligibility set) for this transaction.
+MOVE;TAXE;Tax - At least one security cannot be used as collateral because a tax event is due in the next few days.
+MOVE;WAIT;Wait - At present the security satisfies the currency and eligibility criteria checks.
+
+MRKT;ACTU;Actual Amount - Price expressed as an amount of currency per unit or per share.
+
+MTCH;MACH;Matched - Instruction has been matched.
+MTCH;MTRE;Resume Matching - Matching process is to be resumed for the referenced transaction.
+MTCH;NMAT;Unmatched - Instruction has not been matched.
+MTCH;UNMT;Unmatch - The referenced transaction is requested to be unmatched.
+
+NAFI;NAFF;Not Affirmed - Counterparty has not affirmed.
+
+NCOM;OTHR;Other - See narrative.
+
+NELP;ACLI;Account Limitation - Participant's account limitation.
+NELP;NELC;Non Eligible Currency - Currency not eligible for settlement in the CSD.
+NELP;NELS;Non Eligible Security - Security not eligible in the CSD.
+NELP;ONEL;Other Non Eligibility - Other source of non eligibility.
+
+NMAT;ACRU;Accrued Interest Amount - Accrued interest amount does not match.
+NMAT;ADEA;Account Servicer Deadline Missed - Received after the account servicer's deadline. Processed on best effort basis.
+NMAT;CADE;Disagreement Transaction Call Delay - Transaction call delay does not match.
+NMAT;CHAR;Disagreement Charges Amount - Charges amount does not match.
+NMAT;CLAT;Counterparty too Late for Matching - Counterparty's instruction was too late for matching.
+NMAT;CMIS;Matching Instruction Not Found - A matching instruction from your counterparty could not be found.
+NMAT;CPCA;Cancelled by Counterparty - Counterparty cancelled their instruction.
+NMAT;DCMX;Disagreement Cum Ex - Disagreement if trade was executed cum or ex.
+NMAT;DDAT;Disagreement Settlement Date - Settlement date/time does not match.
+NMAT;DDEA;Deal Price Not Match - Deal price does not match.
+NMAT;DEAL;Disagreement Deal Amount - Deal amount does not match.
+NMAT;DELN;Disagreement Direction of Trade - Direction of the trade does not match. Counterparty expects a delivery from you, not a receipt or vice versa.
+NMAT;DEPT;Disagreement Place of Settlement - Place of settlement does not match.
+NMAT;DMCT;Disagreement Automatic Generation - Disagreement on automatic generation of market claim or transformation.
+NMAT;DMON;Disagreement Settlement Amount - Settlement amount does not match.
+NMAT;DQUA;Disagreement Quantity - Quantity of financial instrument does not match.
+NMAT;DSEC;Disagreement Security - Financial instrument identification does not match, for example, ISIN, financial instrument attributes differs...
+NMAT;DTRA;Not Recognised - Counterparty has been contacted or contacted us, and does not recognise the transaction.
+NMAT;DTRD;Disagreement Trade Date - Trade date does not match.
+NMAT;EXEC;Disagreement Executing Broker's Commission - Executing broker's commission does not match.
+NMAT;FORF;Disagreement Forfeit Amount - Forfeit amount does not match.
+NMAT;FRAP;Disagreement Payment Code - Payment type does not match: your instruction is free of payment, your counterparty's instruction is against payment or vice versa.
+NMAT;ICAG;Incorrect Agent - Delivering or receiving agent (counterparty) does not match.
+NMAT;ICUS;Disagreement Receiving or Delivering Custodian - Delivering or receiving custodian does not match.
+NMAT;IEXE;Incorrect Buyer or Seller - Buyer (receiver) or seller (deliverer) does not match.
+NMAT;IIND;Disagreement Common Reference - Common reference does not match.
+NMAT;INPS;Disagreement Place of Safekeeping - The place of safekeeping information does not allow matching to take place.
+NMAT;INVE;Disagreement Investor Party - Investor party does not match.
+NMAT;LATE;Market Deadline Missed - Your instruction was too late for matching.
+NMAT;LEOG;Disagreement Letter of Guarantee Indicator - Counterparty is for settlement through Letter of Guarantee (L/G), your instruction is not, or vice versa.
+NMAT;MCAN;Matching Record Cancelled - Corresponding matching record has been cancelled.
+NMAT;MIME;Missing Market Side Details - Market side execution details are missing.
+NMAT;NARR;Narrative - Other details do not match. See narrative for details.
+NMAT;NCRR;Disagreement Currency Settlement Amount - Settlement amount currency does not match.
+NMAT;NMAS;No Matching Started - Matching process has not yet started.
+NMAT;PHYS;Disagreement Physical Settlement - Counterparty's instruction is physical settlement, your instruction is not, or vice versa.
+NMAT;PLCE;Disagreement Place of Trade - Place of trade does not match.
+NMAT;PLIS;Disagreement Place of Listing - Place of listing does not match.
+NMAT;PODU;Possible Duplicate Instruction - Instruction has not been matched. It is a possible duplicate instruction.
+NMAT;REGD;Disagreement Registration Details - Registration details linked to the transaction are incorrect.
+NMAT;REPA;Disagreement Termination Transaction Amount - Termination transaction amount does not match.
+NMAT;REPO;Disagreement Repurchase Rate - Repurchase rate does not match.
+NMAT;REPP;Disagreement Premium Amount - Premium amount does not match.
+NMAT;RERT;Disagreement Repurchase Rate Type - Repurchase rate type does not match.
+NMAT;RSPR;Disagreement Repurchase Spread Rate - Repurchase spread rate does not match.
+NMAT;RTGS;Disagreement RTGS System - Counterparty is for Real Time Gross Settlement (RTGS) system, you are for non-RTGS or vice versa.
+NMAT;SAFE;Disagreement Safekeeping Account - Safekeeping account used as matching criteria on the market concerned does not match. This includes Buyer/seller's account, direct...
+NMAT;SETR;Disagreement Settlement Transaction - Settlement transaction type does not match (relates to the settlement transaction type codes available for field :22F::SETR).
+NMAT;SETS;Disagreement Settlement System/Method - Settlement system/method does not match (for example, instruction is to settle using settlement system/method A. Counterparty...
+NMAT;TERM;Disagreement Closing Date/Time - Closing date/time does not match.
+NMAT;TQBT;Disagreement Total Block Quantity - Total block quantity does not match.
+NMAT;TXST;Disagreement Tax Status - Disagreement on the tax status of the financial instruments to be settled.
+NMAT;UNBR;Unmatched Market Side Details - Market side trade is unmatched.
+NMAT;VASU;Disagreement Variable Rate Support - Variable rate support does not match (repo).
+
+NSIS;DEFE;Defeased Security Indicator - Funds have been placed in escrow by a trustee or agent to ensure payment on a portion of the outstanding balance of the original security...
+NSIS;EXIS;Existing Issue - The securities proceeds are not new issues.
+NSIS;NDEF;Non Defeased Security Indicator - Funds will not be guaranteed at maturity by the issuer or paying agent for this newly issued non-defeased security.
+NSIS;NEIS;New Issue - The securities proceeds are newly issued.
+NSIS;NREF;Non-Refunded Security Indicator - New Security issued that has not been refunded and the maturity date of the original underlying security is unchanged. Applicable only...
+NSIS;REFU;Refunded Security Indicator - New security issued which has been refunded to an earlier maturity date. Applicable only in the frame of a partial defeasance corporate...
+NSIS;UKWN;Unknown - It is not known whether the securities proceeds are newly issued or not.
+
+NTWK;DITU;Digital Token Unit Number - Quantity of digital token expressed as a number, for example, a number of blockchain tokens.
+
+OFFE;ACPR;Acceptance Priority - Event will be paid in a particular priority stated in the offering documentation. Higher tiers of securities will be paid ahead of lower tiers of...
+OFFE;DISS;Dissenter's Rights - Securities' holder has the right to disagree with a mandatory event. This right is not inherent in all offers and therefore must be noted in...
+OFFE;ERUN;Restriction Exchange - Exchange of Restricted to Unrestricted (or vice versa).
+OFFE;FCFS;First Come First Served - Securities will be accepted in the order they have been submitted until the target number of quantity sought is reached.
+OFFE;FINL;Final Offer - Final or last offer to holders subject to offer conditions being reached, for example, 50% accepted on a tender.
+OFFE;NDIS;Dissenter's Rights Not Applicable - Dissenterâ€™s rights are not applicable for this offer.
+OFFE;PART;Partial Offer - Partial offer.
+OFFE;SQUE;Squeeze Out Bid - Offer launched by a company, in possession of a large number of the shares (90% - 95%) of a company (generally as a result of a tender offer), in order...
+
+OFRF;NOUP;No Update Rate - No update of the rate for the duration of the trade.
+OFRF;OVNI;Overnight - Daily fixing according to the tenor of the index.
+OFRF;PERI;Periodic - Periodic fixing of the rate in line with (according to) the tenor of the rate.
+
+OMAT;MATA;Allowed - Maturity date modification is allowed.
+OMAT;MATN;Not Allowed - Maturity date modification is not allowed.
+
+OPST;AMER;American Style - Option can be exercised before or on expiry date.
+OPST;EURO;European Style - Option can be exercised on expiry date only.
+
+OPTF;ASVO;Account Servicer Option - Option is offered by the account servicer only.
+OPTF;BOIS;Beneficiary Owner Instruction - Indicates that the holder needs to instruct at beneficiary owner level only.
+OPTF;CAOS;Corporate Action Option Applicability - The option applicability is not subject to the account owner decision but depends on the terms defined by the issuer, for example...
+OPTF;COND;Conditional - Feature whereby the holder can elect to place a condition on the acceptance of the option.
+OPTF;MAXC;Maximum Cash - Maximum cash option, may be subject to scaling, as such you may receive a combination of cash and securities outturn.
+OPTF;MAXS;Maximum Securities - Maximum stock option, may be subject to scaling, as such you may receive a combination of securities and cash outturn.
+OPTF;NOSE;No Service Offered Indicator - Feature whereby the holder must elect directly to the issuer's agent (issuer only supported option).
+OPTF;OPLF;Odd Lot Preference - Tender or Exchange with the Odd Lot Preference.
+OPTF;PINS;Previous Instruction Invalidity - Indicates that the previously sent instructions become invalid. It is only applicable after a market deadline extension.
+OPTF;PROR;Pro Ration - Feature whereby the option can be subject to pro ration in case, for example, of over-subscription.
+OPTF;QCAS;Instruct Cash Amount - Feature whereby the holder should only instruct a cash amount.
+OPTF;RGRS;Gross Dividend Reinvestment - The gross dividend is reinvested.
+OPTF;RNET;Net Dividend Reinvestment - The dividend reinvestment is processed net of withholding tax.
+OPTF;SHAR;Shareholder Number - Indicates usage of a reference number to identify an investor or a shareholder with the issuer or the registration provider (for instance allocation...
+OPTF;VVPR;Reduced Withholding Tax - Reduced withholding tax rate applies to the option.
+
+OPTI;CALL;Call Option - A right to buy a defined quantity of an asset by a certain date at an agreed price.
+OPTI;PUTO;Put Option - A right to sell a defined quantity of an asset by a certain date at an agreed price.
+
+OSTA;CANC;Cancelled - Option is not valid; it has been cancelled by the market or service provider, and cannot be responded to. Any responses already processed against this option...
+OSTA;INTV;Inactive - Option is not active and can no longer be responded to. Any responses already processed against this option will remain valid, for example, expired option.
+
+OWNT;NOMI;Nominee Name - Financial instruments are held in nominee name.
+OWNT;OWNE;Own Name - Financial instruments are held in the beneficial owner's own name, self-ownership.
+OWNT;TRUS;Trustee/Third Party - Financial instruments are held by a trustee, in third-party ownership.
+
+PACK;ADEA;Account Servicer Deadline Missed - Received after the account servicer's deadline. Processed on best effort basis.
+PACK;NARR;Narrative Reason - See narrative field for reason.
+PACK;NSTP;Not STP - Instruction was not STP and had to be processed manually.
+PACK;SMPG;Market Practice Rule Discrepancy - Instruction is accepted but does not comply with the market practice rule published for the concerned market or process.
+
+PARS;PAIN;Partial Settlement - Confirmation is for partial settlement. Part of the instruction remains unsettled.
+PARS;PARC;Partially Confirmed - Confirmation is for partial settlement. No additional settlement will take place.
+
+PAYS;FULL;Fully Paid - Financial instrument is fully paid.
+PAYS;NILL;Nil Paid - Financial instrument is nil paid.
+PAYS;PART;Partially Paid - Financial instrument is partially paid.
+
+PEND;ADEA;Account Servicer Deadline Missed - Received after the account servicer's deadline. Processed on best effort basis.
+PEND;AUTH;Sent to Tax Authorities - Event is pending because the reclaim is sent to the tax authorities.
+PEND;AWMO;Awaiting Money - Financial instruments are delivered, but still awaiting money from the counterparty.
+PEND;AWSH;Awaiting Securities from Counterparty - Financial instruments have not yet been received from the counterparty (if receive against payment trade), the money has been...
+PEND;BATC;Processing Batch Difference - Processing batch differs in the counterparty's instruction, for example, daytime/real-time versus overnight.
+PEND;BENO;Beneficial Ownership Disagreement - Disagreement in beneficial ownership.
+PEND;BLOC;Account Blocked - Your account is blocked, no instruction can settle over the account.
+PEND;BOTH;Both Instructions on Hold - Counterparty's instruction and your instruction are on hold/frozen/in a preadvice mode.
+PEND;BSTR;Before Instruction Period - Instruction is submitted before instruction start date.
+PEND;CAIS;Awaiting Securities - Awaiting financial instruments from a corporate action issue or other procedure, for example, conversion, dematerialisation, exchange...
+PEND;CDLR;Conditional Delivery Awaiting Release - Instruction is in a hold/frozen/preadvice mode - infrastructure platform is awaiting release.
+PEND;CERT;Incorrect Certification - The provided certification is incorrect or incomplete.
+PEND;CHAS;Enquiry Sent - A chaser/enquiry has been sent.
+PEND;CLAC;Counterparty Insufficient Securities - Insufficient deliverable financial instruments in counterparty's account or counterparty does not hold financial instruments.
+PEND;CLHT;Clearing House Trade - Instructed settlement date does not agree with the settlement date on the Clearing House trade, that is, a specific type of trade in India.
+PEND;CMON;Counterparty Insufficient Money - Insufficient money in counterparty's account.
+PEND;COLL;Securities Pledged as Collateral - Financial instruments are not deliverable as they are pledged as collateral.
+PEND;CPEC;Counterparty In Receivership - Counterparty is in receivership (form of bankruptcy where a court appointed person, the receiver, manages the affairs of the business).
+PEND;CSDH;CSD Hold - Central securities depository has set the instruction in a hold/frozen/preadvice mode.
+PEND;CVAL;CSD Validation - Instruction is in a hold/frozen/preadvice mode as it fulfils predefined conditions of a restriction processing type in the market infrastructure...
+PEND;DENO;Unavailable Deliverable Denominated Quantity - Quantity instructed does not match the denomination available/deliverable. Physical financial instruments need to be...
+PEND;DEPO;Refused Deposit for Issue of Depositary Receipts - Deposit of shares for the issuing of depositary receipts has been refused. The allotment granted by the issuer is...
+PEND;DISA;Natural Disaster - Exceptional closing of all financial institutions due to natural disaster, for example, earthquake.
+PEND;DKNY;Counterparty Returned Shares - Counterparty has returned or refused the financial instruments.
+PEND;DOCC;Awaiting Documents/Registration Instruction/Endorsements from Counterparty - Awaiting documents, registration instruction or endorsements from counterparty.
+PEND;DOCY;Awaiting Documents/Registration Instruction/Endorsements from You - Awaiting documents, registration instruction or endorsements from you.
+PEND;DQCS;Disagreement on Cash Amount - Unrecognised or invalid instructed cash amount.
+PEND;DQUA;Disagreement on Quantity - Unrecognised or invalid instructed quantity.
+PEND;FLIM;Maximum Foreign Limit Reached - Insufficient deliverable financial instruments in your account as maximum foreign limit has been reached.
+PEND;FROZ;Securities Frozen At CSD - Financial instruments are blocked at the CSD following a corporate event.
+PEND;FULL;Pending Beneficiary Owner Details - Pending receipt of beneficiary owner details.
+PEND;FUTU;Awaiting Settlement Date - Awaiting settlement date. No settlement problems to be reported.
+PEND;GLOB;Global Form Securities - Settlement cannot be executed; financial instruments are in global form.
+PEND;IAAD;Status Reason Investigation - Pending reason being investigated.
+PEND;INBC;Incomplete Number Count - Not all the instructions part of a pool have been received.
+PEND;INCA;Income Adjustment Required - Financial instruments require income adjustment, for example, dividend or interest.
+PEND;IPAW;Invalid Paperwork - Required paperwork is invalid, incomplete, or missing.
+PEND;IPED;Instruction Prior to Entitlement Date - Instruction was received prior to entitlement date.
+PEND;ITAX;Incorrect Tax Rate - Tax rate provided is incorrect. It falls outside the acceptable values for that investment country.
+PEND;LAAW;Awaiting Other Transaction - Awaiting settlement of a purchase to cover failing positions.
+PEND;LACK;Lack of Securities - Insufficient financial instruments in your account.
+PEND;LALO;Securities are Loaned Out - Financial instruments are out on loan.
+PEND;LATE;Market Deadline Missed - Instruction was received after market deadline.
+PEND;LINK;Pending Linked Instruction - Your instruction is pending settlement because the instruction linked to it is pending.
+PEND;LIQU;Insufficient Central Bank Liquidity - Central Bank Liquidity is insufficient.
+PEND;MCER;Missing or Invalid Certification - Awaiting receipt of adequate certification.
+PEND;MINO;Minimum Settlement Quantity - Quantity instructed is lower than the minimum existing settlement quantity for the financial instrument.
+PEND;MONY;Insufficient Money - Insufficient money in your account and/or credit line is insufficient.
+PEND;MTAX;Missing Tax Rate - Tax rate is missing.
+PEND;MUNO;Multiple Settlement Quantity - Quantity instructed is not a multiple of an existing settlement quantity lot for the financial instrument.
+PEND;NARR;Narrative - See narrative field for reason.
+PEND;NCON;Confirmation Not Received - Confirmation of settlement has not yet been received.
+PEND;NEWI;New Issues - Financial instrument is a new issue and not yet available/tradable.
+PEND;NMAS;No Matching Required - Instruction has not been matched; matching process is not required.
+PEND;NOFX;No Foreign Exchange Instruction - A foreign exchange instruction from you is missing.
+PEND;NPAY;Payment Not Made - Payment has not been made by issuer.
+PEND;NSEC;Securities Not Delivered - Financial instruments have not been delivered by the issuer.
+PEND;NTAX;Inconsistent Tax Rate - Tax rate is not consistent with the documentation in place.
+PEND;PART;Trade Settles in Partials - Trade will settle in partials.
+PEND;PATD;Partial Differ - Disagreement on partial indicator preventing partial settlement.
+PEND;PENR;Pending Receipt - The instruction is pending receipt of securities, for example, from a purchase, loan etc.
+PEND;PHCK;Physical Securities in Verification Process - Physical financial instruments have been received and are being checked for authenticity.
+PEND;PHSE;Physical Delivery Delay - Settlement is physical. Financial instruments are being delivered.
+PEND;PRCY;Counterparty Instruction on Hold - Counterparty's instruction is on hold/frozen/in a preadvice mode.
+PEND;PREA;Your Instruction on Hold - Your instruction is on hold/frozen/in a preadvice mode.
+PEND;PREL;Partially Released - Transaction has been partially released.
+PEND;PRSY;On Hold by System - The transaction was put on hold by the system.
+PEND;REFS;Not In Good Order - Delivery/receipt was refused because physical financial instruments are not in good order.
+PEND;REFU;Instruction Refused/Not Recognised - Instruction has been refused or not recognised and is represented automatically.
+PEND;REGT;Certificates Rejected - Certificates have been lodged with the registrar but rejected due to incomplete documentation or foreign ownership limitation reached.
+PEND;SBLO;Securities Blocked - Financial instruments are blocked due to a corporate action event, realignment, etc.
+PEND;SDUT;Lack of Stamp Duty Information - Stamp duty information is missing.
+PEND;SETS;Settlement System/Method Modified - Settlement system/method has been modified at CSD to allow settlement.
+PEND;SNAV;System Not Available - System is not available. Instruction is sent outside of business hours.
+PEND;TAMM;Trade Amended in Market - Trade is being amended in the market.
+PEND;YCOL;Collateral Shortage - Insufficient collateral in your account to execute the instruction.
+
+PENF;ADEA;Account Servicer Deadline Missed - Received after the account servicer's deadline. Processed on best effort basis.
+PENF;AWMO;Awaiting Money - Financial instruments are delivered, but still awaiting money from the counterparty.
+PENF;AWSH;Awaiting Securities from Counterparty - Financial instruments have not yet been received from the counterparty (if receive against payment), the money has been delivered.
+PENF;BATC;Processing Batch Difference - Processing batch differs in the counterparty's instruction, for example, daytime/real-time versus overnight.
+PENF;BENO;Beneficial Ownership Disagreement - Disagreement in beneficial ownership.
+PENF;BLOC;Account Blocked - Your account is blocked, no instruction can settle over the account.
+PENF;BOTH;Both Instructions on Hold - Counterparty's instruction and your instruction are on hold/frozen/in a preadvice mode.
+PENF;BYIY;Buy-in Procedure - A buy-in procedure has started on the market (on your behalf if your instruction is a receipt, by the counterparty if your instruction is a delivery).
+PENF;CAIS;Awaiting Securities - Awaiting financial instruments from a corporate action issue or other procedure, for example, conversion, dematerialisation, exchange...
+PENF;CANR;Cancellation/Confirmation Request - A cancellation or confirmation of instruction is required.
+PENF;CDLR;Conditional Delivery Awaiting Release - Instruction is in a hold/frozen/preadvice mode - infrastructure platform is awaiting release.
+PENF;CERT;Wrong Certificate Numbers - Certificate number error.
+PENF;CHAS;Enquiry Sent - A chaser/enquiry has been sent.
+PENF;CLAC;Counterparty Insufficient Securities - Insufficient deliverable financial instruments in counterparty's account or counterparty does not hold financial instruments.
+PENF;CLAT;Counterparty too Late for Settlement - Counterparty's instruction was too late for settlement (that is received too late, matching or settlement problems solved too...
+PENF;CLHT;Clearing House Trade - Instructed Settlement date does not agree with the settlement date on the Clearing House trade that is a specific type of trade in India.
+PENF;CMON;Counterparty Insufficient Money - Insufficient money in counterparty's account.
+PENF;COLL;Securities Pledged as Collateral - Financial instruments are not deliverable as they are pledged as collateral.
+PENF;CPEC;Counterparty In Receivership - Counterparty is in receivership (form of bankruptcy where a court appointed person, the receiver, manages the affairs of the business).
+PENF;CSDH;CSD Hold - Central securities depository has set the instruction in a hold/frozen/preadvice mode.
+PENF;CVAL;CSD Validation - Instruction is in a hold/frozen/preadvice mode as it fulfils predefined conditions of a restriction processing type in the market infrastructure...
+PENF;CYCL;Awaiting Next Settlement Cycle - Instruction is confirmed in the local market or is ready for settlement, awaiting next settlement cycle.
+PENF;DENO;Unavailable Deliverable Denominated Quantity - Quantity instructed does not match the denomination available/deliverable. Physical financial instruments need to be...
+PENF;DEPO;Refused Deposit for Issue of Depositary Receipts - Deposit of shares for the issuing of depositary receipts has been refused. The allotment granted by the issuer is...
+PENF;DISA;Natural Disaster - Exceptional closing of all financial institutions due to natural disaster, for example, typhoon, flooding, earthquake, hurricane.
+PENF;DKNY;Counterparty Returned Shares - Counterparty has returned or refused the financial instruments.
+PENF;DOCC;Awaiting Documents/Registration Instruction/Endorsements from Counterparty - Awaiting documents, registration instruction or endorsements from counterparty.
+PENF;DOCY;Awaiting Documents/Registration Instruction/Endorsements from You - Awaiting documents, registration instruction or endorsements from you.
+PENF;FLIM;Maximum Foreign Limit Reached - Insufficient deliverable financial instruments in your account as maximum foreign limit has been reached.
+PENF;FROZ;Securities Frozen At CSD - Financial instruments are blocked at the CSD following a corporate event.
+PENF;GLOB;Global Form Securities - Settlement cannot be executed; financial instruments are in global form.
+PENF;IAAD;Status Reason Investigation - Failing reason being investigated.
+PENF;INBC;Incomplete Number Count - Not all the instructions part of a pool have been received.
+PENF;INCA;Income Adjustment Required - Financial instruments require income adjustment, for example, dividend or interest.
+PENF;LAAW;Awaiting Other Transaction - Awaiting settlement of a purchase to cover failing positions.
+PENF;LACK;Lack of Securities - Insufficient deliverable financial instruments in your account.
+PENF;LALO;Securities are Loaned Out - Financial instruments are out on loan.
+PENF;LATE;Market Deadline Missed - Your instruction is too late for settlement, for example, received too late, matching or settlement problems solved too late.
+PENF;LINK;Pending Linked Instruction - A linked instruction is pending/failing.
+PENF;LIQU;Insufficient Central Bank Liquidity - Central Bank Liquidity is insufficient.
+PENF;MINO;Minimum Settlement Quantity - Quantity instructed is lower than the minimum existing settlement quantity for the financial instrument.
+PENF;MLAT;Money/Securities too Late for Settlement - Covering money/financial instruments were received too late for completing settlement on a same day basis.
+PENF;MONY;Insufficient Money - Insufficient money in your account and/or credit line is insufficient.
+PENF;MUNO;Multiple Settlement Quantity - Quantity instructed is not a multiple of an existing settlement quantity lot for the financial instrument.
+PENF;NARR;Narrative - See narrative field for reason.
+PENF;NCON;Confirmation Not Received - Confirmation of settlement has not yet been received.
+PENF;NEWI;New Issues - Financial instrument is a new issue and not yet available/tradable.
+PENF;NOFX;No Foreign Exchange Instruction - A foreign exchange instruction from you is missing.
+PENF;OBJT;Under Objection - Financial instruments are stolen, in dispute, under objection etc.
+PENF;PART;Trade Settles in Partials - Trade will settle in partials.
+PENF;PATD;Partial Differ - Disagreement on partial indicator preventing partial settlement.
+PENF;PHCK;Physical Securities in Verification Process - Physical financial instruments have been received and are being checked for authenticity.
+PENF;PHSE;Physical Delivery Delay - Settlement is physical. Financial instruments are being delivered.
+PENF;PRCY;Counterparty Instruction on Hold - Counterparty's instruction is on hold/frozen/in a preadvice mode.
+PENF;PREA;Your Instruction on Hold - Your instruction is on hold/frozen/in a preadvice mode.
+PENF;PREL;Partially Released - Transaction has been partially released.
+PENF;PRSY;On Hold by System - The transaction was put on hold by the system.
+PENF;REFS;Not In Good Order - Delivery/receipt was refused because physical financial instruments are not in good order.
+PENF;REGT;Certificates Rejected - Certificates have been lodged with the registrar but rejected due to incomplete documentation or foreign ownership limitation reached.
+PENF;SBLO;Securities Blocked - Financial instruments are blocked due to a corporate action event, realignment, etc.
+PENF;SDUT;Lack of Stamp Duty Information - Stamp duty information is missing.
+PENF;SETS;Settlement System/Method Modified - Settlement system/method has been modified at CSD to allow settlement.
+PENF;STCD;Confirmation Discrepancy - Discrepancy in the settlement confirmation.
+PENF;YCOL;Collateral Shortage - Insufficient collateral in your account to execute the instruction.
+
+PFRE;ANNU;Annual - Payment frequency is annual.
+PFRE;MNTH;Monthly - Payment frequency is monthly.
+PFRE;QUTR;Quarterly - Payment frequency is quarterly.
+PFRE;SEMI;Semi-Annual - Payment frequency is semi-annual.
+PFRE;WEEK;Weekly - Payment frequency is weekly.
+
+PLIS;EXCH;Stock Exchange - Place of listing is a stock exchange.
+PLIS;OTCO;Over The Counter - Place of listing is over the counter.
+PLIS;PRIM;Primary Market - Place of listing is the primary market.
+PLIS;SECM;Secondary Market - Place of listing is the secondary market.
+
+PNST;ACTV;Active - The penalty is active for the party.
+PNST;NCOM;Not Computed - For penalties that could not be computed (for example, in case of missing reference data).
+PNST;REMO;Removed - Removal of a cash penalty where settlement cannot be performed for reasons that are independent from any of the CSD participants or the CSD.
+
+PNTP;LMFP;Late Matching Fail Penalty - Applies from the intended settlement date until the matching date. The penalty is charged to the participant who was last to enter or modify...
+PNTP;SEFP;Settlement Fail Penalty - Penalties apply to instructions that fail to settle on the intended settlement date. A settlement instruction that â€œfails to settle on that...
+
+PPRC;ADEA;Account Servicer Deadline Missed - Instruction was received after the account servicer's deadline. Processed on best effort basis.
+PPRC;BLOC;Account Blocked - Your account is blocked, no instruction can settle over the account.
+PPRC;CAIS;Awaiting Securities - Awaiting securities from a corporate action issue or other procedure, for example, conversion, dematerialisation, exchange, registration, stamping...
+PPRC;CERT;Wrong Certificate Numbers - Certificate number error.
+PPRC;COLL;Securities Pledged as Collateral - Securities are not deliverable as they are pledged as collateral.
+PPRC;CSDH;CSD Hold - Central securities depository has set the instruction in a hold/frozen/preadvice mode.
+PPRC;DENO;Unavailable Deliverable Denominated Quantity - Quantity instructed does not match the denomination available/deliverable. Physical securities need to be obtained in...
+PPRC;DOCY;Awaiting Documents/Registration Instruction/Endorsements from You - Awaiting documents, registration instruction or endorsements from you.
+PPRC;FLIM;Maximum Foreign Limit Reached - Insufficient deliverable financial instruments in your account as maximum foreign limit has been reached.
+PPRC;GLOB;Global Form Securities - Settlement cannot be executed; financial instruments are in global form.
+PPRC;LACK;Lack of Securities - Insufficient financial instruments in your account.
+PPRC;LALO;Securities are Loaned Out - Financial instruments are out on loan.
+PPRC;LIQU;Insufficient Central Bank Liquidity - Central Bank Liquidity is insufficient.
+PPRC;MINO;Minimum Settlement Quantity - Quantity instructed is lower than the minimum existing settlement quantity for the financial instrument.
+PPRC;MONY;Insufficient Money - Insufficient money in your account and/or credit line is insufficient.
+PPRC;MUNO;Multiple Settlement Quantity - Quantity instructed is not a multiple of an existing settlement quantity lot for the financial instrument.
+PPRC;NARR;Narrative Reason - See narrative field for reason.
+PPRC;NEXT;Next Process - Next Process is launched. No processing pending problems to be reported.
+PPRC;NOFX;No Foreign Exchange Instruction - A foreign exchange instruction from you is missing.
+PPRC;PREA;Your Instruction on Hold - Your instruction is on hold/frozen/in a preadvice mode.
+PPRC;PRSY;On Hold by System - The transaction was put on hold by the system.
+PPRC;YCOL;Collateral Shortage - Insufficient collateral in your account to execute the instruction.
+
+PRCM;AVCL;Average Closing Price - Price of the asset at close of a given day.
+PRCM;MIMP;Mid-Market Price - Price at a certain amount of time prior to the date it is announced.
+PRCM;NAVA;Net Asset Value - Net value of an investment fund's assets less its liabilities, divided by the number of shares outstanding.
+PRCM;NAVF;Final Asset Value - Final asset value at the liquidation of the fund.
+PRCM;VWAP;Volume Weighted Average Price - The price is based on a volume-weighted average price which is a ratio of the cumulative share price to the cumulative volume traded over...
+
+PREC;PRCA;Pre-Confirm Cash - Pre-confirmation of the movement of the cash pending the movement of securities.
+PREC;PRSE;Pre-Confirm Securities - Pre-confirmation of the movement of the securities pending the movement of cash.
+
+PRIC;AVER;Average Price - Price is an average price.
+PRIC;AVOV;Override of the Average Price - Price is an override of the average price.
+PRIC;COMB;Combined Expenses - Price is a combined expenses price (used in the UK market).
+PRIC;FUND;Fund - Source of price quotation is a fund (transfer agent, fund itself).
+PRIC;GREX;Gross Execution Price - Price is an all inclusive price, that is, including all charges, fees and taxes.
+PRIC;LMAR;Local Market - Source of price quotation is the market.
+PRIC;NDIS;Net to Client Disclosed - Price is net to the client disclosed (used in the UK market).
+PRIC;NET1;Net Price 1 - Price is a net price, that is, net of all charges, taxes, or fees.
+PRIC;NET2;Net Price 2 - Price is a net price, that is, net only of local broker's commission, local fees, or local taxes.
+PRIC;NOGR;Notional Gross - Price is notional gross (used in the UK market).
+PRIC;NUND;Net to Client Undisclosed - Price is net to the client undisclosed (used in the UK market).
+PRIC;PARV;Par Value - Price is a par value or equal to the nominal or face value of the instrument.
+PRIC;RDAV;Rounded Average Price - Price is a rounded average price.
+PRIC;THEO;Theoretical - Source of price quotation is a theoretical value based on the market yield.
+PRIC;VEND;Vendor - Source of price quotation is an external vendor.
+
+PRMN;FULL;Accepted in Full - Instructions will be accepted in full (with their original quantity of securities instructed).
+PRMN;MIEX;Minimum Quantity - Instructions will be accepted but prorated to the minimum quantity to instruct.
+PRMN;MILT;Multiple Quantity - Instructions will be accepted but rounded up or down to the specified minimum multiple quantity to instruct according to the value of the disposition...
+PRMN;REJT;Rejected - Instructions will be rejected.
+PRMN;UKWN;Unknown - Processing of instructions prorated below the minimum quantity to instruct is unknown.
+
+PROC;CLOA;Close Account - Trade relates to a closure of an account.
+PROC;CLOP;Close Position - Movement was to close a position.
+PROC;COMP;Complete - Message contains complete details of the corporate action event at the time the event is communicated and the occurrence of the event has been confirmed by...
+PROC;COMU;Complete Unconfirmed - Message contains complete details of the corporate action event at the time the event is communicated but the occurrence of the event has not been...
+PROC;ENTL;With Entitlement - The message contains entitlements.
+PROC;OPEP;Open Position - Movement was to open a position.
+PROC;PREC;Preliminary Announcement: Confirmed - Message may not contain complete details of the corporate action event, however, the occurrence of the event has been confirmed by...
+PROC;PREU;Preliminary Announcement: Unconfirmed - Message may not contain complete details of the corporate action event and the occurrence of the event has not been confirmed by...
+
+PRTL;NPAR;No Partial Settlement Allowed - Partial settlement is not allowed.
+PRTL;PART;Partial Settlement - Partial settlement is allowed.
+
+RATS;FUND;Fund - Source of price quotation is a fund (transfer agent, fund itself).
+RATS;LMAR;Local Market - Source of price quotation is the market.
+RATS;THEO;Theoretical - Source of price quotation is a theoretical value based on the market yield.
+RATS;VEND;Vendor - Source of price quotation is an external vendor.
+
+REJT;ADEA;Account Servicer Deadline Missed - Received after the account servicer's deadline. Processed on best effort basis.
+REJT;ASTM;Agreement Start Date Invalid Or Missing - Agreement start date is missing.
+REJT;BATC;Processing Batch Rejection - Unrecognised or invalid processing batch, that is, daytime/real-time while only possible to settle in overnight batch.
+REJT;BPRJ;Bid or Order Price Rejection - Bid or order price not within the price bands (high - low).
+REJT;BSTR;Before Instruction Period - Instruction is submitted before instruction start date.
+REJT;BUSE;Type of Order Rejection - Unrecognised or invalid type of order.
+REJT;CADE;Transaction Call Delay Rejection - Unrecognised or invalid transaction call delay.
+REJT;CAEV;Corporate Action Rejection - Corporate action pending on the financial instrument instructed.
+REJT;CANC;Cancelled - Option is not valid; it has been cancelled by the market or service provider, and cannot be responded to. Any responses already processed against this option...
+REJT;CASH;Cash Account Rejection - Unrecognised or invalid cash account.
+REJT;CASY;Impossible Cash Settlement System - Impossible standing arrangements override instruction for the cash settlement system.
+REJT;CERT;Incorrect Certification - Instruction is rejected since the provided certification is incorrect or incomplete.
+REJT;COMC;Commercialisation Contract Rejection - Unrecognised or invalid commercialisation contract.
+REJT;CTCT;Missing Contact - Contact information is missing.
+REJT;CURR;Currency Code Invalid - The Currency code is invalid or is not acceptable to the service provider.
+REJT;DCAN;Rejected Since Already Cancelled - Cancellation request was rejected since the instruction has already been cancelled.
+REJT;DDAT;Settlement or Execution Requested Date Rejection - Invalid settlement or execution requested date.
+REJT;DDEA;Deal Price Rejection - Unrecognised or invalid deal price.
+REJT;DEPT;Place of Settlement Rejection - Unrecognised or invalid Place of Settlement.
+REJT;DLNP;Declarations Not Provided - Declarations applicable to the issue are missing.
+REJT;DMON;Settlement Amount Rejection - Unrecognised or invalid settlement amount.
+REJT;DPRG;Rejected Since In Progress - Cancellation request has been rejected because the instruction process is in progress or has been processed.
+REJT;DQAM;Instruction Type Rejection - Invalid use of instructed amount (QCAS) or of instructed quantity (QINS) qualifiers.
+REJT;DQBI;Invalid Bid Increment - Bid price/basis points/percentage increments rejected due to invalid bid increment for the event (generally used in Dutch Auctions or Bid...
+REJT;DQBV;Invalid Bid Value - Bid price/basis points/percentage falls outside of bid range for the event (generally used in Dutch Auctions or Bid Tenders).
+REJT;DQCC;Currency Rejection - Invalid instructed currency.
+REJT;DQCS;Amount Rejection - Unrecognised or invalid instructed cash amount.
+REJT;DQUA;Quantity Rejection - Unrecognised or invalid instructed quantity.
+REJT;DSEC;Disagreement Financial Instrument - Financial instrument identification does not match, that is, ISIN differs, or Financial Instrument Attributes differs.
+REJT;DTRD;Trade Date Rejection - Trade Date is missing or invalid for the instruction.
+REJT;DUPL;Duplicate Instruction - Instruction is rejected due to duplicate business message identifier.
+REJT;EMBQ;Exceeds Maximum Bid or Order Quantity - Bid or order quantity instructed exceeds the investment limits or maximum number of securities that can be held under applicable...
+REJT;EVNM;Unrecognised Corporate Action Event Number Rejection - Unrecognised corporate action event number.
+REJT;FDNP;Funding Details Not Provided - Funding details is missing in bid or order instruction.
+REJT;FEEE;Fee/Commission Rejection - Unrecognised or invalid fee or commission.
+REJT;FORF;Forfeit Repurchase Amount Rejection - Unrecognised or invalid forfeit repurchase amount.
+REJT;FULL;Missing Beneficiary Owner Details - Rejected due to missing beneficiary owner details.
+REJT;ICAG;Agent Rejection - Unrecognised or invalid receiving or delivering agent.
+REJT;ICUS;Receiving or Delivering Custodian Rejection - Unrecognised or invalid receiving or delivering custodian.
+REJT;IEXE;Buyer or Seller Rejection - Unrecognised or invalid buyer or seller.
+REJT;IIND;Common Reference Rejection - Unrecognised, invalid or missing Common Reference.
+REJT;INBV;Incorrect Bid or Order Value - Bid or order value provided is incorrect.
+REJT;INDL;Incomplete Declaration Provided - Declaration provided in the instruction is not complete.
+REJT;INFD;Insufficient Funding - Funding not sufficient to process the bid or order.
+REJT;INIR;Instruction Irrevocable - The instruction is irrevocable.
+REJT;INNA;Narrative Information Rejection - Unrecognised or invalid SLA agreed narrative information.
+REJT;INPS;Place of Safekeeping Rejection - Unrecognised, invalid or missing Place of Safekeeping.
+REJT;INTV;Inactive - Option is not active and can no longer be responded to. Any responses already processed against this option will remain valid, for example, expired option.
+REJT;INVA;Invalid for Tax Authorities - For tax reclaim, the reclaim is invalid for the tax authorities.
+REJT;INVB;Balance Rejection - Unrecognised, invalid or missing balance.
+REJT;INVE;Investor Party Rejection - Unrecognised or invalid investor party. May be used by an executing party to reject an instruction for an investor (or portfolio) for which it...
+REJT;INVL;Link Rejection - Unrecognised, invalid or missing link.
+REJT;INVM;Invalid Modification Request - Invalid or unrecognized modification request.
+REJT;INVN;Number Rejection - Unrecognised, invalid or missing lot/sub-balance number.
+REJT;IPAW;Invalid Paperwork - Required paperwork is invalid, incomplete, or missing.
+REJT;IPED;Instruction Prior to Entitlement Date - Instruction was received prior to entitlement date.
+REJT;IRDQ;Invalid Use Round Up Quantity - Instruction is rejected due to invalid use of additional round up quantity (RDUQ).
+REJT;ISOL;Invalid Solicitation Dealer Fee Use - Invalid use of solicitation dealer fee indicator.
+REJT;ITAX;Incorrect Tax Rate - Tax rate provided is incorrect. It falls outside the acceptable values for that investment country.
+REJT;LACK;Lack of Securities - Instructed position exceeds the eligible balance.
+REJT;LATE;Market Deadline Missed - Instruction was received after market deadline.
+REJT;LEOG;Letter of Guarantee Rejection - Unrecognised or invalid letter of guarantee indicator instructed.
+REJT;MINO;Minimum Settlement Quantity - Quantity instructed is lower than the minimum existing settlement quantity for the financial instrument.
+REJT;MISM;Invalid Requested Message Type - ONLY for SPRC status. The MT549 statement/status advice request cannot be executed. The message type requested is not valid for the...
+REJT;MLOT;Lot Size Rejection - Bid or order quantity not in multiples of lot size.
+REJT;MTAX;Missing Tax Rate - Tax rate is missing.
+REJT;MUNO;Multiple Settlement Quantity - Quantity instructed is not a multiple of an existing settlement quantity lot for the financial instrument.
+REJT;NARR;Narrative Reason - See narrative field for reason.
+REJT;NCRR;Settlement Amount Currency Rejection - Unrecognised or invalid settlement amount currency.
+REJT;NMTY;Mismatch Option Number and Option Type Rejection - Mismatch between option number and option type.
+REJT;NRGM;No Match - Cancellation request has been rejected since more than one instruction match to the cancellation criteria.
+REJT;NRGN;Not Found - Cancellation request has been rejected since the instruction could not be found.
+REJT;NTAX;Inconsistent Tax Rate - Tax rate is not consistent with the documentation in place.
+REJT;ODNP;Order Date not Provided - Order entry date is missing.
+REJT;OPNM;Option Number Rejection - Unrecognised option number.
+REJT;OPTY;Option Type Rejection - Invalid option type.
+REJT;PHYS;Physical Settlement Impossible - Physical settlement is impossible for the instructed financial instrument.
+REJT;PLCE;Place of Trade Rejection - Unrecognised or invalid place of trade.
+REJT;PLIS;Place of Listing Rejection - Unrecognised or invalid place of listing. Used when the security identified is not listed on the market supplied.
+REJT;PROI;Missing Protect Identification - Protect identification is required for cover protect instructions.
+REJT;PRON;No Protect Privilege - No protect privilege for this event.
+REJT;PROT;Missing Protect Date - Protect date is required for cover protect instructions.
+REJT;PTYR;Party Rejection - One or more party is not valid, unknown or not authorized to instruct.
+REJT;QUNP;Quantity Unit Type not Provided - Quantity unit type is missing.
+REJT;REFE;Reference Rejection - One or more references are missing, invalid or unknown in the system for the instruction.
+REJT;REFT;Refused by the Tax Authorities - Reclaim is refused by the tax authorities.
+REJT;REJA;Rejected By Issuer Agent - Instruction rejected by the issuer agent.
+REJT;REPA;Termination Transaction Amount Rejection - Unrecognised or invalid termination transaction amount.
+REJT;REPO;Repurchase Rate Rejection - Unrecognised or invalid repurchase rate.
+REJT;REPP;Premium Amount Rejection - Unrecognised or invalid premium amount.
+REJT;RERT;Rate Rejection - Rate is missing or invalid for the instruction.
+REJT;RSPR;Repurchase Spread Rate Rejection - Unrecognised or invalid repurchase spread rate.
+REJT;RTGS;Impossible to use the RTGS system instructed - It is not possible to use the RTGS system instructed (NRTG or YRTG).
+REJT;SAFE;Safekeeping Account Rejection - Unrecognised or invalid message sender's safekeeping account.
+REJT;SDUT;Lack of Stamp Duty Information - Required stamp duty information is missing.
+REJT;SETR;Settlement Transaction Rejection - Unrecognised or invalid settlement transaction type (relates to the settlement transaction type codes available for sequence E field...
+REJT;SETS;Settlement System/Method Rejection - Unrecognised or invalid settlement system/method instructed.
+REJT;SHAR;Shareholder Number Missing - Shareholder number or reference is missing.
+REJT;TERM;Closing Date Rejection - Invalid closing date.
+REJT;TNAR;Transaction Notice Already Accepted or Rejected - A message with the same Transaction Notice Reference, Market Member, and Intermediary has already been processed.
+REJT;TNIU;Transaction Notice ID Unknown - The combination of the Transaction Notice Reference, Market Member, and Intermediary is unknown.
+REJT;TQBT;Total Block Quantity Rejection - Unrecognised or invalid total block quantity. Used when the total block quantity supplied in an allocation is different from the advised...
+REJT;TQHI;Traded Quantity Higher than Original Order Quantity - Market member executed the order exceeding the requested quantity.
+REJT;TQNP;Traded Securities Quantity not provided - Traded Securities Quantity is missing.
+REJT;TRTI;Missing Transaction Type - Transaction type is missing or invalid for protect or cover protect instructions.
+REJT;TRXR;Transaction Rejection - The transaction could not be found or could not be uniquely defined.
+REJT;TRXT;Transaction Type Invalid - The type of transaction is not valid or authorized.
+REJT;TXST;Tax Status Rejection - Unrecognised or invalid tax status of the securities instructed.
+REJT;ULNK;Unknown - Linked reference is unknown.
+REJT;VALR;Rule Rejection - Account servicer validation rule rejection.
+REJT;VASU;Variable Rate Support Rejection - Unrecognised or invalid variable rate support (repo).
+
+REMO;CORP;Corporate Action - Specifies that due to a specific corporate action, the security does no longer exists.
+REMO;INSO;Insolvency - Penalty was removed because insolvency proceedings are opened against the failing participant.
+REMO;OTHR;Other - See narrative.
+REMO;RALO;Reallocated Reason - Re-allocation of a Late Matching Fail Penalty (LMFP) from the instructing party to the delivering/receiving party, or from the failing party to the...
+REMO;SEMP;Settlement on Multiple Platforms - Settlement on multiple platforms where one of the platforms is closed for settlement (either cash or securities).
+REMO;SESU;Settlement Suspended - Penalty was removed because ISIN is suspended from settlement due to a reconciliation issue.
+REMO;SUSP;Trading Suspended - Penalty was removed because of ISIN suspension from trading.
+REMO;SWIC;Switch Reason - Switch between the failing and non-failing party of a cash penalty.
+REMO;TEIM;Technical Impossibilities - Penalty was removed because there were technical impossibilities at the CSD level that prevent settlement, such as: a failure of the...
+
+REPR;ADEA;Account Servicer Deadline Missed - Instruction was received after the Receiver's deadline.
+REPR;BATC;Processing Batch Repair - Unrecognised or invalid processing batch, that is, daytime/real-time while only possible to settle in overnight batch.
+REPR;BUSE;Type of Order Repair - Unrecognised or invalid type of order.
+REPR;CADE;Transaction Call Delay Repair - Unrecognised or invalid transaction call delay.
+REPR;CAEV;Corporate Action Repair - Corporate action pending on the financial instrument instructed.
+REPR;CASH;Cash Account Repair - Unrecognised or invalid cash account.
+REPR;CASY;Cash Settlement System Repair - Impossible standing arrangements override instruction for the cash settlement system.
+REPR;COMC;Commercialisation Contract Repair - Unrecognised or invalid commercialisation contract.
+REPR;DDAT;Settlement Date Repair - Unrecognised or invalid settlement date (that is date is not a settlement date for the instructed market, settlement date is too old ...).
+REPR;DDEA;Deal Price Repair - Unrecognised or invalid deal price.
+REPR;DEPT;Place of Settlement Repair - Unrecognised or invalid Place of Settlement.
+REPR;DMON;Settlement Amount Repair - Unrecognised or invalid settlement amount.
+REPR;DQUA;Settlement Quantity Repair - Unrecognised or invalid settlement quantity.
+REPR;DSEC;Financial Instrument Repair - Unrecognised or invalid financial instrument identification (that is invalid ISIN, security not eligible at the instructed market ...).
+REPR;DTRD;Trade Date Repair - Unrecognised or invalid trade date.
+REPR;FEEE;Fee/Commission Repair - Unrecognised or invalid fee or commission.
+REPR;FORF;Forfeit Repurchase Amount Repair - Unrecognised or invalid forfeit repurchase amount.
+REPR;ICAG;Agent Repair - Unrecognised or invalid receiving or delivering agent.
+REPR;ICUS;Custodian Repair - Unrecognised or invalid receiving or delivering custodian.
+REPR;IEXE;Buyer or Seller Repair - Unrecognised or invalid buyer or seller.
+REPR;IIND;Common Reference Repair - Unrecognised, invalid or missing Common Reference.
+REPR;INNA;Agreed Narrative Repair - Unrecognised or invalid SLA agreed narrative information.
+REPR;INPS;Place of Safekeeping Repair - Unrecognised, invalid or missing Place of Safekeeping.
+REPR;LEOG;Letter of Guarantee Repair - Unrecognised or invalid letter of guarantee indicator instructed.
+REPR;MINO;Minimum Settlement Quantity Repair - Quantity instructed is lower than the minimum existing settlement quantity for the financial instrument.
+REPR;MUNO;Multiple Settlement Quantity Repair - Quantity instructed is not a multiple of an existing settlement quantity lot for the financial instrument.
+REPR;NARR;Narrative Reason - See narrative field for reason.
+REPR;NCRR;Settlement Amount Currency Repair - Unrecognised or invalid settlement amount currency.
+REPR;NRGM;No Match Repair - Cancellation request is in repair since more than one instruction match to the cancellation criteria.
+REPR;NRGN;Not Found Repair - Cancellation request is in repair since the instruction could not be found.
+REPR;PHYS;Physical Settlement Repair - Physical settlement is impossible for the instructed financial instrument.
+REPR;PLCE;Place of Trade Repair - Unrecognised or invalid place of trade.
+REPR;PROV;Collateral Giver - The client is the collateral giver.
+REPR;RECE;Collateral Taker - The client is the collateral taker.
+REPR;REFE;Reference Repair - Instruction has a reference identical to another previously received instruction.
+REPR;REPA;Termination Transaction Amount Repair - Unrecognised or invalid termination transaction amount.
+REPR;REPO;Repurchase Rate Repair - Unrecognised or invalid repurchase rate.
+REPR;REPP;Repurchase Premium Amount Repair - Unrecognised or invalid repurchase premium amount.
+REPR;RERT;Repurchase Rate Type Repair - Unrecognised or invalid repurchase rate type.
+REPR;RSPR;Repurchase Spread Rate Repair - Unrecognised or invalid repurchase spread rate.
+REPR;RTGS;RTGS Repair - Impossible to use the RTGS system instructed (NRTG or YRTG).
+REPR;SAFE;Safekeeping Account Repair - Unrecognised or invalid message sender's safekeeping account.
+REPR;SDUT;Lack of Stamp Duty Information - Required stamp duty information is missing.
+REPR;SETR;Settlement Transaction Type Repair - Unrecognised or invalid settlement transaction type (relates to the settlement transaction type codes available for sequence E field...
+REPR;SETS;Settlement System/Method Repair - Unrecognised or invalid settlement system/method instructed.
+REPR;TERM;Closing Date Repair - Unrecognised or invalid closing date/time.
+REPR;TXST;Tax Status Repair - Unrecognised or invalid tax status of the securities instructed.
+REPR;ULNK;Linked Reference Repair - Message was not recognised - unknown linked reference.
+REPR;VASU;Variable Rate Support Repair - Unrecognised or invalid variable rate support (repo).
+
+RERT;FIXE;Fixed - Rate is fixed.
+RERT;FORF;Forfeit - No specific rate applies to the transaction, only a forfeit.
+RERT;VARI;Variable - Rate is variable.
+
+REST;CONF;Confirmed - Collateral giver instruction details are confirmed.
+REST;DKNY;Rejected - Collateral giver instruction details are rejected.
+
+RETR;NARR;Narrative Reason - See narrative field for reason.
+RETR;PROR;Prorated - Shares returned due to prorated acceptance.
+
+REVA;REVN;No Revaluation - No revaluation of collateral position should be performed.
+REVA;REVY;Revaluation - Revaluation of collateral position should be performed.
+
+REVR;DCBD;Day Count Basis Difference - Difference in day count basis.
+REVR;FNRC;Funds Not Received - Funds have not been received.
+REVR;IETR;Incorrect Event Level Tax Rate - Event level tax rate is incorrect.
+REVR;IPCU;Incorrect Payment Currency - Payment currency is incorrect.
+REVR;IPRI;Incorrect Price - Price is incorrect.
+REVR;IRED;Incorrect Entitlement Date - Entitlement date is incorrect.
+REVR;IVAD;Incorrect Value Date - Value date is incorrect.
+REVR;NARR;Narrative Reason - See narrative field for reason.
+REVR;UPAY;Undue Payment - Payment is not due.
+
+RHDI;BIDS;Reverse Rights - Distribution of reverser rights.
+RHDI;BONU;Bonus Rights - Distribution of bonus rights.
+RHDI;DRIP;Dividend Reinvestment Securities - Distribution of dividend reinvestment securities.
+RHDI;DVCA;Cash Dividend - Distribution of cash to holders, in proportion to their equity holding. Ordinary dividends are recurring and regular. Holder must take cash and may be...
+RHDI;DVOP;Dividend Option - Distribution of a dividend to holders with a choice of benefit to receive additional securities or cash. To be distinguished from DRIP as the company...
+RHDI;DVSC;Scrip Dividend/Payment - Dividend or interest paid in the form of scrip.
+RHDI;DVSE;Stock Dividend - Dividend paid to shareholders in the form of shares of stock.
+RHDI;EXOF;Exchange - Exchange of holdings for other securities and/or cash. The exchange can be either mandatory or voluntary involving the exchange of outstanding securities for...
+RHDI;EXRI;Subscription Rights - Distribution of subscription rights.
+RHDI;INTR;Interest Payment - Interest payment distributed to holders of an interest bearing asset.
+RHDI;LIQU;Liquidation Dividend/Liquidation Payment - A distribution of cash, assets or both.
+RHDI;MRGR;Merger - Exchange of outstanding securities, initiated by the issuer which may include options, as the result of two or more companies combining assets, that is, an...
+RHDI;PRIO;Open Offer Rights - Distribution of open offer rights.
+RHDI;SOFF;Spin-Off - A distribution of securities issued by another company. The distributed securities may either be of a newly created or of an existing company. For example...
+RHDI;SPLF;Stock Split/Change in Nominal Value/Subdivision - Increase in a corporation's number of outstanding equities without any change in the shareholder's equity or the...
+
+RPOR;DEFR;Deferred Report - The report is deferred, for example, because the order was executed in partial fills.
+RPOR;EXCH;Stock Exchange - Trade details are to be reported to a stock exchange. This stock exchange is identified in sequence D Other Parties.
+RPOR;TRRE;Trade Details Reported - Trade details are to be reported to a regulatory organisation. This stock regulatory organisation is identified in sequence D Other Parties.
+
+RPRC;DEND;Denied - Replacement request cannot be executed.
+RPRC;EXCH;Received at Stock Exchange - Replacement request previously received from you has been received at the stock exchange.
+RPRC;INTE;Received at Intermediary - Replacement request previously received from you has been received at intermediary (if not stock exchange).
+RPRC;PACK;Accepted - Replacement request has been accepted for further processing.
+RPRC;PART;Partial Replacement Accepted - Order is partially filled, replacement processing accepted for the remaining.
+RPRC;PEND;Pending - Replacement request is pending.
+RPRC;REJT;Rejected - Replacement request has been rejected for further processing.
+RPRC;REPL;Replacement Completed - Replacement request has been completed.
+RPRC;REPR;In Repair - Replacement request previously received from you is in repair.
+
+RREA;BEAR;Bearer Share Exchange - Exchange from registered shares into bearer shares.
+RREA;BONU;Bonus Issue - Bonus or capitalisation issue. Security holders receive additional assets free of payment from the issuer, in proportion to their holding.
+RREA;CAPG;Capital Gains Distribution - Distribution of profits resulting from the sale of securities. Shareholders of mutual funds, unit trusts, or sicavs may be recipients of...
+RREA;DVCA;Cash Dividend - Distribution of cash to holders, in proportion to their equity holding. Ordinary dividends are recurring and regular. Holder must take cash and may be...
+RREA;EXWA;Warrant Exercise - Option to buy (call warrant) or to sell (put warrant) a specific amount of equities, cash, commodity, etc. at a predetermined price over a specific...
+RREA;INCR;Increase in Value - Increase in the face value of a single security. The number of circulating securities remains unchanged. This event may include a cash payout to...
+RREA;INHE;Inheritance - Registration related to an inheritance of financial instruments.
+RREA;OTHR;Other - See narrative.
+RREA;POSS;Change of Possession - Change in the possession or ownership of the financial instrument.
+RREA;REGD;Registered Share Exchange - Exchange from bearer shares into registered shares.
+RREA;STAF;Staff Shares - Registration of shares given to staff.
+
+RTRN;DMON;Wrong Settlement Amount - Wrong settlement amount settled in the original delivery.
+RTRN;DQUA;Wrong Quantity - Wrong quantity delivered in the original instruction.
+RTRN;DUEB;Due Bill Information Missing - Due bill information missing in the original delivery.
+RTRN;PARD;Partial Return - A portion of the original transaction quantity was returned by the receiver.
+RTRN;PART;Partial - Only a portion of the original transaction quantity was delivered by the CSD.
+RTRN;SAFE;Account Information Missing - Account information is missing in the original delivery.
+RTRN;UNRE;Unrecognised Delivery - Original delivery is not recognized.
+
+SELL;NREN;Non Renounceable - Intermediate securities cannot be sold.
+SELL;RENO;Renounceable - Intermediate securities can be sold.
+
+SETG;GENS;Instruction Generation by ETC Provider - Specifies if the ETC service provider is to generate a settlement instruction.
+SETG;NOGE;Not Instruction Generation by ETC Provider - Specifies if the ETC service provider is not to generate a settlement instruction where a previous agreement to do so exists.
+
+SETR;PREA;Pre-Advice - Relates to a pre-advice, that is for matching purposes only.
+
+SETT;NPRE;Not Presented - The instruction is NOT to be presented for settlement.
+SETT;PAIN;Partial Settlement - Part of the instruction remains unsettled.
+SETT;PEND;Pending Settlement - Instruction is pending. Settlement at the instructed settlement date is still possible.
+SETT;PENF;Pending/Failing Settlement - Instruction is failing. Settlement at the instructed settlement date is no longer possible.
+SETT;SETT;Settled - Financial instrument was settled.
+SETT;USET;Unsettled - Instruction is unsettled.
+SETT;YPRE;Presented - The instruction is to be presented for settlement.
+
+SFRE;QUTR;Quarterly - Statement is sent quarterly (four times per year).
+
+SPLT;TRAD;Request to unilaterally split the transaction - The referenced transaction is requested to be unmatched.
+
+SPRC;REJT;Rejected - Request for Statement/Status Advice MT549 has been rejected for further processing.
+
+STBA;CONT;Contractual - Statement is based on contractual settlement date positions, irrespective of failed instructions.
+STBA;EOSP;End of Settlement Positions - Mark-to-Market report sent after settlement. All transactions which have been initiated.
+STBA;FUTM;Future Mark-to-Market - Mark-to-market report taking into account collateral management actions which are still pending initiation and initiated transactions..
+
+STCO;IAAB;Instruct Account Balance - Indicates whether the available balance in the cash account is to be utilised for the transaction.
+STCO;TRIP;Triparty Collateral Segregation - Triparty segregation of collateral, typically requested by an IM to their custodian to comply with a no delivery of collateral...
+
+STST;PENA;Penalties - Statement contains penalties (sequence D is to be used).
+STST;STAT;Statuses - Statement is sorted by status (sequence B is to be used).
+STST;TRAN;Transactions - Statement is sorted by transaction (sequence C is to be used).
+
+STTP;CALL;Call - Indicates whether the issuer has the right to repay the financial instrument prior to maturity.
+STTP;EGRE;Evergreen - Identified as a term repo that renews daily.
+STTP;EXTE;Extendable - Identified as a repo that has a maturity date, but prior to that date there is a point in the lifecycle in which it can be extended.
+STTP;PUTT;Put - Indicates whether the holder has the right to ask for redemption of the financial instrument prior to final maturity.
+
+STTY;ACCT;Accounting - Statement is an accounting statement.
+STTY;CUST;Custody - Statement is a custody statement.
+
+TDMT;ACTU;Actual Rate - Rate is actual.
+TDMT;INDI;Indicative Rate - Rate is indicative.
+TDMT;TXBL;Taxable Portion - Rate relating to the underlying security for which tax is charged.
+
+TDTA;TDIN;Not Calculated - The fund is NOT calculating the taxable income per dividend/taxable income per share.
+TDTA;TDIY;Calculated - The fund is calculating the taxable income per dividend/taxable income per share.
+TDTA;UKWN;Unknown - Unknown whether the fund is calculating the taxable income per dividend/taxable income per share.
+
+TEMP;TEMP;Temporary Financial Instrument Identification - Temporary financial instrument identification used for processing reasons.
+
+TENO;ADHO;Ad-Hoc - Payment is done following a request.
+TENO;FOMN;Every Four Months - Payment is done every four months.
+TENO;INDA;Intra-Day - Payment is done intra-day (multiple reports during the day).
+TENO;MNTH;Monthly - Payment frequency is monthly.
+TENO;OVNG;Overnight - Payment is done overnight.
+TENO;QUTR;Quarterly - Payment frequency is quarterly.
+TENO;SEMI;Every Six Months - Payment is done twice a year.
+TENO;TOMN;Every Two Months - Payment is done every two months.
+TENO;TOWK;Every Two Weeks - Payment is done twice a month.
+TENO;WEEK;Weekly - Payment frequency is weekly.
+TENO;YEAR;Yearly - Payment is done yearly (once per year).
+
+TITL;ASOC;Associates/Couples - Associates/couples.
+TITL;DR01;Doctor - Doctor.
+TITL;FRAU;Frau - Frau.
+TITL;HERR;Herr - Herr.
+TITL;MADA;Madam - Madam.
+TITL;MISS;Miss - Miss.
+TITL;MR01;Mister - Mister.
+TITL;MRSS;Mrs - Mrs.
+TITL;SIRR;Sir - Sir.
+
+TPRC;DEND;Denied - Modification request will not be executed.
+TPRC;MODC;Modification Completed - Modification has been completed.
+TPRC;MOPN;Modification Pending - Modification is pending. It is unknown at this time whether the modification can be affected.
+TPRC;PACK;Acknowledged/Accepted - Instruction has been acknowledged/accepted by the account servicer.
+TPRC;REJT;Rejected - Instruction has been rejected for further processing.
+
+TRAD;EXCH;Stock Exchange - Place of trade is a stock exchange.
+TRAD;OTCO;Over The Counter - Place of trade is over the counter.
+TRAD;PRIM;Primary Market - Place of trade is the primary market.
+TRAD;SECM;Secondary Market - Place of trade is the secondary market.
+TRAD;VARI;Various - Various places of trade.
+
+TRAK;TRAC;Tracked - The loan/collateral instruction is tracked.
+TRAK;UNTR;Untracked - The loan/collateral instruction is untracked.
+
+TRAN;DEFI;Deficit - Shortage of collateral.
+TRAN;EXCS;Excess - Excess of collateral.
+TRAN;FLAT;Flat - Collateral covers the exposure and there is no excess.
+
+TRCA;AGEN;Trading as Agent - Party is trading on behalf of his client.
+TRCA;BAGN;Acting as Agent for Customer and Other Person - Party is acting as an agent for both customer and another person.
+TRCA;CAGN;Crossing as Agent - Party is crossing on behalf of his client.
+TRCA;CCPA;Central Counterparty - Provided when the failing or non-failing party of the penalty/claim is a CCP.
+TRCA;CPRN;Crossing as Principal - Party is crossing for his own account.
+TRCA;CSDP;CSD Participant - Provided when the failing or non-failing party of the penalty/claim is neither a CSD nor a CCP but it is a legal entity that is a CSD Participant.
+TRCA;EXTE;External CSD - Provided when the failing or non-failing party of the penalty/claim is neither a CSD nor a CCP and its party type is an external CSD in T2S.
+TRCA;ICSD;International Central Securities Depositary - Provided when the ICSD itself is the failing or non-failing party of the penalty/claim. This is used to differentiate...
+TRCA;INFI;Investment Firm - Any legal person whose regular occupation or business is the provision of one or more investment services to third parties and/or the performance of...
+TRCA;MKTM;Market Maker - Dealer or specialist that is trading for their own account in the OTC market. Market makers are expected to maintain an orderly market by being available...
+TRCA;MLTF;Multi-Lateral Trading Facility - Multilateral trading facility (MTF) is a multilateral system which brings together multiple third-party buying and selling interests in...
+TRCA;NAPI;Natural Person - Provided when the failing or non-failing party of the penalty/claim is neither a CSD nor a CCP but is a CSD Participant that is a natural person.
+TRCA;NCSD;National Central Securities Depository - Provided when the CSD itself is the failing or non-failing party of the penalty/claim. This is used to differentiate between the...
+TRCA;OAGN;Acting as Agent for Person Other than Customer - Party is acting as an agent for a person other than a customer.
+TRCA;PRAG;Acting as Agent for Some Executions and Principal - Party is acting as an agent for some executions and principal for others.
+TRCA;PRIN;Trading as Principal - Party is trading for his own account.
+TRCA;RMKT;Regulated Market - A regulated market is a market on which financial instruments can be traded according to rules defined by the stock exchange.
+TRCA;SINT;Systematic Internaliser - Firms which, on an organised, frequent and systematic basis, deal on their own account by executing client orders outside a regulated market or...
+TRCA;TAGT;Transfer Agent - The party appointed by the Fund Management Company. It updates records of investor accounts to reflect the daily investor purchases, redemptions...
+
+TRCN;SOLI;Solicited - Trade was solicited by the executing broker. The broker has suggested to his client to buy/sell financial instruments.
+TRCN;USOL;Unsolicited - Trade was unsolicited. The client acts on its own without advice from the executing broker.
+
+TREX;INTD;Initiated - Transaction which has been initiated and has not yet closed.
+TREX;PINT;Pending Initiation - Pending Initiation.
+
+TRTR;BASK;Basket Trade - Transaction is a single order to buy and sell several financial instruments for the purpose of simultaneous buying and selling. Baskets are often used for...
+TRTR;BRKR;Broker to Broker Trade - Transaction is a trade from a broker to another broker.
+TRTR;EMTR;Employee Trade Reporting - Transaction relates to employee trade reporting.
+TRTR;FUND;Fund to Fund Trade - Transaction is a trade from an investment fund to another investment fund.
+TRTR;INDX;Index Trade - Transaction is a single order to buy or sell all underlying financial instruments of an index, for example, S&amp;P500.
+TRTR;LIST;List Trade - Transaction is a trade of a predetermined set of financial instruments.
+TRTR;PALL;Pre-Allocation - Transaction is a pre-allocation.
+TRTR;PROG;Program Trade - Transaction relates to computer-driven automatically executed trades in large volumes of a set of several financial instruments.
+TRTR;TRAD;Trade - Transaction is a regular trade.
+
+TSMT;ACTU;Actual Amount - Price expressed as an amount of currency per unit or per share.
+TSMT;DISC;Discount - Price expressed as a discount amount.
+TSMT;PREM;Premium - Price expressed as a premium.
+
+TSTA;TSIN;TIS Not Calculated - The fund is NOT calculating the taxable income per share within NAV.
+TSTA;TSIY;TIS Calculated - The fund is calculating the taxable income per share within NAV.
+TSTA;UKWN;Unknown - Unknown whether the fund is calculating the taxable income per share within NAV.
+
+TTCO;BCBL;Board Lots - Trade was executed on board lots; not set for odd lots (UK specific).
+TTCO;BCBN;Bad Names - Trade was executed on bad names, not set for good names (UK specific).
+TTCO;BCFD;Form of Delivery - Not for foreign registration when unset (UK specific).
+TTCO;BCPD;Place of Delivery - In country of incorporation when unset (UK specific).
+TTCO;BCRO;Result of Option When Set - Result of option when set (UK specific).
+TTCO;BCRP;Result of Repo When Set - Result of repo when set (UK specific).
+TTCO;BLKO;Block Order - Trade is a block trade, allocation instructions will follow.
+TTCO;BTEX;Best Execution - Trade was executed at best execution.
+TTCO;BTMI;Bought Minus - Bought minus indicator.
+TTCO;CALL;Call - Trade executed following the exercise of a call option on the security.
+TTCO;CBNS;Cum Bonus - Trade was executed cum bonus.
+TTCO;CCPN;Cum Coupon - Trade was executed cum coupon.
+TTCO;CDIV;Cum Dividend - Trade was executed cum dividend.
+TTCO;CLBR;Closure Before Rollover - Trade executed for closure of a previous position before the rollover of a position (Deferred Settlement Service).
+TTCO;CLEN;Clean - Trade is to be executed clean, that is, does not pay government tax on the accrued interest on the bond, and consequently price is higher.
+TTCO;CRST;Cross Trade Allowed - Cross trades are allowed whereby buy and sell orders are offset without recording the trade on the exchange.
+TTCO;CRTS;Cum Rights - Trade was executed cum rights.
+TTCO;CWAR;Cum Warrants - Trade was executed cum warrants.
+TTCO;DIOR;Directed Order - Trade is executed with a specific trading party.
+TTCO;DIRT;Dirty - Trade is executed dirty, that is, pay government tax on the accrued interest of the bond.
+TTCO;DORD;Direct Order - Trade is executed by a trading party other than the trading party to which the order is sent. In this case, the instructing party has traded with another...
+TTCO;FORW;Forward Price - Trade is based on forward price. Price was calculated after the close of the dealing period.
+TTCO;FRAC;Fractional Parts Allowed - Fractional parts allowed.
+TTCO;GTDL;Guaranteed Delivery - Delivery of the financial instrument on settlement date is guaranteed.
+TTCO;HIST;Historic Price - Trade is based on historic price.
+TTCO;MAPR;Market Price - The trade was executed at market price.
+TTCO;MONT;Monthly - Trade executed for month-end settlement (Deferred Settlement Service).
+TTCO;NBFR;New Trade Following Rollover - Trade executed for a new trade position on the next month following the rollover of a position (Deferred Settlement Service).
+TTCO;NCRS;No Cross Trade Allowed - No cross trade allowed.
+TTCO;NEGO;Negotiated Trade - A negotiated trade is a trade for which the price is not the one quoted but an <x:i>improved</x:i> one that is, negotiated price.
+TTCO;NMPR;Non-Market Price - The trade was executed outside of <x:i>normal</x:i> market conditions (for example, in the case of an iceberg order).
+TTCO;PETA;PreTrade Anonymity - Allows trader to explicitly request anonymity or disclosure in pre-trade market data feeds. Anonymity is relevant in markets where counterparties...
+TTCO;PUTT;Putt - Trade executed following the exercise of a put option on the security.
+TTCO;SETI;Sold Exempt - Trade is exempt from short-sale rules.
+TTCO;SPCU;Special Cum Dividend - Trade was executed with a special cum dividend, that is, buying after the ex date and getting the dividend.
+TTCO;SPEX;Special Ex Dividend - Trade was executed with a special ex dividend, that is, selling before the ex date without the coupon.
+TTCO;SPSI;Sold Plus - Sold plus indication.
+TTCO;SSTI;Sold Short - Sold short indication.
+TTCO;TEFR;Trade Executed Following Rollover - Trade executed this month following the rollover of positions.
+TTCO;TRFR;Trade Following Rollover - Trade executed on the next month following the rollover of positions.
+TTCO;XBNS;Ex Bonus - Trade was executed ex bonus.
+TTCO;XCPN;Ex Coupon - Trade was executed ex coupon.
+TTCO;XDIV;Ex Dividend - Trade was executed ex dividend.
+TTCO;XRTS;Ex Rights - Trade was executed ex rights.
+TTCO;XWAR;Ex Warrants - Trade was executed ex warrants.
+
+TXAP;TXBL;Taxable - The relevant proceeds are taxable.
+
+UPDT;OTHR;Other - See narrative.
+
+YIEL;CALL;To Call - Transaction was effected at yield to call.
+YIEL;CURR;Current - Transaction was effected at current yield.
+YIEL;MATU;Maturity - Transaction was effected at yield to maturity.

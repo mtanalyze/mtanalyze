@@ -39,10 +39,13 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Wraps the connection, upload and search for SWIFT MT files in Elasticsearch.
@@ -205,6 +208,34 @@ public class MtElastic implements AutoCloseable {
             return 0L;
         }
         return client.count(c -> c.index(index)).count();
+    }
+
+    /**
+     * Of the given {@link #contentId(String) content ids}, returns the subset that already
+     * has a document in the index -- the document id is the content id itself (see
+     * {@link #uploadRaw}), so this is a plain ids-query existence check, exposed here to tell
+     * "already indexed" apart from "new" without indexing anything.
+     */
+    public Set<String> existingContentIds(Collection<String> contentIds) throws IOException {
+        if (contentIds.isEmpty()) {
+            return Set.of();
+        }
+        boolean exists = client.indices().exists(ExistsRequest.of(e -> e.index(index))).value();
+        if (!exists) {
+            return Set.of();
+        }
+        List<String> ids = new ArrayList<>(contentIds);
+        SearchResponse<Void> response = client.search(s -> s
+                        .index(index)
+                        .query(q -> q.ids(i -> i.values(ids)))
+                        .source(src -> src.fetch(false))
+                        .size(ids.size()),
+                Void.class);
+        Set<String> found = new HashSet<>();
+        for (Hit<Void> hit : response.hits().hits()) {
+            found.add(hit.id());
+        }
+        return found;
     }
 
     /**

@@ -207,6 +207,32 @@ final class EntryPanelModel {
     }
 
     /**
+     * FIN texts of every MT 536 entry in the table, each isolated to its own transaction
+     * via {@link #buildIsolatedMessageText} -- the same branch-pruning the "Isolate Entry
+     * in New Tab" action uses -- or the plain message text when the statement holds only
+     * one transaction (nothing to isolate). Feeds the "Index MT 536 Entries" action.
+     */
+    public List<String> buildMt536IsolatedTexts() {
+        List<String> texts = new ArrayList<>();
+        for (int row = 0; row < allEntries.size(); row++) {
+            if (!"MT536".equals(allEntries.get(row).data().get(MT_COL_KEY))) continue;
+            String isolated = buildIsolatedMessageText(row);
+            if (isolated == null) isolated = wholeMessageFin(getMessageForRow(row));
+            if (isolated != null && !isolated.isBlank()) texts.add(isolated);
+        }
+        return texts;
+    }
+
+    /** Prowide's FIN serialization of the whole message, or {@code null} if it fails. */
+    private static String wholeMessageFin(SwiftMessage msg) {
+        try {
+            return msg != null ? msg.raw().message() : null;
+        } catch (RuntimeException ex) {
+            return null;
+        }
+    }
+
+    /**
      * Walks the flat tag range {@code [start, end)} one nesting level at a time. Any
      * {@code :16R:}/{@code :16S:} block that repeats among its siblings in that range is
      * dropped in its entirety unless its subtree contains at least one tag from
@@ -369,12 +395,13 @@ final class EntryPanelModel {
         if ("564".equals(type)) return "CAOPTN";
         if ("530".equals(type)) return "REQD";
         if ("567".equals(type)) return "STAT";
+        if ("500".equals(type) || "501".equals(type)) return "CLTDET";
         if ("569".equals(type)) return detect569RowSequence(mt.getSwiftMessage().getBlock4());
         if (type != null && type.matches("54[0-8]")) return null;
         if ("527".equals(type) || "558".equals(type) || "578".equals(type)
                 || "565".equals(type) || "566".equals(type) || "568".equals(type)
                 || "509".equals(type) || "514".equals(type) || "515".equals(type)
-                || "517".equals(type) || "518".equals(type)) return null;
+                || "517".equals(type) || "518".equals(type) || "599".equals(type)) return null;
         if ("940".equals(type) || "950".equals(type)) return "61";
         SwiftTagListBlock b4 = mt.getSwiftMessage().getBlock4();
         if (b4 != null && b4.getTags().stream().noneMatch(t -> "16R".equals(t.getName()))) return null;

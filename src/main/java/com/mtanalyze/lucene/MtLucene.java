@@ -40,9 +40,11 @@ import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TermInSetQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -53,6 +55,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -302,6 +306,29 @@ public class MtLucene implements AutoCloseable {
     }
 
     /**
+     * Of the given {@link #contentId(String) content ids}, returns the subset that already
+     * has a document in the index -- the same identity check {@link #addMessage} relies on
+     * for idempotent re-indexing, exposed here to tell "already indexed" apart from "new"
+     * without indexing anything.
+     */
+    public Set<String> existingContentIds(Collection<String> contentIds) throws IOException {
+        if (contentIds.isEmpty() || !DirectoryReader.indexExists(directory)) {
+            return Set.of();
+        }
+        List<BytesRef> terms = contentIds.stream().map(BytesRef::new).toList();
+        Query query = new TermInSetQuery(F_CONTENT_ID, terms);
+        try (DirectoryReader reader = DirectoryReader.open(directory)) {
+            IndexSearcher searcher = new IndexSearcher(reader);
+            StoredFields storedFields = reader.storedFields();
+            Set<String> found = new HashSet<>();
+            for (ScoreDoc scoreDoc : searcher.search(query, contentIds.size()).scoreDocs) {
+                found.add(storedFields.document(scoreDoc.doc).get(F_CONTENT_ID));
+            }
+            return found;
+        }
+    }
+
+    /**
      * Searches for a value in a specific tag, e.g. tag="35B", value="US0378331005".
      * Returns the complete original documents (raw_message + metadata).
      */
@@ -350,6 +377,19 @@ public class MtLucene implements AutoCloseable {
      */
     public List<SwiftHit> search(String lt, List<String> messageTypes,
                                  Map<String, String> tagValues) throws IOException {
+        return search(lt, messageTypes, tagValues, null);
+    }
+
+    /**
+     * Same as {@link #search(String, List, Map)}, additionally ANDing in a raw Lucene query
+     * string (classic {@link QueryParser} syntax, same as {@link #searchByQueryString}) when
+     * {@code extraQuery} is non-blank -- lets a structured search mask fall back to free text
+     * for anything the structured fields don't cover.
+     *
+     * @throws IllegalArgumentException if {@code extraQuery} cannot be parsed
+     */
+    public List<SwiftHit> search(String lt, List<String> messageTypes,
+                                 Map<String, String> tagValues, String extraQuery) throws IOException {
         BooleanQuery.Builder builder = new BooleanQuery.Builder();
         boolean anyCondition = false;
 
@@ -367,6 +407,10 @@ public class MtLucene implements AutoCloseable {
                         BooleanClause.Occur.MUST);
                 anyCondition = true;
             }
+        }
+        if (extraQuery != null && !extraQuery.isBlank()) {
+            builder.add(parseQueryString(extraQuery), BooleanClause.Occur.MUST);
+            anyCondition = true;
         }
         if (!anyCondition) {
             return List.of();
@@ -398,15 +442,18 @@ public class MtLucene implements AutoCloseable {
      * @throws IllegalArgumentException if the query string cannot be parsed
      */
     public List<SwiftHit> searchByQueryString(String queryString) throws IOException {
+        return runSearch(parseQueryString(queryString));
+    }
+
+    /** Parses a raw Lucene query string; see {@link #searchByQueryString} for the syntax. */
+    private Query parseQueryString(String queryString) {
         QueryParser parser = new QueryParser(F_RAW_MESSAGE, analyzer);
         parser.setAllowLeadingWildcard(true);
-        Query query;
         try {
-            query = parser.parse(queryString);
+            return parser.parse(queryString);
         } catch (ParseException e) {
             throw new IllegalArgumentException("Invalid Lucene query: " + e.getMessage(), e);
         }
-        return runSearch(query);
     }
 
     /**
