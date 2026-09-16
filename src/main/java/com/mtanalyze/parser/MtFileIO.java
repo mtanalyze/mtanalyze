@@ -51,6 +51,10 @@ public final class MtFileIO {
     private static final String DEFAULT_ADDR = "BANKBEBBAXXX";
     private static final String NEWLINE_PATTERN = "\r?\n";
 
+    /** SWIFT sequence boundary markers -- opening and closing a {@code :16R:}/{@code :16S:} block. */
+    private static final String TAG_16R = ":16R:";
+    private static final String TAG_16S = ":16S:";
+
     /** 0-based index of the first content character in append-text lines (column 31). */
     private static final int APPEND_TEXT_CONTENT_COL = 30;
     private static final int APPEND_TEXT_MIN_TAG_LINES = 3;
@@ -100,20 +104,24 @@ public final class MtFileIO {
     private static final Pattern MT_EQ_PREFIX_PAT = Pattern.compile("MT\\s*=\\s*");
     private static final Pattern DIGITS_3_PAT = Pattern.compile("\\d{3}");
     private static final Pattern ISO_DATE_PAT = Pattern.compile("(\\d{4})-(\\d{2})-(\\d{2})");
+    // Possessive quantifiers (*+/++) throughout: every quantified run here is immediately
+    // followed by either a disjoint literal/class or the pattern's end, so giving a character
+    // back on backtrack could never let a later part match -- making them possessive is a
+    // behavior-preserving no-op that just stops the engine wasting time retrying it.
     private static final Pattern NV_KEY_PAT =
-        Pattern.compile("^[A-Z0-9]*_((?:\\d{2}[A-Z]+|5R)\\s*:.*)$");
+        Pattern.compile("^[A-Z0-9]*+_((?:\\d{2}[A-Z]++|5R)\\s*+:.*+)$");
 
     /** Minimum number of genuine SWIFT fields required to classify content as Name-Value. */
     private static final int NAME_VALUE_MIN_FIELDS = 3;
     /** Detects a SWIFT field line in multi-line name-value format: [PREFIX]_TAG:...=... */
     private static final Pattern MULTI_LINE_NV_FIELD_PAT =
-        Pattern.compile("^[A-Z0-9]*[_ ](?:\\d{2}[A-Z]+|5R)\\s*:[^=]*=[^\\n]*");
+        Pattern.compile("^[A-Z0-9]*+[_ ](?:\\d{2}[A-Z]++|5R)\\s*+:[^=]*+=[^\\n]*+");
     /** Parses a field line; groups: (1) tag, (2) qualifier, (3) value. */
     private static final Pattern MULTI_LINE_NV_PARSE_PAT =
-        Pattern.compile("^[A-Z0-9]*[_ ]((?:\\d{2}[A-Z]+|5R))\\s*:\\s*([A-Z0-9]*+)\\s*=\\s*([^\\n]*)");
+        Pattern.compile("^[A-Z0-9]*+[_ ](\\d{2}[A-Z]++|5R)\\s*+:\\s*+([A-Z0-9]*+)\\s*+=\\s*+([^\\n]*+)");
     /** Detects a SWIFT field segment in single-line name-value format: [PREFIX]_TAG[:QUAL]=VALUE, semicolon-separated. */
     private static final Pattern SINGLE_LINE_NV_FIELD_PAT =
-        Pattern.compile("^[A-Z0-9]*_(?:\\d{2}[A-Z]+|5R)\\s*:[^=]*=.*$");
+        Pattern.compile("^[A-Z0-9]*+_(?:\\d{2}[A-Z]++|5R)\\s*+:[^=]*+=.*+$");
 
 
 
@@ -510,8 +518,8 @@ public final class MtFileIO {
         String prev16S = null;
         for (String line : lines) {
             String t = line.strip();
-            if (t.startsWith(":16S:") && t.equals(prev16S)) continue;
-            prev16S = t.startsWith(":16S:") ? t : null;
+            if (t.startsWith(TAG_16S) && t.equals(prev16S)) continue;
+            prev16S = t.startsWith(TAG_16S) ? t : null;
             sb.append(line).append('\n');
         }
         return !sb.isEmpty() ? sb.substring(0, sb.length() - 1) : msg;
@@ -790,7 +798,7 @@ public final class MtFileIO {
             if (isAppendTextTagLine(line)) {
                 flushAppendTextField(fields, tag, value);
                 Matcher m = SWIFT_TAG_PAT.matcher(line);
-                m.find();
+                if (!m.find()) continue; // isAppendTextTagLine() already confirmed this matches
                 tag = m.group(1);
                 value = new StringBuilder(line.substring(APPEND_TEXT_CONTENT_COL).trim());
             } else if (value != null && hasAppendTextContentColumn(line)) {
@@ -852,13 +860,13 @@ public final class MtFileIO {
         StringBuilder sb = new StringBuilder();
         int seq = 0; // 0=GENL 2=FIN (TRAN fields are buffered separately once reached)
         List<String[]> tranFields = null;
-        sb.append(":16R:").append(genl).append('\n');
+        sb.append(TAG_16R).append(genl).append('\n');
         for (String[] field : fields) {
             String tag = field[0];
             if (seq == 0 && APPEND_TEXT_536_FIN_TAG.equals(tag)) {
-                sb.append(":16S:").append(genl).append('\n');
-                sb.append(":16R:").append(subsafe).append('\n');
-                sb.append(":16R:").append(fin).append('\n');
+                sb.append(TAG_16S).append(genl).append('\n');
+                sb.append(TAG_16R).append(subsafe).append('\n');
+                sb.append(TAG_16R).append(fin).append('\n');
                 seq = 2;
             }
             if (seq == 2 && tranFields == null && !APPEND_TEXT_536_FIN_CONTINUATION_TAGS.contains(tag)) {
@@ -868,12 +876,12 @@ public final class MtFileIO {
             else appendBlock4Field(sb, tag, field[1]);
         }
         if (tranFields != null) {
-            sb.append(":16R:").append(tran).append('\n');
+            sb.append(TAG_16R).append(tran).append('\n');
             appendTranInterior(sb, tranFields, sequences);
-            sb.append(":16S:").append(tran).append('\n');
+            sb.append(TAG_16S).append(tran).append('\n');
         }
-        if (seq == 2) { sb.append(":16S:").append(fin).append('\n').append(":16S:").append(subsafe).append('\n'); }
-        else sb.append(":16S:").append(genl).append('\n');
+        if (seq == 2) { sb.append(TAG_16S).append(fin).append('\n').append(TAG_16S).append(subsafe).append('\n'); }
+        else sb.append(TAG_16S).append(genl).append('\n');
         return sb.toString();
     }
 
@@ -890,36 +898,64 @@ public final class MtFileIO {
         String transdet = sequences.getOrDefault("B1a2", "TRANSDET");
         String setprty  = sequences.getOrDefault("B1a2A", "SETPRTY");
 
+        int i = appendLinkOccurrences(sb, tranFields, link);
+        if (i >= tranFields.size()) return;
+
+        sb.append(TAG_16R).append(transdet).append('\n');
+        appendTransdetFields(sb, tranFields, i, setprty);
+        sb.append(TAG_16S).append(transdet).append('\n');
+    }
+
+    /**
+     * Emits each leading LINK occurrence -- repeating optional ({@code 13a}, {@code 20a})
+     * pairs, see {@link #APPEND_TEXT_536_LINK_TAGS} -- and returns the index of the first
+     * field after the LINK run (the start of TRANSDET).
+     */
+    private static int appendLinkOccurrences(StringBuilder sb, List<String[]> tranFields, String link) {
         int i = 0;
         int n = tranFields.size();
         while (i < n && APPEND_TEXT_536_LINK_TAGS.contains(tranFields.get(i)[0])) {
-            sb.append(":16R:").append(link).append('\n');
-            String tag = tranFields.get(i)[0];
-            if ("13A".equals(tag) || "13B".equals(tag)) {
-                appendBlock4Field(sb, tag, tranFields.get(i)[1]);
-                i++;
-            }
-            if (i < n && ("20C".equals(tranFields.get(i)[0]) || "20U".equals(tranFields.get(i)[0]))) {
-                appendBlock4Field(sb, tranFields.get(i)[0], tranFields.get(i)[1]);
-                i++;
-            }
-            sb.append(":16S:").append(link).append('\n');
+            sb.append(TAG_16R).append(link).append('\n');
+            i = appendLinkPair(sb, tranFields, i);
+            sb.append(TAG_16S).append(link).append('\n');
         }
-        if (i >= n) return;
+        return i;
+    }
 
-        sb.append(":16R:").append(transdet).append('\n');
+    /** Appends one LINK occurrence's optional {@code 13a} then optional {@code 20a} field,
+     *  returning the index just past whichever of the two were present. */
+    private static int appendLinkPair(StringBuilder sb, List<String[]> tranFields, int i) {
+        int n = tranFields.size();
+        String tag = tranFields.get(i)[0];
+        if ("13A".equals(tag) || "13B".equals(tag)) {
+            appendBlock4Field(sb, tag, tranFields.get(i)[1]);
+            i++;
+        }
+        if (i < n && ("20C".equals(tranFields.get(i)[0]) || "20U".equals(tranFields.get(i)[0]))) {
+            appendBlock4Field(sb, tranFields.get(i)[0], tranFields.get(i)[1]);
+            i++;
+        }
+        return i;
+    }
+
+    /**
+     * Appends the remaining TRANSDET-level fields starting at {@code start}, opening/closing
+     * a fresh SETPRTY occurrence whenever a new {@link #APPEND_TEXT_536_SETPRTY_START_TAGS}
+     * tag starts one.
+     */
+    private static void appendTransdetFields(StringBuilder sb, List<String[]> tranFields,
+                                              int start, String setprty) {
         boolean setprtyOpen = false;
-        for (; i < n; i++) {
+        for (int i = start; i < tranFields.size(); i++) {
             String tag = tranFields.get(i)[0];
             if (APPEND_TEXT_536_SETPRTY_START_TAGS.contains(tag)) {
-                if (setprtyOpen) sb.append(":16S:").append(setprty).append('\n');
-                sb.append(":16R:").append(setprty).append('\n');
+                if (setprtyOpen) sb.append(TAG_16S).append(setprty).append('\n');
+                sb.append(TAG_16R).append(setprty).append('\n');
                 setprtyOpen = true;
             }
             appendBlock4Field(sb, tag, tranFields.get(i)[1]);
         }
-        if (setprtyOpen) sb.append(":16S:").append(setprty).append('\n');
-        sb.append(":16S:").append(transdet).append('\n');
+        if (setprtyOpen) sb.append(TAG_16S).append(setprty).append('\n');
     }
 
     private static void appendBlock4Field(StringBuilder sb, String tag, String value) {
