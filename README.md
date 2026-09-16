@@ -3,7 +3,7 @@
 [![Maven Central](https://img.shields.io/maven-central/v/com.mtanalyze/mtanalyze)](https://central.sonatype.com/artifact/com.mtanalyze/mtanalyze)
 [![SonarQube](https://sonarcloud.io/api/project_badges/measure?project=mtanalyze_mtanalyze&metric=alert_status)](https://sonarcloud.io/summary/overall?id=mtanalyze_mtanalyze)
 
-An open-source desktop tool for analyzing SWIFT MT messages — from a handful of files up to large archives — and keeping them in a searchable message store. Load instructions, statements and confirmations of any of 32 supported MT types (SWIFT categories 5 and 9) into a single table, resolve the ISO 15022 meaning of every field, and compare messages side by side. Indexed messages stay queryable across tabs and sessions through two interchangeable full-text search engines: an embedded Apache Lucene index for local, file-based search, or Elasticsearch when the volume calls for a real search cluster.
+An open-source desktop tool for analyzing SWIFT MT messages — from a handful of files up to large archives — and keeping them in a searchable message store. Load instructions, statements and confirmations of any of 34 supported MT types (SWIFT categories 5, 6 and 9) into a single table, resolve the ISO 15022 meaning of every field, and compare messages side by side. Indexed messages stay queryable across tabs and sessions through two interchangeable full-text search engines: an embedded Apache Lucene index for local, file-based search, or Elasticsearch when the volume calls for a real search cluster.
 
 Open and Save read and write the standard SWIFT RJE bulk-message format (via Prowide's `RJEReader`/`RJEWriter`), so files stay interoperable with other SWIFT tooling.
 
@@ -33,7 +33,7 @@ Get-FileHash MT-Analyze-<version>.jar -Algorithm SHA256
 
 ## Supported MT Types
 
-MT Analyze parses 32 message types from SWIFT categories 5 (securities markets) and 9 (cash management) — settlement, corporate actions and cash reporting:
+MT Analyze parses 34 message types from SWIFT categories 5 (securities markets), 6 (treasury markets) and 9 (cash management) — settlement, corporate actions, standing settlement instructions and cash reporting:
 
 | Group                              | MT Types                   |
 |------------------------------------|-----------------------------|
@@ -48,6 +48,7 @@ MT Analyze parses 32 message types from SWIFT categories 5 (securities markets) 
 | Corporate Actions                  | MT 564, 565, 566, 567, 568 |
 | Settlement Allegement              | MT 578                     |
 | Free Format Message                | MT 599                     |
+| Standing Settlement Instructions   | MT 670, 671                |
 | Cash Statements                    | MT 940, 950                |
 
 ---

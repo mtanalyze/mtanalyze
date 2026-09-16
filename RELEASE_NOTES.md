@@ -12,6 +12,20 @@ java -jar MT-Analyze-2.0.2.jar
 
 ## Changes
 
+### MT 670 / MT 671 support
+
+Added parsing support for **MT 670** (Standing Settlement Instruction Update Notification
+Request) and **MT 671** (Standing Settlement Instruction Update Notification) — the first
+SWIFT category 6 (treasury markets) message types MT Analyze parses, alongside the
+existing categories 5 and 9. Each **Standing Settlement Instruction Details** (`SSIDET`)
+block becomes one row in the Entries table, with the General Information sequence carried
+into every row — the same pattern already used for MT 530, MT 564, MT 567, MT 569 and MT
+500/501. Selectable from the MT type dropdown (**MT 670**, **MT 671**) for content without
+its own SWIFT header; the two message types are structurally near-identical (both use the
+same `SSIDET` block), so — like MT 500/501 and MT 540-548 — auto-detection from content
+alone isn't possible and the type must come from the message header or an explicit
+selection.
+
 ### Entries table: Tag / Components column layout
 
 The Entries table's column header context menu (and the row context menu's Display

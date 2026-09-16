@@ -40,7 +40,7 @@ public final class MtFileIO {
         "MT 540", "MT 541", "MT 542", "MT 543",
         "MT 544", "MT 545", "MT 546", "MT 547", "MT 548",
         "MT 558", "MT 564", "MT 565", "MT 566", "MT 567", "MT 568", "MT 569",
-        "MT 578", "MT 599", "MT 940", "MT 950"
+        "MT 578", "MT 599", "MT 670", "MT 671", "MT 940", "MT 950"
     };
 
     public static String[] getMtTypeItems() { return MT_TYPE_ITEMS.clone(); }

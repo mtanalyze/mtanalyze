@@ -506,7 +506,9 @@ final class EntryPanelModel {
         "530", "REQD",
         "567", "STAT",
         "500", "CLTDET",
-        "501", "CLTDET"
+        "501", "CLTDET",
+        "670", "SSIDET",
+        "671", "SSIDET"
     );
 
     /** MT types with no repeating sequence at all -- each becomes a single flat table row. */
