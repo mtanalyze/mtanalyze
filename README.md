@@ -89,6 +89,23 @@ Lucene and Elasticsearch indexes.
 
 ---
 
+## Entries Table
+
+Right-click a column header, or a cell, for layout and per-column analysis:
+
+- **Show Components** (header context menu, or the row context menu's Display section)
+  switches the whole table between one column per SWIFT tag and one column per field
+  component — e.g. `98A:PAYD` splits into its own `Date`, `Time`, ... columns, the same
+  breakdown the Excel "Components" export uses. The Tag and Components layouts remember
+  their own column order and visibility independently, so switching back and forth doesn't
+  lose either one.
+- **Column Statistics** (row context menu, for the column under the cursor) shows Count
+  and Distinct Count for that column, plus Min/Max/Sum/Average when every visible value is
+  numeric, or Min/Max when every value is a date — computed on demand, over the currently
+  filtered/sorted rows only. Can be turned off under **Settings ▸ General**.
+
+---
+
 ## Message Repository (Index & Search)
 
 The **Lucene** and **Elasticsearch** menus each provide a full-text index of parsed
@@ -96,8 +113,8 @@ messages, in two independent engines you can use side by side — pick whichever
 volume at hand. Both menus offer the same five core actions (Lucene additionally has a
 dedicated MT 536 transaction index, see below) and are shared across all tabs and
 sessions. Each engine is **off by default** and must be turned on independently under
-**Settings ▸ Advanced** (**Enable Lucene Search** / **Enable Elasticsearch**) — an engine
-left disabled has no menu and no keyboard shortcut.
+**Settings ▸ Lucene** / **Settings ▸ Elasticsearch** (**Enable Lucene Search** / **Enable
+Elasticsearch**) — an engine left disabled has no menu and no keyboard shortcut.
 
 ### Lucene
 
@@ -116,7 +133,7 @@ component — just a directory on disk.
 - **Statistics…** shows how many messages are currently indexed.
 
 The index directory (default `~/.mtanalyze/swift-index`) and the maximum number of
-results (default 100) are configured under **Settings ▸ Advanced ▸ Lucene Search**.
+results (default 100) are configured under **Settings ▸ Lucene**.
 
 #### Query syntax
 
@@ -188,8 +205,8 @@ point MT Analyze at a cluster you run or manage.
   backend that's turned off shows as **Disabled** instead of being queried.
 
 Host, port, scheme, credentials, index name (default `swift-messages`) and the maximum
-number of results (default 100) are configured under **Settings ▸ Advanced ▸
-Elasticsearch**. Unlike Lucene this is a real server connection — indexing and searching
+number of results (default 100) are configured under **Settings ▸ Elasticsearch**. Unlike
+Lucene this is a real server connection — indexing and searching
 report a network error if the cluster is unreachable.
 
 The basic-auth password is stored in the OS credential store (Windows Credential Manager,

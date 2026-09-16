@@ -19,6 +19,7 @@ import com.mtanalyze.model.Entry;
 import com.mtanalyze.model.Project;
 import com.mtanalyze.model.SwiftMessage;
 import com.mtanalyze.parser.MtParser;
+import com.mtanalyze.profile.DataHelper;
 import com.prowidesoftware.swift.model.SwiftTagListBlock;
 import com.prowidesoftware.swift.model.Tag;
 import com.prowidesoftware.swift.model.mt.AbstractMT;
@@ -55,39 +56,64 @@ final class EntryPanelModel {
     private final List<Entry>    allEntries         = new ArrayList<>();
     private final List<ColumnDef> allColumnDefs     = new ArrayList<>();
 
+    // ── Components-mode column state (lazy: built on first access, see componentColumnDefs()) ─
+    private final DataHelper            dataHelper              = new DataHelper();
+    private final List<ColumnDef>       allComponentColumnDefs  = new ArrayList<>();
+    private boolean                     componentColumnsDirty   = true;
+
     // ── Package-private accessors (EntryTableModel + column-pref methods) ─
     List<Entry>     allEntries() { return Collections.unmodifiableList(allEntries); }
     /** Mutable — {@code MtEntryPanel.syncColumnOrder()} reorders this list in place. */
     List<ColumnDef> columnDefs() { return allColumnDefs; }
 
     /**
+     * Mutable, lazily-built one-column-per-field-component layout, split out exactly like the
+     * Excel "Components" export ({@link DataHelper#collectAllComponentCells}) so the two stay
+     * visually consistent. Built (or rebuilt, preserving the caller's current order/visibility
+     * for columns that still exist) on first access after data changed; cheap to call repeatedly
+     * once built.
+     */
+    List<ColumnDef> componentColumnDefs() {
+        if (componentColumnsDirty) rebuildComponentColumns();
+        return allComponentColumnDefs;
+    }
+
+    /**
      * Reorders columns: the pinned metadata columns ({@code Typ}, {@code MT}) stay first,
      * everything else is sorted by its display sequence (e.g. {@code "A"}, {@code "B1"}, ...),
      * keeping the original relative order among columns that share the same sequence.
      */
-    void sortColumnsBySequence() {
+    void sortColumnsBySequence() { sortBySequence(allColumnDefs); }
+
+    /** Same as {@link #sortColumnsBySequence()}, for the components-mode column layout. */
+    void sortComponentColumnsBySequence() { sortBySequence(componentColumnDefs()); }
+
+    private static void sortBySequence(List<ColumnDef> cols) {
         List<ColumnDef> pinned = new ArrayList<>();
         List<ColumnDef> rest   = new ArrayList<>();
-        for (ColumnDef cd : allColumnDefs) {
+        for (ColumnDef cd : cols) {
             if (PINNED_FRONT_KEYS.contains(cd.key)) pinned.add(cd);
             else rest.add(cd);
         }
         pinned.sort(Comparator.comparingInt(cd -> PINNED_FRONT_KEYS.indexOf(cd.key)));
         rest.sort(Comparator.comparing(cd -> cd.seqDisplay));
-        allColumnDefs.clear();
-        allColumnDefs.addAll(pinned);
-        allColumnDefs.addAll(rest);
+        cols.clear();
+        cols.addAll(pinned);
+        cols.addAll(rest);
     }
 
     // ── Public accessors ───────────────────────────────────────────────────
     public List<SwiftMessage> getLoadedMessages() { return project.messages(); }
     public List<ColumnDef>    getColumnDefs()     { return Collections.unmodifiableList(allColumnDefs); }
+    public List<ColumnDef>    getComponentColumnDefs() { return Collections.unmodifiableList(componentColumnDefs()); }
 
     // ── Bulk load ──────────────────────────────────────────────────────────
     public void clear() {
         project.clear();
         allEntries.clear();
         allColumnDefs.clear();
+        allComponentColumnDefs.clear();
+        componentColumnsDirty = true;
     }
 
     public void loadBatch(List<SwiftMessage> messages, List<ColumnDef> columnDefs) {
@@ -105,6 +131,7 @@ final class EntryPanelModel {
             allEntries.addAll(msg.entries());
         }
         mergeColumnDefs(columnDefs);
+        componentColumnsDirty = true;
     }
 
     /**
@@ -240,7 +267,7 @@ final class EntryPanelModel {
      * treatment. Plain (non-wrapper) tags and non-repeating wrapper blocks always survive.
      */
     private static List<Tag> pruneSiblings(List<Tag> tags, int start, int end, Set<Tag> keep) {
-        List<int[]> spans = new ArrayList<>();       // {spanStart, spanEndExclusive}
+        List<int[]> spans = new ArrayList<>();
         Map<String, Integer> occurrences = new LinkedHashMap<>();
         int i = start;
         while (i < end) {
@@ -259,19 +286,29 @@ final class EntryPanelModel {
 
         List<Tag> result = new ArrayList<>();
         for (int[] span : spans) {
-            boolean isBlock = "16R".equals(tags.get(span[0]).getName());
-            if (!isBlock) { result.add(tags.get(span[0])); continue; }
-
-            String name = nvl(tags.get(span[0]).getValue());
-            boolean repeating = occurrences.get(name) > 1;
-            boolean intersectsTarget = rangeIntersects(tags, span[0], span[1], keep);
-            if (repeating && !intersectsTarget) continue; // prune this whole occurrence
-
-            result.add(tags.get(span[0])); // opening 16R
-            result.addAll(pruneSiblings(tags, span[0] + 1, span[1] - 1, keep));
-            result.add(tags.get(span[1] - 1)); // closing 16S
+            result.addAll(resolveSpan(tags, span, occurrences, keep));
         }
         return result;
+    }
+
+    /** The tags {@code span} contributes to the pruned result: itself (a plain tag), nothing
+     *  (a repeating block pruned in its entirety), or the block with its interior recursively
+     *  pruned. Extracted so {@link #pruneSiblings}'s loop needs no {@code continue}. */
+    private static List<Tag> resolveSpan(List<Tag> tags, int[] span,
+                                          Map<String, Integer> occurrences, Set<Tag> keep) {
+        boolean isBlock = "16R".equals(tags.get(span[0]).getName());
+        if (!isBlock) return List.of(tags.get(span[0]));
+
+        String name = nvl(tags.get(span[0]).getValue());
+        boolean repeating = occurrences.get(name) > 1;
+        boolean intersectsTarget = rangeIntersects(tags, span[0], span[1], keep);
+        if (repeating && !intersectsTarget) return List.of(); // prune this whole occurrence
+
+        List<Tag> kept = new ArrayList<>();
+        kept.add(tags.get(span[0])); // opening 16R
+        kept.addAll(pruneSiblings(tags, span[0] + 1, span[1] - 1, keep));
+        kept.add(tags.get(span[1] - 1)); // closing 16S
+        return kept;
     }
 
     /** Index of the {@code :16S:name} that closes the {@code :16R:name} at {@code openIdx}. */
@@ -359,6 +396,81 @@ final class EntryPanelModel {
         };
     }
 
+    // ── Components-mode column building ───────────────────────────────────
+
+    /**
+     * Rebuilds {@link #allComponentColumnDefs} from the current entries, preserving the order
+     * and visibility of any column key that survives the rebuild (columns no longer produced by
+     * the current data are dropped; newly discovered ones are appended, default-visible) — so
+     * an in-session customization (via the header context menu or the column chooser) survives
+     * a later {@code mergeBatch} even though the whole layout is recomputed from scratch.
+     */
+    private void rebuildComponentColumns() {
+        componentColumnsDirty = false;
+
+        Map<String, Boolean> prevVisibility = new LinkedHashMap<>();
+        List<String> prevOrder = new ArrayList<>();
+        for (ColumnDef cd : allComponentColumnDefs) {
+            prevVisibility.put(cd.key, cd.isVisible());
+            prevOrder.add(cd.key);
+        }
+
+        List<ColumnDef> fresh = computeComponentColumnDefs();
+
+        Map<String, ColumnDef> byKey = new LinkedHashMap<>();
+        for (ColumnDef cd : fresh) byKey.put(cd.key, cd);
+        List<ColumnDef> ordered = new ArrayList<>();
+        for (String key : prevOrder) {
+            ColumnDef cd = byKey.remove(key);
+            if (cd == null) continue;
+            cd.setVisible(Boolean.TRUE.equals(prevVisibility.get(key)));
+            ordered.add(cd);
+        }
+        ordered.addAll(byKey.values());
+
+        allComponentColumnDefs.clear();
+        allComponentColumnDefs.addAll(ordered);
+    }
+
+    /**
+     * Splits every entry's tags into one column per field component -- the same pivot
+     * {@link DataHelper#collectAllComponentCells} builds for the Excel "Components" export --
+     * and, as a side effect, stores each resulting value into the owning {@link Entry}'s data
+     * map under the component column's key (so {@code EntryTableModel} can read it exactly like
+     * any whole-tag column, with no further plumbing).
+     */
+    private List<ColumnDef> computeComponentColumnDefs() {
+        List<ColumnDef> defs = new ArrayList<>();
+        if (allEntries.isEmpty()) return defs;
+
+        if (allEntries.stream().anyMatch(e -> !e.getValue(MT_COL_KEY).isEmpty()))
+            defs.add(new ColumnDef("", "_MT_", "", 1, MT_COL_LABEL));
+        defs.add(new ColumnDef("", "_TYPE_", "", 1, "Typ"));
+
+        List<DataHelper.CompCell> cells = dataHelper.collectAllComponentCells(
+                getFullDisplaySequences(), getRowData(), MtParser.SEQ_KEY, MT_COL_KEY);
+
+        Map<String, ColumnDef> byKey = new LinkedHashMap<>();
+        for (DataHelper.CompCell c : cells) {
+            String label = componentColumnLabel(c.seqLabel(), c.tagName(), c.qualifier(), c.label());
+            ColumnDef candidate = new ColumnDef(c.seqLabel(), c.tagName(), c.qualifier(), 1, label, c.seqLabel(), c.label());
+            ColumnDef cd = byKey.computeIfAbsent(candidate.key, k -> { defs.add(candidate); return candidate; });
+            int rowIdx = Integer.parseInt(c.entry());
+            allEntries.get(rowIdx).data().put(cd.key, c.value() != null ? c.value().toString() : "");
+        }
+        return defs;
+    }
+
+    /** Mirrors {@code ExcelExport.compColHeader} so component column headers read identically. */
+    private static String componentColumnLabel(String seqLabel, String tagName, String qualifier, String component) {
+        StringBuilder sb = new StringBuilder();
+        if (!seqLabel.isEmpty()) sb.append(seqLabel).append(' ');
+        sb.append(tagName);
+        if (!qualifier.isEmpty()) sb.append(':').append(qualifier);
+        if (!component.isEmpty()) sb.append(' ').append(component);
+        return sb.toString();
+    }
+
     // ── Column management (package-private, used by panel's prefs methods) ─
 
     private void mergeColumnDefs(List<ColumnDef> incoming) {
@@ -386,23 +498,35 @@ final class EntryPanelModel {
 
     // ── Static helpers ─────────────────────────────────────────────────────
 
+    /** MT types whose row sequence is a direct, unconditional mapping from the message type. */
+    private static final Map<String, String> SIMPLE_ROW_SEQUENCES = Map.of(
+        "535", "SUBBAL",
+        "537", "TRANS",
+        "564", "CAOPTN",
+        "530", "REQD",
+        "567", "STAT",
+        "500", "CLTDET",
+        "501", "CLTDET"
+    );
+
+    /** MT types with no repeating sequence at all -- each becomes a single flat table row. */
+    private static final Set<String> FLAT_MODE_TYPES = Set.of(
+        "527", "558", "578", "565", "566", "568",
+        "509", "514", "515", "517", "518", "599"
+    );
+
     static String detectRowSequence(AbstractMT mt) {
         com.prowidesoftware.swift.model.SwiftBlock2 b2 = mt.getSwiftMessage().getBlock2();
         if (b2 == null) return "TRAN";
         String type = b2.getMessageType();
-        if ("535".equals(type)) return "SUBBAL";
-        if ("537".equals(type)) return "TRANS";
-        if ("564".equals(type)) return "CAOPTN";
-        if ("530".equals(type)) return "REQD";
-        if ("567".equals(type)) return "STAT";
-        if ("500".equals(type) || "501".equals(type)) return "CLTDET";
+
+        String simple = type != null ? SIMPLE_ROW_SEQUENCES.get(type) : null;
+        if (simple != null) return simple;
         if ("569".equals(type)) return detect569RowSequence(mt.getSwiftMessage().getBlock4());
         if (type != null && type.matches("54[0-8]")) return null;
-        if ("527".equals(type) || "558".equals(type) || "578".equals(type)
-                || "565".equals(type) || "566".equals(type) || "568".equals(type)
-                || "509".equals(type) || "514".equals(type) || "515".equals(type)
-                || "517".equals(type) || "518".equals(type) || "599".equals(type)) return null;
+        if (type != null && FLAT_MODE_TYPES.contains(type)) return null;
         if ("940".equals(type) || "950".equals(type)) return "61";
+
         SwiftTagListBlock b4 = mt.getSwiftMessage().getBlock4();
         if (b4 != null && b4.getTags().stream().noneMatch(t -> "16R".equals(t.getName()))) return null;
         return "TRAN";

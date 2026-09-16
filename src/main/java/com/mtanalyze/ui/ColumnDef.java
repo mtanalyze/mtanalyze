@@ -18,13 +18,15 @@ package com.mtanalyze.ui;
 import com.mtanalyze.parser.Lookups;
 
 public class ColumnDef {
-    /** Unique key: seqLabel \t tagName \t qualifier \t occurrence */
+    /** Unique key: seqLabel \t tagName \t qualifier \t occurrence, plus \t component when {@link #component} is set. */
     public final String key;
     public final String seqLabel;   // Raw :16R:/:16S: qualifier, e.g. "SETPRTY" -- used for matching/filtering
     public final String seqDisplay; // Human-facing sequence label, e.g. Prowide's "B1a2A" -- used for display/grouping
     public final String tagName;    // SWIFT tag, e.g. "35B", "20C"
     public final String qualifier;  // Qualifier value, or "" if none
     public final String label;      // Column header
+    /** Field component label (e.g. "Date/Time", "Comp. 2"), or "" for a whole-tag column. */
+    public final String component;
     private boolean visible;
 
     /** Convenience constructor for columns with no distinct display sequence (e.g. synthetic columns). */
@@ -34,12 +36,20 @@ public class ColumnDef {
 
     public ColumnDef(String seqLabel, String tagName, String qualifier, int occurrence,
               String label, String seqDisplay) {
+        this(seqLabel, tagName, qualifier, occurrence, label, seqDisplay, "");
+    }
+
+    /** Full constructor -- {@code component} splits one tag column into one column per field component. */
+    public ColumnDef(String seqLabel, String tagName, String qualifier, int occurrence,
+              String label, String seqDisplay, String component) {
         this.seqLabel   = seqLabel;
         this.seqDisplay = seqDisplay;
         this.tagName    = tagName;
         this.qualifier  = qualifier;
         this.label      = label;
-        this.key        = seqLabel + "\t" + tagName + "\t" + qualifier + "\t" + occurrence;
+        this.component  = component;
+        this.key        = seqLabel + "\t" + tagName + "\t" + qualifier + "\t" + occurrence
+                         + (component.isEmpty() ? "" : "\t" + component);
         this.visible    = Lookups.DEFAULT_VISIBLE;
     }
 

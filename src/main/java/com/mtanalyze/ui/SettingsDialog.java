@@ -41,6 +41,7 @@ final class SettingsDialog {
     private SettingsDialog() {}
 
     record Config(CsvKeys csv, ThemeConfig theme, SystemKeys system, PowerUserConfig powerUser,
+                  ColumnStatsConfig columnStats,
                   MaskingConfig masking, MaskingConfig quantityMasking, LuceneConfig lucene, ElasticConfig elastic) {
         record CsvKeys(String fieldSep, String decimalSep) {
         }
@@ -88,6 +89,11 @@ final class SettingsDialog {
         record PowerUserConfig(String prefKey, Runnable onChange) {
         }
 
+        /** Whether the entries table's row context menu offers "Column Statistics". Read
+         *  fresh each time the menu is built, so no {@code onChange} callback is needed. */
+        record ColumnStatsConfig(String prefKey) {
+        }
+
         /**
          * Import-time masking of tags sharing a prefix -- {@code 19} (e.g. {@code 19A},
          * {@code 19B}) for {@code masking}, {@code 36} (e.g. {@code 36B}, {@code 36D}) for
@@ -117,6 +123,8 @@ final class SettingsDialog {
         String currentTheme = prefs.get(cfg.theme.prefKey, "Dark");
         JCheckBox darkModeCheck  = new JCheckBox("Dark Mode",       MtAnalyzeFrame.isDarkTheme(currentTheme));
         JCheckBox powerUserCheck = new JCheckBox("Power User Mode", prefs.getBoolean(cfg.powerUser.prefKey, false));
+        JCheckBox columnStatsCheck = new JCheckBox("Show \"Column Statistics\" in entries context menu",
+                prefs.getBoolean(cfg.columnStats.prefKey, true));
         JCheckBox maskAmountsCheck = new JCheckBox("Mask 19xx tag values (digits → 9)",
                 prefs.getBoolean(cfg.masking.prefKey, false));
         JCheckBox maskQuantitiesCheck = new JCheckBox("Mask 36xx tag values (digits → 9)",
@@ -167,8 +175,10 @@ final class SettingsDialog {
                 elasticEnabledCheck, elasticHostField, elasticPortField, elasticSchemeField,
                 elasticUsernameField, elasticPasswordField, elasticIndexField, elasticMaxHitsField);
 
-        JPanel generalPanel  = buildGeneralPanel(darkModeCheck, powerUserCheck, fields);
-        JPanel advancedPanel = buildAdvancedPanel(fields, maskAmountsCheck, maskQuantitiesCheck, cfg.lucene, cfg.elastic);
+        JPanel generalPanel  = buildGeneralPanel(darkModeCheck, powerUserCheck, columnStatsCheck, fields);
+        JPanel advancedPanel = buildAdvancedPanel(fields, maskAmountsCheck, maskQuantitiesCheck);
+        JPanel lucenePanel   = buildLucenePanel(fields, cfg.lucene);
+        JPanel elasticPanel  = buildElasticPanel(fields, cfg.elastic);
 
         // ---- User Dictionary tab ----
         DefaultTableModel dictModel = new DefaultTableModel(
@@ -197,6 +207,8 @@ final class SettingsDialog {
         JTabbedPane tabs = new JTabbedPane();
         tabs.addTab("General",         generalPanel);
         tabs.addTab("Advanced",        advancedPanel);
+        tabs.addTab("Lucene",          lucenePanel);
+        tabs.addTab("Elasticsearch",   elasticPanel);
         tabs.addTab("User Dictionary", dictPanel);
 
         JButton ok     = new JButton("OK");
@@ -213,6 +225,7 @@ final class SettingsDialog {
             cfg.theme.onChange.accept(newTheme);
             prefs.putBoolean(cfg.powerUser.prefKey, powerUserCheck.isSelected());
             cfg.powerUser.onChange.run();
+            prefs.putBoolean(cfg.columnStats.prefKey, columnStatsCheck.isSelected());
             prefs.putBoolean(cfg.masking.prefKey, maskAmountsCheck.isSelected());
             cfg.masking.onChange.run();
             prefs.putBoolean(cfg.quantityMasking.prefKey, maskQuantitiesCheck.isSelected());
@@ -235,7 +248,7 @@ final class SettingsDialog {
     // -----------------------------------------------------------------------
 
     private static JPanel buildGeneralPanel(JCheckBox darkModeCheck, JCheckBox powerUserCheck,
-                                             FormFields fields) {
+                                             JCheckBox columnStatsCheck, FormFields fields) {
         FormPanel fp = new FormPanel();
         JPanel form = fp.panel;
         GridBagConstraints lc = fp.lc;
@@ -244,10 +257,11 @@ final class SettingsDialog {
         addSectionSeparator(form, 0,  "Appearance");
         FormPanel.addRow(form, lc, fc, 1,  "",                    darkModeCheck);
         FormPanel.addRow(form, lc, fc, 2,  "",                    powerUserCheck);
+        FormPanel.addRow(form, lc, fc, 3,  "",                    columnStatsCheck);
 
-        addSectionSeparator(form, 3,  "CSV Export");
-        FormPanel.addRow(form, lc, fc, 4,  "Field separator:",    fields.fieldSep);
-        FormPanel.addRow(form, lc, fc, 5,  "Decimal separator:",  fields.decimalSep);
+        addSectionSeparator(form, 4,  "CSV Export");
+        FormPanel.addRow(form, lc, fc, 5,  "Field separator:",    fields.fieldSep);
+        FormPanel.addRow(form, lc, fc, 6,  "Decimal separator:",  fields.decimalSep);
 
         JButton resetSeparators = new JButton("Use system defaults");
         resetSeparators.setToolTipText("Reset separators to the values for "
@@ -259,11 +273,11 @@ final class SettingsDialog {
         });
         JPanel resetWrap = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         resetWrap.add(resetSeparators);
-        FormPanel.addRow(form, lc, fc, 6,  "",                    resetWrap);
+        FormPanel.addRow(form, lc, fc, 7,  "",                    resetWrap);
 
-        addSectionSeparator(form, 7,  "MT Export");
-        FormPanel.addRow(form, lc, fc, 8,  "Sender BIC:",         fields.sender);
-        FormPanel.addRow(form, lc, fc, 9,  "Receiver BIC:",       fields.receiver);
+        addSectionSeparator(form, 8,  "MT Export");
+        FormPanel.addRow(form, lc, fc, 9,  "Sender BIC:",         fields.sender);
+        FormPanel.addRow(form, lc, fc, 10, "Receiver BIC:",       fields.receiver);
 
         return form;
     }
@@ -273,8 +287,7 @@ final class SettingsDialog {
     // -----------------------------------------------------------------------
 
     private static JPanel buildAdvancedPanel(FormFields fields, JCheckBox maskAmountsCheck,
-                                              JCheckBox maskQuantitiesCheck,
-                                              Config.LuceneConfig lucene, Config.ElasticConfig elastic) {
+                                              JCheckBox maskQuantitiesCheck) {
         FormPanel fp = new FormPanel();
         JPanel form = fp.panel;
         GridBagConstraints lc = fp.lc;
@@ -305,7 +318,20 @@ final class SettingsDialog {
         resetWrap.add(resetLogTokens);
         FormPanel.addRow(form, lc, fc, 8, "", resetWrap);
 
-        int row = 9;
+        return form;
+    }
+
+    // -----------------------------------------------------------------------
+    // Lucene tab
+    // -----------------------------------------------------------------------
+
+    private static JPanel buildLucenePanel(FormFields fields, Config.LuceneConfig lucene) {
+        FormPanel fp = new FormPanel();
+        JPanel form = fp.panel;
+        GridBagConstraints lc = fp.lc;
+        GridBagConstraints fc = fp.fc;
+
+        int row = 0;
         addSectionSeparator(form, row++, "Lucene Search");
         FormPanel.addRow(form, lc, fc, row++, "", fields.luceneEnabled);
 
@@ -332,7 +358,7 @@ final class SettingsDialog {
         });
         JPanel resetLuceneWrap = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         resetLuceneWrap.add(resetLucene);
-        FormPanel.addRow(form, lc, fc, row++, "", resetLuceneWrap);
+        FormPanel.addRow(form, lc, fc, row, "", resetLuceneWrap);
 
         setEnabledRecursively(dirRow, fields.luceneEnabled.isSelected());
         fields.luceneMaxHits.setEnabled(fields.luceneEnabled.isSelected());
@@ -344,6 +370,20 @@ final class SettingsDialog {
             resetLucene.setEnabled(on);
         });
 
+        return form;
+    }
+
+    // -----------------------------------------------------------------------
+    // Elasticsearch tab
+    // -----------------------------------------------------------------------
+
+    private static JPanel buildElasticPanel(FormFields fields, Config.ElasticConfig elastic) {
+        FormPanel fp = new FormPanel();
+        JPanel form = fp.panel;
+        GridBagConstraints lc = fp.lc;
+        GridBagConstraints fc = fp.fc;
+
+        int row = 0;
         addSectionSeparator(form, row++, "Elasticsearch");
         FormPanel.addRow(form, lc, fc, row++, "", fields.elasticEnabled);
         FormPanel.addRow(form, lc, fc, row++, "Host:",               fields.elasticHost);
@@ -366,7 +406,7 @@ final class SettingsDialog {
         });
         JPanel resetElasticWrap = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         resetElasticWrap.add(resetElastic);
-        FormPanel.addRow(form, lc, fc, row++, "", resetElasticWrap);
+        FormPanel.addRow(form, lc, fc, row, "", resetElasticWrap);
 
         JComponent[] elasticFields = {fields.elasticHost, fields.elasticPort, fields.elasticScheme,
                 fields.elasticUsername, fields.elasticPassword, fields.elasticIndex, fields.elasticMaxHits,

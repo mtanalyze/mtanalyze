@@ -129,6 +129,7 @@ public class MtAnalyzeFrame extends JFrame {
     private static final String PREF_CSV_DECIMAL_SEP      = "csv_decimal_sep";
     private static final String PREF_USER_DICT             = "user_qualifier_values";
     private static final String PREF_POWER_USER            = "power_user";
+    private static final String PREF_COLUMN_STATS_ENABLED  = "column_stats_enabled";
     private static final String PREF_MASK_AMOUNTS_ENABLED  = "mask_amounts_enabled";
     private static final String PREF_MASK_QUANTITIES_ENABLED = "mask_quantities_enabled";
     private static final String PREF_LUCENE_ENABLED        = "lucene_enabled";
@@ -244,7 +245,7 @@ public class MtAnalyzeFrame extends JFrame {
                                   config.getMtExportSender(), config.getMtExportReceiver(),
                                   statusLabel::setText)),
             this::showSettings,
-            this::showSearchPopup,
+            () -> withActiveTab(EntryTab::showSearchPopup),
             () -> HelpDialog.show(this),
             this::showAboutDialog,
             this::populateEditMenu,
@@ -317,7 +318,7 @@ public class MtAnalyzeFrame extends JFrame {
                 bar.setString(n + " / " + count);
             }
             @Override protected void done() {
-                finishIndexing(this, pd, t, documentCount, indexDescription, indexedIntoDescription);
+                t.finishIndexing(this, pd, documentCount, indexDescription, indexedIntoDescription);
             }
         };
         pd.runWorker(worker);
@@ -326,29 +327,6 @@ public class MtAnalyzeFrame extends JFrame {
     @FunctionalInterface
     private interface CountSupplier {
         long count() throws IOException;
-    }
-
-    /** Shared completion handler for the Lucene / Elasticsearch indexing background workers. */
-    private void finishIndexing(SwingWorker<Integer, Integer> worker, FrameLayout.ProgressDialog pd, EntryTab t,
-            CountSupplier documentCount, String indexDescription, String indexedIntoDescription) {
-        pd.dialog().dispose();
-        if (worker.isCancelled()) { statusLabel.setText("Indexing cancelled."); return; }
-        try {
-            int n = worker.get();
-            long total = documentCount.count();
-            statusLabel.setText(n + (n == 1 ? MSG_SINGULAR : MSG_PLURAL)
-                + " indexed (" + total + " in " + indexDescription + ").");
-            t.detailCtrl.notificationPanel().addNotification(
-                NotificationPanel.Type.INFO, "Messages indexed",
-                n + (n == 1 ? MSG_SINGULAR : MSG_PLURAL) + " indexed into "
-                    + indexedIntoDescription + " (" + total + " total; a message already in the index is replaced).");
-        } catch (InterruptedException ex) {
-            Thread.currentThread().interrupt();
-        } catch (ExecutionException | IOException ex) {
-            Throwable cause = ex instanceof ExecutionException && ex.getCause() != null ? ex.getCause() : ex;
-            JOptionPane.showMessageDialog(this, "Indexing failed:\n" + cause.getMessage(),
-                ERROR_TITLE, JOptionPane.ERROR_MESSAGE);
-        }
     }
 
     @FunctionalInterface
@@ -491,7 +469,7 @@ public class MtAnalyzeFrame extends JFrame {
                 bar.setString(n + " / " + count);
             }
             @Override protected void done() {
-                finishIndexing(this, pd, t, mt536Index::documentCount,
+                t.finishIndexing(this, pd, mt536Index::documentCount,
                     "the MT 536 index", "the MT 536 index at " + mt536Index.indexDir());
             }
         };
@@ -612,6 +590,7 @@ public class MtAnalyzeFrame extends JFrame {
                 config::getMaxEntries, config::getLogSwiftStart, config::getLogNewlineToken,
                 config::saveSettings),
             new SettingsDialog.Config.PowerUserConfig(PREF_POWER_USER, this::applyPowerUserMode),
+            new SettingsDialog.Config.ColumnStatsConfig(PREF_COLUMN_STATS_ENABLED),
             new SettingsDialog.Config.MaskingConfig(PREF_MASK_AMOUNTS_ENABLED, this::applyMaskingConfig),
             new SettingsDialog.Config.MaskingConfig(PREF_MASK_QUANTITIES_ENABLED, this::applyMaskingConfig),
             new SettingsDialog.Config.LuceneConfig(PREF_LUCENE_ENABLED, PREF_LUCENE_DIR, PREF_LUCENE_MAX_HITS,
@@ -749,21 +728,13 @@ public class MtAnalyzeFrame extends JFrame {
 
         im.put(KeyStroke.getKeyStroke("ctrl F"), "focusSearch");
         am.put("focusSearch", new AbstractAction() {
-            @Override public void actionPerformed(ActionEvent e) { showSearchPopup(); }
+            @Override public void actionPerformed(ActionEvent e) { withActiveTab(EntryTab::showSearchPopup); }
         });
 
         im.put(KeyStroke.getKeyStroke("ctrl D"), "toggleDetail");
         am.put("toggleDetail", new AbstractAction() {
             @Override public void actionPerformed(ActionEvent e) { withActiveTab(t -> t.detailCtrl.toggle()); }
         });
-    }
-
-    private void showSearchPopup() {
-        EntryTab t = activeTab();
-        if (t == null) return;
-        SearchPopup.show(menuSearchBtn, t.entryPanel.getSearchField(),
-            t.entryPanel.finClearBtn, t.entryPanel.finPrevBtn,
-            t.entryPanel.finNextBtn, t.entryPanel.finMatchLabel);
     }
 
     private void setupStatusBar() {
@@ -844,75 +815,6 @@ public class MtAnalyzeFrame extends JFrame {
         if (t == null) return;
         saveExcelItem.setEnabled(!t.entryPanel.getLoadedMessages().isEmpty());
         saveAsMtItem.setEnabled(!t.entryPanel.getLoadedMessages().isEmpty());
-    }
-
-    /**
-     * Context-menu action: copies the messages currently visible in {@code source}'s
-     * entries table (after filtering) into another tab chosen by the user, or a new one.
-     * The messages are re-parsed from their FIN text so the target tab gets independent
-     * copies.
-     */
-    private void copyVisibleMessagesToTab(EntryTab source) {
-        List<SwiftMessage> visible = source.entryPanel.getVisibleMessages();
-        if (visible.isEmpty()) {
-            source.setStatus("No visible messages to copy.");
-            return;
-        }
-
-        final String newTabOption = "＋  New Tab";
-        List<EntryTab> targets = new ArrayList<>();
-        List<String> options = new ArrayList<>();
-        options.add(newTabOption);
-        for (int i = 0; i < openTabs.size(); i++) {
-            EntryTab t = openTabs.get(i);
-            if (t == source) continue;
-            targets.add(t);
-            options.add((i + 1) + ":  " + t.title);
-        }
-
-        String choice = (String) JOptionPane.showInputDialog(this,
-            "Copy " + visible.size() + (visible.size() == 1 ? MSG_SINGULAR : MSG_PLURAL) + " to:",
-            "Copy Visible Messages to Tab", JOptionPane.QUESTION_MESSAGE, null,
-            options.toArray(), options.get(0));
-        if (choice == null) return;
-
-        EntryTab target = choice.equals(newTabOption)
-            ? openNewTab()
-            : targets.get(options.indexOf(choice) - 1);
-
-        List<String> chunks = new ArrayList<>(visible.size());
-        for (SwiftMessage m : visible) {
-            try {
-                String fin = m.raw().message();
-                if (fin != null && !fin.isBlank()) chunks.add(fin);
-            } catch (RuntimeException ignored) {
-                // skip a message that cannot be serialized back to FIN
-            }
-        }
-        int parsed = target.importer.appendFromContent(chunks, null, null, MessageOrigin.CLIPBOARD);
-        int idx = openTabs.indexOf(target);
-        if (idx >= 0) tabs.setSelectedIndex(idx);
-        target.setStatus(parsed + (parsed == 1 ? MSG_SINGULAR : MSG_PLURAL)
-            + " copied from " + source.title + ".");
-    }
-
-    /**
-     * Context-menu action: copies the row's message into a new tab, keeping only that
-     * row's entry and dropping every other entry of the same message (e.g. every other
-     * TRAN/TRANSDET block of an MT 536 statement).
-     */
-    private void isolateEntryInNewTab(EntryTab source, int modelRow) {
-        String isolated = source.entryPanel.buildIsolatedMessageText(modelRow);
-        if (isolated == null || isolated.isBlank()) {
-            source.setStatus("Nothing to isolate: this entry is already alone in its message.");
-            return;
-        }
-        EntryTab target = openNewTab();
-        int parsed = target.importer.appendFromContent(List.of(isolated), null, null, MessageOrigin.CLIPBOARD);
-        int idx = openTabs.indexOf(target);
-        if (idx >= 0) tabs.setSelectedIndex(idx);
-        target.setStatus(parsed + (parsed == 1 ? MSG_SINGULAR : MSG_PLURAL)
-            + " isolated from " + source.title + ".");
     }
 
     // -----------------------------------------------------------------------
@@ -1120,24 +1022,7 @@ public class MtAnalyzeFrame extends JFrame {
     }
 
     private static JPanel buildAboutPanel() {
-        JPanel panel = new JPanel() {
-            @Override protected void paintComponent(Graphics g0) {
-                super.paintComponent(g0);
-                Graphics2D g = (Graphics2D) g0.create();
-                try {
-                    g.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
-                                       RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-                    BrandTheme.paintBackdrop(g, getWidth(), getHeight());
-                } finally {
-                    g.dispose();
-                }
-            }
-        };
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBackground(BrandTheme.BG);
-        panel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(BrandTheme.BORDER, 1),
-            new EmptyBorder(20, 36, 18, 36)));
+        JPanel panel = createAboutBasePanel();
 
         JLabel title   = aboutLabel(APP_NAME,                            22f, Font.BOLD,   BrandTheme.FG);
         JLabel version = aboutLabel("Version " + loadVersion(),          12f, Font.PLAIN,  BrandTheme.SUB);
@@ -1171,6 +1056,29 @@ public class MtAnalyzeFrame extends JFrame {
         addRow(panel, dep3,    14);
         addAboutDivider(panel);
         panel.add(swift);
+        return panel;
+    }
+
+    /** The About dialog's base panel: brand backdrop, vertical label stacking, bordered frame. */
+    private static JPanel createAboutBasePanel() {
+        JPanel panel = new JPanel() {
+            @Override protected void paintComponent(Graphics g0) {
+                super.paintComponent(g0);
+                Graphics2D g = (Graphics2D) g0.create();
+                try {
+                    g.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
+                                       RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+                    BrandTheme.paintBackdrop(g, getWidth(), getHeight());
+                } finally {
+                    g.dispose();
+                }
+            }
+        };
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setBackground(BrandTheme.BG);
+        panel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(BrandTheme.BORDER, 1),
+            new EmptyBorder(20, 36, 18, 36)));
         return panel;
     }
 
@@ -1396,6 +1304,7 @@ public class MtAnalyzeFrame extends JFrame {
                 }
                 @Override public void onFilesDropped(List<File> files) { appendDroppedFiles(files); }
                 @Override public boolean isPowerUser() { return MtAnalyzeFrame.this.isPowerUser(); }
+                @Override public boolean isColumnStatsEnabled() { return EntryTab.this.isColumnStatsEnabled(); }
                 @Override public void focusDetailTag(ColumnDef cd) { tagPanel.focusTag(cd); }
                 @Override public void switchDetailCard(String card) { EntryTab.this.switchDetailCard(card); }
                 @Override public void exportMessageForRow(int modelRow) {
@@ -1408,12 +1317,8 @@ public class MtAnalyzeFrame extends JFrame {
                 }
                 @Override public void showAppendTextDialog() { EntryTab.this.showAppendTextDialog(); }
                 @Override public void setStatus(String message) { setStatusText(message); }
-                @Override public void copyVisibleMessagesToTab() {
-                    MtAnalyzeFrame.this.copyVisibleMessagesToTab(EntryTab.this);
-                }
-                @Override public void isolateEntryInNewTab(int modelRow) {
-                    MtAnalyzeFrame.this.isolateEntryInNewTab(EntryTab.this, modelRow);
-                }
+                @Override public void copyVisibleMessagesToTab() { EntryTab.this.copyVisibleMessagesToTab(); }
+                @Override public void isolateEntryInNewTab(int modelRow) { EntryTab.this.isolateEntryInNewTab(modelRow); }
             };
         }
 
@@ -1594,6 +1499,20 @@ public class MtAnalyzeFrame extends JFrame {
             detailCtrl.notificationPanel().addNotification(NotificationPanel.Type.WARNING, "Duplicates removed", body);
             switchDetailCard(DetailPanelController.NOTIFICATIONS);
             detailCtrl.expandIfNeeded();
+        }
+
+        /** Whether the entries table's row context menu offers "Column Statistics"
+         *  (Settings ▸ General toggle, on by default). */
+        private boolean isColumnStatsEnabled() {
+            return PREFS.getBoolean(PREF_COLUMN_STATS_ENABLED, true);
+        }
+
+        /** Ctrl+F: opens the Find popup anchored to the toolbar's search button, wired to
+         *  this tab's MT Entries search field and match-navigation controls. */
+        void showSearchPopup() {
+            SearchPopup.show(menuSearchBtn, entryPanel.getSearchField(),
+                entryPanel.finClearBtn, entryPanel.finPrevBtn,
+                entryPanel.finNextBtn, entryPanel.finMatchLabel);
         }
 
         void onFileLoaded(ImportBatch batch, File file) {
@@ -1777,6 +1696,101 @@ public class MtAnalyzeFrame extends JFrame {
             title = newTitle;
             int idx = openTabs.indexOf(this);
             if (idx >= 0 && tabs != null) tabs.setTitleAt(idx, newTitle);
+        }
+
+        // -------------------------------------------------------------------
+        // Tab-scoped actions (context menu / indexing callbacks)
+        // -------------------------------------------------------------------
+
+        /** Shared completion handler for the Lucene / Elasticsearch indexing background workers. */
+        private void finishIndexing(SwingWorker<Integer, Integer> worker, FrameLayout.ProgressDialog pd,
+                CountSupplier documentCount, String indexDescription, String indexedIntoDescription) {
+            pd.dialog().dispose();
+            if (worker.isCancelled()) { statusLabel.setText("Indexing cancelled."); return; }
+            try {
+                int n = worker.get();
+                long total = documentCount.count();
+                statusLabel.setText(n + (n == 1 ? MSG_SINGULAR : MSG_PLURAL)
+                    + " indexed (" + total + " in " + indexDescription + ").");
+                detailCtrl.notificationPanel().addNotification(
+                    NotificationPanel.Type.INFO, "Messages indexed",
+                    n + (n == 1 ? MSG_SINGULAR : MSG_PLURAL) + " indexed into "
+                        + indexedIntoDescription + " (" + total + " total; a message already in the index is replaced).");
+            } catch (InterruptedException ex) {
+                Thread.currentThread().interrupt();
+            } catch (ExecutionException | IOException ex) {
+                Throwable cause = ex instanceof ExecutionException && ex.getCause() != null ? ex.getCause() : ex;
+                JOptionPane.showMessageDialog(MtAnalyzeFrame.this, "Indexing failed:\n" + cause.getMessage(),
+                    ERROR_TITLE, JOptionPane.ERROR_MESSAGE);
+            }
+        }
+
+        /**
+         * Context-menu action: copies the messages currently visible in this tab's entries
+         * table (after filtering) into another tab chosen by the user, or a new one. The
+         * messages are re-parsed from their FIN text so the target tab gets independent copies.
+         */
+        private void copyVisibleMessagesToTab() {
+            List<SwiftMessage> visible = entryPanel.getVisibleMessages();
+            if (visible.isEmpty()) {
+                setStatus("No visible messages to copy.");
+                return;
+            }
+
+            final String newTabOption = "＋  New Tab";
+            List<EntryTab> targets = new ArrayList<>();
+            List<String> options = new ArrayList<>();
+            options.add(newTabOption);
+            for (int i = 0; i < openTabs.size(); i++) {
+                EntryTab t = openTabs.get(i);
+                if (t == this) continue;
+                targets.add(t);
+                options.add((i + 1) + ":  " + t.title);
+            }
+
+            String choice = (String) JOptionPane.showInputDialog(MtAnalyzeFrame.this,
+                "Copy " + visible.size() + (visible.size() == 1 ? MSG_SINGULAR : MSG_PLURAL) + " to:",
+                "Copy Visible Messages to Tab", JOptionPane.QUESTION_MESSAGE, null,
+                options.toArray(), options.get(0));
+            if (choice == null) return;
+
+            EntryTab target = choice.equals(newTabOption)
+                ? openNewTab()
+                : targets.get(options.indexOf(choice) - 1);
+
+            List<String> chunks = new ArrayList<>(visible.size());
+            for (SwiftMessage m : visible) {
+                try {
+                    String fin = m.raw().message();
+                    if (fin != null && !fin.isBlank()) chunks.add(fin);
+                } catch (RuntimeException ignored) {
+                    // skip a message that cannot be serialized back to FIN
+                }
+            }
+            int parsed = target.importer.appendFromContent(chunks, null, null, MessageOrigin.CLIPBOARD);
+            int idx = openTabs.indexOf(target);
+            if (idx >= 0) tabs.setSelectedIndex(idx);
+            target.setStatus(parsed + (parsed == 1 ? MSG_SINGULAR : MSG_PLURAL)
+                + " copied from " + title + ".");
+        }
+
+        /**
+         * Context-menu action: copies the row's message into a new tab, keeping only that
+         * row's entry and dropping every other entry of the same message (e.g. every other
+         * TRAN/TRANSDET block of an MT 536 statement).
+         */
+        private void isolateEntryInNewTab(int modelRow) {
+            String isolated = entryPanel.buildIsolatedMessageText(modelRow);
+            if (isolated == null || isolated.isBlank()) {
+                setStatus("Nothing to isolate: this entry is already alone in its message.");
+                return;
+            }
+            EntryTab target = openNewTab();
+            int parsed = target.importer.appendFromContent(List.of(isolated), null, null, MessageOrigin.CLIPBOARD);
+            int idx = openTabs.indexOf(target);
+            if (idx >= 0) tabs.setSelectedIndex(idx);
+            target.setStatus(parsed + (parsed == 1 ? MSG_SINGULAR : MSG_PLURAL)
+                + " isolated from " + title + ".");
         }
     }
 }

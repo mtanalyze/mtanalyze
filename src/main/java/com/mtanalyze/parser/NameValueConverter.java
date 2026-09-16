@@ -52,6 +52,17 @@ public final class NameValueConverter {
     private static final Pattern TAG_CODE_PAT = Pattern.compile("\\d{2}[A-Z]+|5R");
 
     /**
+     * Unicode C1 control characters (U+0080-U+009F) -- never valid in SWIFT FIN text. Seen in
+     * practice as a stray SS2 (U+008E) inside a {@code 35B} description (bytes {@code C2 8E}):
+     * some upstream export step decoded a single Windows-1252 byte (where 0x8E is "Ž") as
+     * Latin-1 instead, which leaves that byte range as raw C1 controls rather than Windows-1252's
+     * printable characters, then re-encoded the resulting control codepoint as UTF-8. Which
+     * printable character was actually intended isn't recoverable from the corrupted byte alone,
+     * so these are stripped rather than guessed at.
+     */
+    private static final Pattern C1_CONTROL_CHARS = Pattern.compile("[\\u0080-\\u009F]");
+
+    /**
      * Tag order shared by the repeating party subsequences {@code SETPRTY},
      * {@code CSHPRTY} and {@code CONFPRTY}. Such a subsequence repeats under the
      * same bare sequence code, so the boundary between two parties is only visible
@@ -147,7 +158,8 @@ public final class NameValueConverter {
     }
 
     private static String normalizeLine(String line) {
-        String normalized = line.replace("&#x0d;", "\n");
+        String normalized = C1_CONTROL_CHARS.matcher(line).replaceAll("");
+        normalized = normalized.replace("&#x0d;", "\n");
         normalized = MIDNIGHT_SUFFIX.matcher(normalized).replaceAll("");
         // Known export quirk: MT 558's RELA reference sometimes arrives without its
         // A3 (LINK) sequence prefix.
@@ -156,8 +168,13 @@ public final class NameValueConverter {
     }
 
     private void processField(String field, String line, ConvertState st) {
-        String[] nameValues = field.split("=");
-        if (nameValues.length < 2) return;
+        // Limit 2: a value containing "=" of its own (rare but possible) must stay intact
+        // instead of being truncated at the second "=".
+        String[] nameValues = field.split("=", 2);
+        if (nameValues.length < 2) {
+            tryHandleNoEqualsField(field, line, st);
+            return;
+        }
         String name = nameValues[0];
         String value = nameValues[1].stripLeading();
 
@@ -165,8 +182,40 @@ public final class NameValueConverter {
             case "MT" -> handleMtField(value, st);
             case "SWIFTABS" -> handleSwiftAbsField(value, st);
             case "SWIFTEMP" -> st.swiftMessage.getSwiftMessage().getBlock1().setSender(value);
-            default -> handleSequencedField(nameValues[0], value, line, st);
+            default -> handleSequencedField(name, value, line, st);
         }
+    }
+
+    /**
+     * Fallback for a sequenced field that has no {@code "="} at all -- some export variants
+     * of this format use {@code "/"} directly after the qualifier instead (e.g.
+     * {@code E_97A:SAFE/3037494}), or an extra {@code ":"} before a value that itself
+     * carries a {@code "/"} as its own SWIFT component separator (e.g.
+     * {@code C_36B:SETT:FAMT/200000000}). Both still name a real tag and qualifier, so this
+     * recovers them into the same {@code (name, value)} shape {@link #processField} gets
+     * from an {@code "="}-separated field instead of silently dropping the field. Does
+     * nothing when {@code field} doesn't have this shape either -- e.g. the free-standing
+     * {@code "MSGESTDT=..."}-less segments this format also carries.
+     */
+    private void tryHandleNoEqualsField(String field, String line, ConvertState st) {
+        int us = field.indexOf('_');
+        if (us < 0) return;
+        String seq = field.substring(0, us);
+        String[] parts = field.substring(us + 1).split(":");
+        if (parts.length < 2) return;
+        String tag = parts[0];
+        String qualifier;
+        String value;
+        if (parts.length == 2) {
+            int slash = parts[1].indexOf('/');
+            if (slash < 0) return;
+            qualifier = parts[1].substring(0, slash);
+            value = parts[1].substring(slash + 1);
+        } else {
+            qualifier = parts[1];
+            value = String.join(":", java.util.Arrays.copyOfRange(parts, 2, parts.length));
+        }
+        handleSequencedField(seq + "_" + tag + ":" + qualifier, value, line, st);
     }
 
     private static void handleMtField(String value, ConvertState st) {
@@ -250,7 +299,7 @@ public final class NameValueConverter {
     }
 
     private void appendField(String[] tagFields, String value, String line, ConvertState st) {
-        if (tagFields.length < 2) return;
+        if (tagFields.length < 1) return;
         try {
             if (tagFields[0].startsWith("98")) {
                 value = value.replace("-", "").replace(" ", "").replace(":", "");
@@ -258,7 +307,11 @@ public final class NameValueConverter {
             if (tagFields[0].startsWith("5R")) {
                 tagFields[0] = "95R";
             }
-            st.swiftMessage.append(Field.getField(tagFields[0], tagFields[1] + "//" + value));
+            // A field with no qualifier segment (e.g. 23G, 35B -- plain, unqualified generic
+            // fields) arrives here as a single-element tagFields; SWIFT's own syntax for
+            // those has no "::qualifier//" prefix, just the raw value.
+            String fieldValue = tagFields.length >= 2 ? (tagFields[1] + "//" + value) : value;
+            st.swiftMessage.append(Field.getField(tagFields[0], fieldValue));
         } catch (Exception ex) {
             logger.warning(line);
             logger.severe(ex.getMessage());

@@ -12,6 +12,38 @@ java -jar MT-Analyze-2.0.2.jar
 
 ## Changes
 
+### Entries table: Tag / Components column layout
+
+The Entries table's column header context menu (and the row context menu's Display
+section) gained a **Show Components** checkbox that switches the whole table between the
+existing one-column-per-tag layout and a new one-column-per-field-component layout — e.g.
+`98A:PAYD` splits into its own `Date`, `Time`, ... columns, exactly the breakdown the Excel
+"Components" export already produces (reusing the same underlying split, so the two stay
+visually consistent). The Tag and Components layouts remember their own column order and
+visibility independently — switching back and forth doesn't disturb either one — and
+whichever layout is active also drives CSV export and "Copy Table". Component columns are
+only built the first time a tab actually switches to Components mode, so tabs that never
+use it pay no extra cost.
+
+### Column Statistics
+
+The Entries table's row context menu gained **Column Statistics**, computed on demand for
+just the column under the cursor (not the whole table), over the currently
+filtered/sorted rows. It shows a small card with **Count** and **Distinct Count** always,
+plus **Min**/**Max**/**Sum**/**Average** when every visible value in the column parses as
+a number (SWIFT's comma decimal separator is accepted alongside a plain dot), or
+**Min**/**Max** as dates when every value is an 8-digit SWIFT date (`yyyyMMdd`). Can be
+turned off under the new **Settings ▸ General ▸ Show "Column Statistics" in entries
+context menu** checkbox (on by default).
+
+### Settings dialog: Lucene and Elasticsearch each got their own tab
+
+The Lucene and Elasticsearch configuration sections, previously both crammed into the
+**Advanced** tab alongside Import Limits, Masking and Log File Import, now each have a
+dedicated **Lucene** / **Elasticsearch** tab of their own. Advanced keeps only Import
+Limits, Masking and Log File Import. No settings values changed — same preference keys,
+same fields, just regrouped.
+
 ### 36xx tag masking (quantity fields)
 
 **Settings ▸ Advanced ▸ Masking** gained a second checkbox, **Mask 36xx tag values (digits

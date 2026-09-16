@@ -42,6 +42,9 @@ import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.io.File;
 import java.net.URI;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.List;
 import java.util.prefs.Preferences;
@@ -62,6 +65,8 @@ public class MtEntryPanel extends JPanel {
         void onRowDeselected();
         void onFilesDropped(List<File> files);
         boolean isPowerUser();
+        /** Whether "Column Statistics" should be offered in the entries row context menu (Settings dialog toggle). */
+        boolean isColumnStatsEnabled();
         void focusDetailTag(ColumnDef cd);
         void switchDetailCard(String card);
         void exportMessageForRow(int modelRow);
@@ -82,6 +87,10 @@ public class MtEntryPanel extends JPanel {
 
     private static final String TOOLTIP_WRAP_MULTI  = "Entries: multi-line – Click to switch to single-line";
     private static final String TOOLTIP_WRAP_SINGLE = "Entries: single-line – Click to switch to multi-line";
+
+    /** Suffix appended to the shared column-order/visibility pref keys while in Components mode,
+     *  so the Tag and Components layouts are remembered independently. */
+    private static final String PREF_COMPONENTS_SUFFIX = "_comp";
 
 
     private static final List<String> REF_SEARCH_QUALIFIERS = List.of("SEME", "RELA", "TRCI", "PREV");
@@ -122,6 +131,10 @@ public class MtEntryPanel extends JPanel {
     // Wrap button – lives in this panel's own toolbar row
     private JButton  wrapBtn;
     private boolean singleLineMode  = false;
+
+    // Tag / Components column layout toggle (context menus only, no dedicated toolbar button)
+    private boolean componentsMode        = false;
+    private boolean componentPrefsApplied = false;
 
     // -----------------------------------------------------------------------
     // Data model
@@ -386,9 +399,11 @@ public class MtEntryPanel extends JPanel {
         popup.add(hideEmpty);
         JMenuItem colChooserItem = new JMenuItem("Show/Hide Columns…", ToolbarIcons.menuShowColumns());
         colChooserItem.addActionListener(ae -> ColumnChooser.show(
-            SwingUtilities.getWindowAncestor(this), model.columnDefs(),
+            SwingUtilities.getWindowAncestor(this), activeColumnDefs(),
             this::saveColumnPrefs, this::rebuildPositionTable, dict));
         popup.add(colChooserItem);
+        popup.addSeparator();
+        popup.add(makeComponentsModeItem());
         popup.show(e.getComponent(), e.getX(), e.getY());
     }
 
@@ -419,6 +434,12 @@ public class MtEntryPanel extends JPanel {
             JMenuItem showInDetail = new JMenuItem("Goto Tag", ToolbarIcons.menuSelectDetail());
             showInDetail.addActionListener(ae -> host.focusDetailTag(hoveredCd));
             popup.add(showInDetail);
+
+            if (host.isColumnStatsEnabled()) {
+                JMenuItem statsItem = new JMenuItem("Column Statistics", ToolbarIcons.menuStatistics());
+                statsItem.addActionListener(ae -> showColumnStatistics(hoveredCd, viewCol));
+                popup.add(statsItem);
+            }
         }
         addShowInEditorMenuItem(popup, modelRow);
         Entry rowEntry = model.getEntryForRow(modelRow);
@@ -431,6 +452,7 @@ public class MtEntryPanel extends JPanel {
         // ── Display ───────────────────────────────────────────────────────
         popup.addSeparator();
         popup.add(makeMultilineRowItem());
+        popup.add(makeComponentsModeItem());
 
         // ── Search & Filter ───────────────────────────────────────────────
         popup.addSeparator();
@@ -467,6 +489,30 @@ public class MtEntryPanel extends JPanel {
             repackPositionRows();
         });
         return item;
+    }
+
+    /** The list of {@link ColumnDef}s backing whichever column layout is currently shown. */
+    private List<ColumnDef> activeColumnDefs() {
+        return componentsMode ? model.componentColumnDefs() : model.columnDefs();
+    }
+
+    private JCheckBoxMenuItem makeComponentsModeItem() {
+        JCheckBoxMenuItem item = new JCheckBoxMenuItem("Show Components", componentsMode);
+        item.setToolTipText("Split each tag into one column per field component, like the Excel Components export");
+        item.addActionListener(ae -> setComponentsMode(item.isSelected()));
+        return item;
+    }
+
+    /** Switches the whole entries table between one-column-per-tag and one-column-per-component. */
+    private void setComponentsMode(boolean enabled) {
+        if (componentsMode == enabled) return;
+        componentsMode = enabled;
+        if (enabled && !componentPrefsApplied) {
+            componentPrefsApplied = true;
+            applyColumnPrefsTo(model.componentColumnDefs(),
+                prefKeys.colOrder() + PREF_COMPONENTS_SUFFIX, prefKeys.colVis() + PREF_COMPONENTS_SUFFIX);
+        }
+        rebuildPositionTable();
     }
 
     private void addShowInEditorMenuItem(JPopupMenu popup, int modelRow) {
@@ -545,6 +591,142 @@ public class MtEntryPanel extends JPanel {
         JMenuItem item = new JMenuItem("Export Message…", ToolbarIcons.menuExport());
         item.addActionListener(ae -> host.exportMessageForRow(modelRow));
         return item;
+    }
+
+    // -----------------------------------------------------------------------
+    // Column statistics – computed on demand for a single column, over the
+    // rows currently visible in the table (i.e. after sorting/filtering).
+    // -----------------------------------------------------------------------
+
+    private static final DateTimeFormatter SWIFT_DATE_FORMAT   = DateTimeFormatter.ofPattern("yyyyMMdd");
+    private static final DateTimeFormatter STATS_DATE_DISPLAY  = DateTimeFormatter.ofPattern("dd-MMM-yyyy", Locale.ENGLISH);
+
+    private record ColumnStats(int count, int distinctCount, String min, String max, String sum, String average) {}
+
+    /** Shows a small statistics card for {@code cd} below its column header, computed fresh
+     *  (only for this one column, not the whole table) at click time. */
+    private void showColumnStatistics(ColumnDef cd, int viewCol) {
+        ColumnStats stats = computeColumnStats(viewCol);
+        JPopupMenu popup = new JPopupMenu();
+        popup.setBorder(BorderFactory.createEmptyBorder());
+        popup.add(buildStatsCard(cd.label, stats));
+        Rectangle headerRect = mtEntryTable.getTableHeader().getHeaderRect(viewCol);
+        popup.show(mtEntryTable.getTableHeader(), headerRect.x, headerRect.height);
+    }
+
+    private ColumnStats computeColumnStats(int viewCol) {
+        List<String> values = new ArrayList<>();
+        int rows = mtEntryTable.getRowCount();
+        for (int r = 0; r < rows; r++) {
+            Object v = mtEntryTable.getValueAt(r, viewCol);
+            String s = v != null ? v.toString().trim() : "";
+            if (!s.isEmpty()) values.add(s);
+        }
+        int count    = values.size();
+        int distinct = new LinkedHashSet<>(values).size();
+
+        double[] numbers = tryParseAllNumeric(values);
+        if (numbers.length > 0) {
+            double min = Double.POSITIVE_INFINITY;
+            double max = Double.NEGATIVE_INFINITY;
+            double sum = 0;
+            for (double d : numbers) { min = Math.min(min, d); max = Math.max(max, d); sum += d; }
+            return new ColumnStats(count, distinct, formatStatsNumber(min), formatStatsNumber(max),
+                formatStatsNumber(sum), formatStatsAverage(sum / numbers.length));
+        }
+        String[] dateMinMax = tryDateMinMax(values);
+        return dateMinMax.length > 0
+            ? new ColumnStats(count, distinct, dateMinMax[0], dateMinMax[1], null, null)
+            : new ColumnStats(count, distinct, null, null, null, null);
+    }
+
+    /** Returns every value parsed as a number if ALL of them parse, else an empty array.
+     *  Accepts SWIFT's comma decimal separator (e.g. {@code "10,5"}) alongside a plain dot. */
+    private static double[] tryParseAllNumeric(List<String> values) {
+        if (values.isEmpty()) return new double[0];
+        double[] out = new double[values.size()];
+        for (int i = 0; i < values.size(); i++) {
+            try {
+                out[i] = Double.parseDouble(values.get(i).replace(',', '.'));
+            } catch (NumberFormatException ex) {
+                return new double[0];
+            }
+        }
+        return out;
+    }
+
+    private static String formatStatsNumber(double d) {
+        return (d == Math.rint(d) && !Double.isInfinite(d)) ? String.valueOf((long) d) : String.valueOf(d);
+    }
+
+    /** Rounds to at most 4 decimal places (trailing zeros stripped) so a repeating average
+     *  like 10/3 reads as {@code "3.3333"} instead of the raw double's full expansion. */
+    private static String formatStatsAverage(double d) {
+        return java.math.BigDecimal.valueOf(d)
+            .setScale(4, java.math.RoundingMode.HALF_UP)
+            .stripTrailingZeros()
+            .toPlainString();
+    }
+
+    /** Returns {min, max} (formatted) if every value parses as an 8-digit SWIFT date
+     *  ({@code yyyyMMdd}), else an empty array. */
+    private static String[] tryDateMinMax(List<String> values) {
+        if (values.isEmpty()) return new String[0];
+        LocalDate min = null;
+        LocalDate max = null;
+        for (String s : values) {
+            LocalDate d;
+            try {
+                d = LocalDate.parse(s, SWIFT_DATE_FORMAT);
+            } catch (DateTimeParseException ex) {
+                return new String[0];
+            }
+            if (min == null || d.isBefore(min)) min = d;
+            if (max == null || d.isAfter(max))  max = d;
+        }
+        return new String[]{min.format(STATS_DATE_DISPLAY), max.format(STATS_DATE_DISPLAY)};
+    }
+
+    private static JComponent buildStatsCard(String columnLabel, ColumnStats stats) {
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(Color.GRAY), BorderFactory.createEmptyBorder(8, 12, 8, 12)));
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.insets = new Insets(2, 0, 2, 18);
+
+        int row = 0;
+        JLabel title = new JLabel(columnLabel);
+        title.setFont(title.getFont().deriveFont(Font.BOLD));
+        gbc.gridx = 0; gbc.gridy = row++; gbc.gridwidth = 2;
+        panel.add(title, gbc);
+        gbc.gridwidth = 1;
+
+        if (stats.min() != null) {
+            row = addStatsRow(panel, gbc, row, "Min:", stats.min());
+            row = addStatsRow(panel, gbc, row, "Max:", stats.max());
+        }
+        if (stats.sum() != null) {
+            row = addStatsRow(panel, gbc, row, "Sum:", stats.sum());
+            row = addStatsRow(panel, gbc, row, "Average:", stats.average());
+        }
+        row = addStatsRow(panel, gbc, row, "Count:", String.valueOf(stats.count()));
+        addStatsRow(panel, gbc, row, "Distinct Count:", String.valueOf(stats.distinctCount()));
+        return panel;
+    }
+
+    private static int addStatsRow(JPanel panel, GridBagConstraints gbc, int row, String label, String value) {
+        gbc.gridx = 0; gbc.gridy = row;
+        JLabel labelComp = new JLabel(label);
+        labelComp.setForeground(new Color(0x1A5FB4));
+        panel.add(labelComp, gbc);
+
+        gbc.gridx = 1;
+        JLabel valueComp = new JLabel(value);
+        valueComp.setFont(valueComp.getFont().deriveFont(Font.BOLD));
+        panel.add(valueComp, gbc);
+        return row + 1;
     }
 
     // -----------------------------------------------------------------------
@@ -728,7 +910,7 @@ public class MtEntryPanel extends JPanel {
     private void syncColumnOrder() {
         int n = mtEntryTable.getColumnModel().getColumnCount();
         if (n == 0) return;
-        List<ColumnDef> active = model.columnDefs();
+        List<ColumnDef> active = activeColumnDefs();
         List<ColumnDef> reordered = new ArrayList<>(n);
         for (int i = 0; i < n; i++) {
             String lbl = String.valueOf(mtEntryTable.getColumnModel().getColumn(i).getHeaderValue());
@@ -742,14 +924,15 @@ public class MtEntryPanel extends JPanel {
 
     /** Puts the pinned Typ/MT columns first, sorts the rest by display sequence. */
     private void sortColumnsBySequence() {
-        model.sortColumnsBySequence();
+        if (componentsMode) model.sortComponentColumnsBySequence();
+        else                model.sortColumnsBySequence();
         rebuildPositionTable();
         saveColumnPrefs();
     }
 
     public ColumnDef visibleColumnDefAt(int viewIndex) {
         int count = 0;
-        for (ColumnDef cd : model.columnDefs()) {
+        for (ColumnDef cd : activeColumnDefs()) {
             if (cd.isVisible()) {
                 if (count == viewIndex) return cd;
                 count++;
@@ -761,13 +944,15 @@ public class MtEntryPanel extends JPanel {
     private void saveColumnPrefs() {
         StringBuilder order = new StringBuilder();
         StringBuilder vis   = new StringBuilder();
-        for (ColumnDef cd : model.columnDefs()) {
+        for (ColumnDef cd : activeColumnDefs()) {
             if (!order.isEmpty()) { order.append('\n'); vis.append('\n'); }
             order.append(cd.key.replace('\t', '|'));
             vis.append(cd.isVisible() ? '1' : '0');
         }
-        putChunked(prefKeys.colOrder(), order.toString());
-        putChunked(prefKeys.colVis(),   vis.toString());
+        String orderKey = componentsMode ? prefKeys.colOrder() + PREF_COMPONENTS_SUFFIX : prefKeys.colOrder();
+        String visKey   = componentsMode ? prefKeys.colVis()   + PREF_COMPONENTS_SUFFIX : prefKeys.colVis();
+        putChunked(orderKey, order.toString());
+        putChunked(visKey,   vis.toString());
     }
 
     /** Splits {@code value} across {@code baseKey}, {@code baseKey.1}, ... to stay under
@@ -795,12 +980,16 @@ public class MtEntryPanel extends JPanel {
     }
 
     public void applyColumnPrefs() {
-        String orderPref = getChunked(prefKeys.colOrder());
-        String visPref   = getChunked(prefKeys.colVis());
+        applyColumnPrefsTo(model.columnDefs(), prefKeys.colOrder(), prefKeys.colVis());
+    }
+
+    /** Reorders/hides {@code cols} in place to match the saved prefs under {@code orderKey}/{@code visKey}. */
+    private void applyColumnPrefsTo(List<ColumnDef> cols, String orderKey, String visKey) {
+        String orderPref = getChunked(orderKey);
+        String visPref   = getChunked(visKey);
         if (orderPref.isEmpty()) return;
         String[] savedKeys = orderPref.split("\n", -1);
         String[] savedVis  = visPref.split("\n", -1);
-        List<ColumnDef> cols = new ArrayList<>(model.columnDefs());
         Map<String, ColumnDef> byKey = new LinkedHashMap<>();
         for (ColumnDef cd : cols) byKey.put(cd.key, cd);
         List<ColumnDef> ordered = new ArrayList<>(cols.size());
@@ -811,7 +1000,8 @@ public class MtEntryPanel extends JPanel {
             ordered.add(cd);
         }
         ordered.addAll(byKey.values());
-        cols.clear(); cols.addAll(ordered);
+        cols.clear();
+        cols.addAll(ordered);
     }
 
     /** Hides every currently visible column that has no non-blank value in the currently filtered rows. */
@@ -819,7 +1009,7 @@ public class MtEntryPanel extends JPanel {
         int rowCount = mtEntryTable.getRowCount();
         if (rowCount == 0) return;
         List<ColumnDef> visibleDefs = new ArrayList<>();
-        for (ColumnDef cd : model.columnDefs()) if (cd.isVisible()) visibleDefs.add(cd);
+        for (ColumnDef cd : activeColumnDefs()) if (cd.isVisible()) visibleDefs.add(cd);
         boolean changed = false;
         for (int modelCol = 0; modelCol < visibleDefs.size(); modelCol++) {
             boolean hasValue = false;
@@ -836,7 +1026,7 @@ public class MtEntryPanel extends JPanel {
     }
 
     public void rebuildPositionTable() {
-        List<ColumnDef> activeDefs = model.columnDefs();
+        List<ColumnDef> activeDefs = activeColumnDefs();
         List<Map<String, String>> activeRows = model.getRowData();
         List<ColumnDef> visible = new ArrayList<>();
         for (ColumnDef cd : activeDefs) if (cd.isVisible()) visible.add(cd);
@@ -922,7 +1112,11 @@ public class MtEntryPanel extends JPanel {
         if (finSearchField != null) finSearchField.setText("");
     }
 
-    public void loadBatch(List<SwiftMessage> msgs, List<ColumnDef> cols)   { model.loadBatch(msgs, cols); }
+    public void loadBatch(List<SwiftMessage> msgs, List<ColumnDef> cols) {
+        componentsMode = false;
+        componentPrefsApplied = false;
+        model.loadBatch(msgs, cols);
+    }
     public void mergeBatch(List<SwiftMessage> msgs, List<ColumnDef> cols)  { model.mergeBatch(msgs, cols); }
 
     public void deleteFinRow(int modelRow) {
@@ -992,7 +1186,9 @@ public class MtEntryPanel extends JPanel {
             visible.add(model.getMessageForRow(mtEntryTable.convertRowIndexToModel(viewRow)));
         return new ArrayList<>(visible);
     }
-    public List<ColumnDef>           getColumnDefs()                        { return model.getColumnDefs(); }
+    public List<ColumnDef>           getColumnDefs()                        {
+        return componentsMode ? model.getComponentColumnDefs() : model.getColumnDefs();
+    }
     public List<Map<String, String>> getRowData()                           { return model.getRowData(); }
     public List<SwiftTagListBlock>   getFullDisplaySequences()              { return model.getFullDisplaySequences(); }
     public SwiftMessage              getMessageForRow(int r)                { return model.getMessageForRow(r); }
