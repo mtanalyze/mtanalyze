@@ -508,13 +508,41 @@ final class EntryPanelModel {
         "500", "CLTDET",
         "501", "CLTDET",
         "670", "SSIDET",
-        "671", "SSIDET"
+        "671", "SSIDET",
+        "321", "SETDET"
     );
 
-    /** MT types with no repeating sequence at all -- each becomes a single flat table row. */
+    /**
+     * MT types with no single, unambiguous top-level repeating row sequence -- each whole
+     * message becomes one flat table row instead. Most listed here (527, 558, 578, 565,
+     * 566, 568, 514, 515, 517, 518, 599, 370, 380, 381, 941, 508, 516, 526, 581, 590, 591,
+     * 592, 595, 596, 598) simply have no repeating sequence at all -- most of the second
+     * group don't even use {@code :16R:}/{@code :16S:} sequences, so they'd already fall
+     * through to flat mode via the generic check at the bottom of this method; they're
+     * listed explicitly anyway so the mapping stays discoverable in one place. MT 509,
+     * 502-507, 510, 513, 519, 524, 538, 549, 575, 576 and 586 do have repeating/optional
+     * sub-sequences (e.g. MT 506's Exposure Details and Collateral Details both repeat at
+     * the top level, MT 503/504/505/507 have a repeating Collateral/Settlement Details
+     * block followed by a trailing single Additional Information sequence), but none of
+     * them has the clean "one row sequence, everything else is header or nested" shape the
+     * wrapper-less row mode (see {@link MtParser#parse}) needs -- flattening keeps every
+     * field visible (with occurrence-numbered columns for the repeats) instead of silently
+     * dropping whatever comes after the last row. Critically, leaving one of these
+     * unlisted would NOT just fall back to flat mode: MT 538 and MT 576 both have a real
+     * sequence qualified {@code FIN} ("Financial Instrument"), and the generic fallback at
+     * the bottom of this method would return {@code "TRAN"} for any MT with 16R tags,
+     * routing them into the hard-coded GENL/SUBSAFE/FIN/TRAN state machine built for MT
+     * 535/536/548 -- which would treat that unrelated {@code FIN} sequence as the
+     * transaction wrapper, never find a {@code TRAN} segment inside it, and silently
+     * produce zero entries.
+     */
     private static final Set<String> FLAT_MODE_TYPES = Set.of(
         "527", "558", "578", "565", "566", "568",
-        "509", "514", "515", "517", "518", "599"
+        "509", "514", "515", "517", "518", "599",
+        "370", "380", "381", "941",
+        "502", "503", "504", "505", "506", "507", "508",
+        "510", "513", "516", "519", "524", "526", "538", "549",
+        "575", "576", "581", "586", "590", "591", "592", "595", "596", "598"
     );
 
     static String detectRowSequence(AbstractMT mt) {
@@ -527,7 +555,7 @@ final class EntryPanelModel {
         if ("569".equals(type)) return detect569RowSequence(mt.getSwiftMessage().getBlock4());
         if (type != null && type.matches("54[0-8]")) return null;
         if (type != null && FLAT_MODE_TYPES.contains(type)) return null;
-        if ("940".equals(type) || "950".equals(type)) return "61";
+        if ("940".equals(type) || "942".equals(type) || "950".equals(type)) return "61";
 
         SwiftTagListBlock b4 = mt.getSwiftMessage().getBlock4();
         if (b4 != null && b4.getTags().stream().noneMatch(t -> "16R".equals(t.getName()))) return null;

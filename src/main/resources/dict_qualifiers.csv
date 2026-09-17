@@ -561,3 +561,186 @@ XCDT;Expected Confirmation Date – Date on which the confirmation is expected.
 YIEL;Yield Type Indicator – Specifies the type of yield at which the transaction was effected.
 YTMR;Yield To Maturity Rate – Rate of return anticipated on a bond when held until maturity date.
 ZWIS;Zwischengewinn – Zwischengewinn.
+# Added from ISO15022_Data_Field_Dictionary_SR2025.xlsx (SR2025_GenericFields sheet)
+ACCT;Currency of Account – base currency of the account
+AEXP;Adjusted Exposure Amount – total amount of collateral required (unrounded)
+AGRE;Agreement Version Number – number identifying the version of the agreement
+ALLE;Allegement Status – provides the status of the allegement reported in a delta statement
+AUTO;Auto Routing Indicator – specifies whether an automatic routing system is involved
+BCOL;Type of Other Collateral Indicator – specifies whether the other collateral is a bank guarantee or a documentary credit
+BUYE;Buy Currency and Amount – these are the currency and amount that have been bought
+CANR;Cancellation Right Indicator – specifies the cancellation right of an investor with respect to an investment fund order
+CCAL;Collateral Call Amount – amount of new or additional collateral claimed by the taker
+CCAM;Counter Amount – counter amount
+CHAI;Currency Haircut – haircut or valuation factor on the currency of the collateral expressed as a percentage
+CINT;Currency and Current Interest Amount – the currency and interest amount to be paid at the current interest payment date
+CLCL;Client Classification Number – number identifying the client classification, for example, standard, preferred, privileged. The classification numbering signification is to be provided by the account servicer in the SLA with the account owner
+CLTY;Client Type Number – number identifying the client type number, for example, private client, institutional client. The type numbering signification is to be provided by the account servicer in the SLA with the account owner
+CNTR;Counter Currency – counter Currency to buy or sell in relation to the trade
+COAL;Collateral Action Type Indicator – specifies the type of operation performed within the collateral management life cycle
+COMI;Commodity Index Narrative – provides the description of the commodity or index traded
+CONM;Contingent Margin Amount – amount of the contingent margin
+CONU;Contract Number Reference – reference of the contract number of the transaction from the point of view of the Sender, or of the institution/corporate on behalf of which the message is sent
+COPC;Collateral Portfolio Code Reference – reference assigned by the Receiver to identify the portfolio of trades that is collateralised
+CORE;Collateral Required Amount – total amount of collateral required (rounded)
+CPTR;Counterparty's Deal Reference – reference assigned by the Receiver to identify the deal
+CRET;Value of Collateral to be Returned – amount of collateral to be returned to the giver
+DEPO;Deposit Amount – amount of money to be deposited
+DPLO;Lender/Borrower Indicator – this field indicates whether the Sender, or the institution/corporate on behalf of which the message is sent is the borrower or the lender
+EFFD;Effective Date Indicator – specifies how the SSI update effective date is to be applied
+EXPO;Exposure Narrative – provides additional information regarding the transaction which could not be reported in any other field, for example, the sub-product type or underlying issuer
+FORC;Date/Time in Force – date/time at which the order was received by the executing party
+FROM;Balance From – balance from which the securities are moving
+FXOR;FX Order Reference – reference assigned by the Sender to unambiguously identify the FX Order
+FXTR;FX Order Transaction Type Indicator – type of FX Order transaction contained in the FX Order details of the message
+GUAR;Guarantee Amount – amount of the bank guarantee
+INCL;Intermediary Closing Balance – closing balance of this page only. This balance must be the intermediary opening balance of the next page of the same statement
+INDA;Independent Amount – non recoverable add-on amount to the exposure at trade level
+INIM;Initial Margin Amount – amount of the initial margin
+INOP;Intermediary Opening Balance – opening balance of this page only. This balance must be the intermediary closing balance of the previous page of the same statement
+LDCR;Deposit Common Reference – this field contains the common reference of the MT 320 exchanged to confirm the fixed loan/deposit
+LDFP;Last Day of First Interest Period – the last day of the first/next interest period
+LOCR;Letter of Credit Amount – amount of the documentary credit
+MARK;Market Area Indicator – specifies the market to which the SSI relates
+MITR;Minimum Transfer Amount – minimum additional collateral amount required above the collateral held
+MKTV;Market Value Amount – total marked to market value of the trade in the reporting currency. It is the dirty price, that is, the accrued interest is included if any
+NEWA;New Address – indicates whether the address is a new address
+NINT;Currency and Next Interest Amount – the currency and interest amount to be paid at the next interest payment date
+NRAD;Netted Independent Amount – non recoverable add-on amount to the exposure
+OPCA;Opening Cash Amount – opening amount of money
+ORGV;Original Face Amount – original par or nominal value of a financial instrument
+OWNF;Ownership Flag – indicates whether the collateral giver owns the proposed collateral
+PEVA;Previous Market Price Value – exposure Value at Previous Valuation
+PMTH;Payment Method Indicator – specifies what kind of payment method is permitted
+PRCD;Precedence Indicator – specifies precedence details for the SSI
+PRCO;Pre-Allocation Condition Indicator – specifies the method used to round up, round down or pro-rate the quantity of securities to allocate
+PRCV;Previous Collateral Value – value of Collateral at Previous Valuation
+PRHA;Pre-haircut Collateral Value – total value of posted collateral (pre-haircut) held by the taker
+PRIT;Principal and Interest – settlement instructions for principal and interest amounts
+PTYA;Party A – party that is advising the net position, unless the message is sent by a central netting system, in this case, the party A is being advised of the net position
+PTYB;Party B's Exposure Amount – exposure from the counterparty's viewpoint (needed for certain types of agreements)
+RADD;Basic Amount – recoverable add-on amount to the exposure
+RECA;Reported Currency and Amount – total amount of the trade in the reporting currency
+RECP;Receive Pay Indicator – indicates whether the netting amount is to be received or paid by Party A
+REMI;Amount Remaining on Order – amount of money of the original order which remains on order
+REPA;Repurchase Amount – amount of money to be settled in the second part of the repurchase agreement
+REQU;Requested Message Type – number identifying the type of message or statement requested
+RERC;Registration Processing Status – provides the status of the registration processing
+RMTH;Rounding Method Requested – specifies the rounding direction applied to fractional numbers, for example, round up
+RODI;Currency and Increase/Decrease Amount – the amount added or substracted to/from the principal at rollover
+ROUN;Rounding Integer Amount – amount to which the value of the collateral collected may be rounded up
+RSET;Requested Settlement Date – date on which the instructing party requests settlement of the collateral to take place
+RVAL;Requested Value Date/Time – date/time at which the cash movement is requested to take place
+SCOL;Collateral Settlement Type Indicator – specifies how the collateral will be settled
+SSBI;Securities Sub-balance Identification – number identifying a sub-balance constituting a quantity of financial instrument
+SSIP;SSI Purpose – specifies the purpose of the individual SSI
+SSIR;SSI Reference – reference of the individual SSI
+STRT;Start Date – date on which the deal starts or becomes effective
+SUBM;Submitting Party – party that is the Sender of the SSI update notification. In many situations this party is also the beneficiary
+SWRT;Switch Rate – to be used for 'switch to' instructions (22F::BUSE//SWIT) and for 1 to n switch to scenarios (Funds Industry)
+TCRL;Total Credit Line Amount – applicable credit line amount
+TERM;Closing Date – closing date or maturity date of the transaction
+THRS;Secured Threshold Amount – amount of secured risk the exposed party is willing to tolerate. If the exposure is bigger than this amount, the whole exposure needs to be offset otherwise no collateral is needed
+THRU;Unsecured Threshold Amount – amount for which the exposed party doesn't have to post collateral. The difference between the total exposure amount and this amount needs to be collateralised
+TILI;Time Limit – specifies from/until when an order must be executed
+TLDE;Type of Loan/Deposit Event – this field specifies the event in the life of the loan/deposit
+TOBA;Balance To – balance to which the securities are moving
+TOOR;Type of Order – specifies the type of instruction to a broker/dealer to buy or sell a financial instrument
+TOSE;Total of Linked Instructions – total number of instructions that are linked together
+TRSE;Trading Session Indicator – specifies the trading phase at the stock exchange
+UDTP;SSI Update Type – specifies the type of SSI update notification
+# Added from ISO15022_Data_Field_Dictionary_SR2025.xlsx (SR2025_DiscreteFields sheet -- 16R/16S sequence codes)
+ACCTINFO;Account Information
+ACTCURR;Activity Information Per Currency
+ACTINFO;Activity Information Per Transaction
+ADDRESS;Address
+ADVD;Advice – message sent for an instruction by the counterparty that has not yet been matched
+ALLDET;Allegement Details
+AMND;Amendment – amended Netting Position Advice message
+AMT;Amounts
+BENODET;Beneficial Owner Details
+BREAK;Amount Breakdown
+BYSTAREA;Statement by Status/Reason and/or by Financial Instrument
+CACONF;Corporate Action Confirmation
+CADETL;Corporate Action Details
+CAINST;Corporate Action Instruction
+CALDET;Calculation Details
+CAOPTN;Corporate Action Options
+CASHACCT;Cash Account Activity
+CASHDET;Cash Only Movement Details
+CASHMOVE;Cash Movement
+CASHSECDET;Cash and Securities Movement Details
+CASHSET;Cash Settlement Details
+CASHSET1;Cash Settlement Details
+CAST;Cancellation Request Status – message reporting on a cancellation request status
+CCOL;Cash Collateral Details
+CLTDET;Client Details
+COLD;Collateral Details
+COLLPRTY;Collateral Parties
+CONFDET;Confirmation Details
+CONFPRTY;Confirmation Parties
+CSHPRTY;Cash Parties
+CSHPRTY1;Cash Parties
+DEALTRAN;Deal Transaction Details
+DISPAR;Distribution Parameter
+EVST;Event Status – message reporting on a corporate action event status
+EXPD;Exposure Valuation Details
+FIA;Financial Instrument Attributes
+FIAC;Financial Instrument/Account
+FREEASS;Free Asset Activity
+FXORDER;FX Order Details
+INPOS;Intra-Position Movement
+INPOSDET;Intra-Position Details
+INTSEC;Intermediate Securities
+LDDET;Loan/Deposit Details
+LDPRTY1;Loan/Deposit Parties 1
+LDPRTY2;Loan/Deposit Parties 2
+NETPOS;Netting Position Details
+NTWKFEE;Digital Network Fee
+ORDER;Order Details
+ORDRDET;Order Details
+ORDRPRTY;FX Order Party
+OTHRDET;Other Details
+OTHRPRTY;Other Parties
+PAFILL;Partial Fill Details
+PENA;Penalties
+PENACOUNT;Penalties per Counterparty
+PENACUR;Penalties per Currency for a Party
+PENDET;Penalty Details
+PERSDET;Personal Details
+PORT;Portfolio Transfer – the Statement of Settlement Allegements relates to a client portfolio move from an account servicer to another
+RCAP;Recap Details
+RECDEL;Receiver/Deliverer
+RECO;Reconciliation Only – settlement instruction is already on the market. Sent by an account owner to an account servicer or vice versa for reconciliation purposes
+REF;By Instruction Reference
+REFPRICE;Reference Price Information
+REGDET;Registration Details
+RELTRAN;Related Transaction
+REPE;Eligible Balance Notification – message reporting an eligible balance that may or may not include an entitlement calculation or a revised entitlement calculation
+REPV;Repo Valuation Details
+REQD;Request Details
+RMDR;Reminder – message sent as a reminder of an event taking place
+RVSL;Reversal – message sent to reverse a previously sent confirmation
+SECDET;Securities Details
+SECMOVE;Securities Movement
+SECS;Securities Valuation Details
+SETDET;Settlement Details
+SETDET1;Settlement Details
+SETPRTY1;Settlement Parties
+SETTL;General Settlement Details
+SETTRAN;Settlement Transaction Details
+SSIDET;Standing Settlement Instruction Details
+SUBBAL;Sub-balance
+SUMC;Summary by Counterparty
+SUMD;Summary Details
+SUME;Summary by Exposure Type
+SUMM;Overall Summary
+TAXVODET;Tax Voucher Details
+TRADDET;Trade Details
+TRADE;Trade Details
+TRADPRTY;Trading Parties
+TRANS;Transactions
+TREA;Treasury Valuation Details
+UNDE;Underlying Transaction Details
+USECU;Underlying Securities
+VALDET;Valuation Details

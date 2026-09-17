@@ -12,6 +12,78 @@ java -jar MT-Analyze-2.0.2.jar
 
 ## Changes
 
+### Dictionary completed from the ISO15022 Data Field Dictionary (SR2025)
+
+Filled every gap between the bundled tag/qualifier/qualifier-value dictionaries
+(`dict_tags.csv`, `dict_qualifiers.csv`, `dict_qualifier_values.csv`) and SWIFT's official
+`ISO15022_Data_Field_Dictionary_SR2025.xlsx` (its `SR2025_GenericFields` and
+`SR2025_DiscreteFields` sheets): 8 new tag descriptions, 181 new qualifier descriptions
+(87 field qualifiers plus 94 `:16R:`/`:16S:` sequence codes such as `SETDET` or `SSIDET`
+that share the same qualifier-tooltip lookup), and 298 new qualifier-value pairs (coded
+field values, e.g. `TOOR` order types or `CASY` clearing systems). Existing hand-curated
+entries were left untouched — this only adds what was missing, sourced directly from the
+official dictionary.
+
+### Remaining SWIFT category 5 message types
+
+Added parsing support for the rest of Prowide's SWIFT category 5 message types: **MT
+510** (Registration Status and Processing Advice), **MT 513** (Client Advice of
+Execution), **MT 516** (Securities Loan Confirmation), **MT 519** (Modification of Client
+Details), **MT 524** (Intra-Position Instruction), **MT 526** (General Securities
+Lending/Borrowing Message), **MT 538** (Statement of Intra-Position Advices), **MT 549**
+(Request for Statement/Status Advice), **MT 575** (Report of Combined Activity), **MT
+576** (Statement of Open Orders), **MT 581** (Collateral Adjustment Message), **MT 586**
+(Statement of Settlement Allegements), **MT 590/591** (Advice/Request for Charges,
+Interest and Other Adjustments), **MT 592** (Request for Cancellation), **MT 595/596**
+(Queries/Answers) and **MT 598** (Proprietary Message). Nine of these (516, 526, 581,
+590-592, 595, 596, 598) don't use `:16R:`/`:16S:` sequences at all and already fell
+through to flat mode automatically; the other nine (510, 513, 519, 524, 538, 549, 575,
+576, 586) needed an explicit flat-mode entry, same reasoning as MT 502-508: none has a
+single top-level repeating sequence clean enough for the wrapper-less row mode.
+Importantly, MT 538 and MT 576 each have a real sequence qualified `FIN` ("Financial
+Instrument") — without an explicit flat-mode entry they'd have been routed into the
+generic fallback built for MT 535/536/548, which treats any `FIN`-qualified sequence as
+that family's transaction wrapper and would have silently produced zero table rows.
+
+### MT 502-508 support
+
+Added parsing support for **MT 502** (Order to Buy or Sell), **MT 503** (Collateral
+Claim), **MT 504** (Collateral Proposal), **MT 505** (Collateral Substitution), **MT 506**
+(Collateral and Exposure Statement), **MT 507** (Collateral Status and Processing Advice)
+and **MT 508** (Intra-Position Advice). Unlike the wrapper-less row types (MT 530, 564,
+567, 569, 500/501, 670/671, 321), none of these has a single, unambiguous top-level
+repeating sequence to key one table row off: MT 506 has two independent repeating blocks
+(Exposure Details and Collateral Details), MT 502-505/507 each have a repeating
+Collateral/Settlement/Order Details block followed by a trailing single Additional
+Information sequence that a wrapper-less row would silently drop once the last row closed,
+and MT 508 has no repeat at all. All seven parse in flat mode instead — the same mode
+already used for MT 509, 578, 599 and others — so every message becomes one table row with
+occurrence-numbered columns for whatever repeats (e.g. `COLD 22H (1)`, `COLD 22H (2)`),
+with nothing lost regardless of how the sequences are arranged.
+
+### MT 941 / MT 942 support
+
+Added parsing support for **MT 941** (Balance Report) and **MT 942** (Interim Transaction
+Report), alongside the existing MT 940/950 cash statements. MT 942 has the same repeating
+`:61:` transaction sequence as MT 940/950, so it reuses that statement mode unchanged — one
+row per `:61:`, with header fields (including the mandatory Floor Limit `34F` and Date/Time
+Indication `13D`) carried into every row. MT 941 has no `:61:` sequence at all — it's a
+point-in-time balance snapshot — so each message becomes a single flat table row, like MT
+578 and MT 599.
+
+### MT 321, MT 370, MT 380, MT 381 support
+
+Added parsing support for four SWIFT category 3 (treasury markets) message types:
+**MT 321** (Instruction to Settle a Third Party Loan/Deposit), **MT 370** (Netting Position
+Advice), **MT 380** (Foreign Exchange Order) and **MT 381** (Foreign Exchange Order
+Confirmation). MT 321 has a genuinely repeating **Settlement Details** (`SETDET`) block, so
+each one becomes its own row — the same wrapper-less row pattern already used for MT 530,
+MT 564, MT 567, MT 569, MT 500/501 and MT 670/671 — with the General Information and
+Deposit Details sequences carried into every row and the nested Settlement Parties
+(`SETPRTY`) folded in. MT 370, MT 380 and MT 381 have no repeating detail sequence at all
+(Net Position / FX Order Details occurs at most once per message), so each message becomes
+a single flat table row instead, like MT 578 and MT 599.
+
 ### MT 670 / MT 671 support
 
 Added parsing support for **MT 670** (Standing Settlement Instruction Update Notification

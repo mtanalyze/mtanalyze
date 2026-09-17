@@ -63,3 +63,12 @@ tag;description
 98B;Date/Time – coded date or date-time indicator value (e.g. NACT = not applicable / not acting)
 98C;Date/Time – full date and time in YYYYMMDDHHmmss format (format :4!c//8!n6!n)
 99A;Number Count – count of transactions, items or days expressed as a signed integer
+# Added from ISO15022_Data_Field_Dictionary_SR2025.xlsx (SR2025_GenericFields sheet)
+20N;Reference – qualified free-text reference, e.g. a cryptographic nonce (format :4!c//35x)
+92C;Rate – qualified rate or index name, with optional data source scheme (format :4!c/[8c]/24x)
+92D;Rate – qualified pair of decimal quantities (format :4!c//15d/15d)
+92F;Rate – qualified currency amount used to express a rate-related value, e.g. an equalisation rate (format :4!c//3!a15d)
+92J;Rate – qualified rate type, currency amount and optional rate status, with optional data source scheme (format :4!c/[8c]/4!c/3!a15d[/4!c])
+93A;Balance – qualified sub-balance type code, with optional data source scheme (format :4!c/[8c]/4!c)
+94E;Place – qualified free-text address/location, up to 10 lines of 35 characters (format :4!c//10*35x)
+99B;Number Count – qualified numeric count value (format :4!c//3!n)

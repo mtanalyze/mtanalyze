@@ -1660,3 +1660,351 @@ UPDT;OTHR;Other - See narrative.
 YIEL;CALL;To Call - Transaction was effected at yield to call.
 YIEL;CURR;Current - Transaction was effected at current yield.
 YIEL;MATU;Maturity - Transaction was effected at yield to maturity.
+
+# -----------------------------------------------------------------------
+# Added from ISO15022_Data_Field_Dictionary_SR2025.xlsx (SR2025_GenericFields sheet)
+# -----------------------------------------------------------------------
+
+AGRE;AFBA;AFB Agreement - French Banker's Association Agreement
+AGRE;BBAA;BBA Agreement - British Banker's Association Agreement
+AGRE;DERV;German Rahmenvertrag Agreement - German Rahmenvertrag Agreement
+AGRE;ISCN;ISDA Master Agreement plus Additional Disruption Event Provisions for an Offshore Deliverable CNY Transaction - International Swaps and Derivatives Association Agreement plus Additional Disruption Event Provisions for an Offshore Deliverable CNY Transaction
+AGRE;ISDA;ISDA Agreement - International Swaps and Derivatives Association Agreement
+AGRE;NONR;No Reference - No information about the master agreement is available
+
+ALLE;CAND;Cancelled - Allegement has been cancelled since the previous delta statement. The allegement was cancelled because of a mistake by the sender or because the alleging party cancelled its instruction
+ALLE;REJT;Rejected - Allegement has been rejected since the previous delta statement. The allegement was rejected because of a reason mentioned in the reason field
+ALLE;REMO;Removed - Allegement has been removed since the previous delta statement. The allegement was removed because the alleged party sent its instruction
+
+ALTE;EMPL;Employee Identification Number - Number assigned to a specific employee for employee trade reporting
+
+AUTO;DDOT;Designated Order Turnaround System - Indicates the Designated Order Turnaround system: a computerised order routing system used at the New York Stock Exchange
+AUTO;SDOT;Evolution of the DOT System - Indicates the evolution of the DOT system, (Designated Order Turnaround system): a computerized order routing system used at the New York Stock Exchange
+
+BCOL;GCOL;Bank Guarantee - Collateral is a bank guarantee
+BCOL;LCOL;Documentary Credit - Collateral is a documentary credit
+
+CAND;CREG;Cancelled by Issuer/Registrar - Instruction has been cancelled by the issuer/registrar
+
+CANR;NOIN;Not Entitled-Institutional - Investor is not entitled to cancellation rights under compliance rules as the investor is an institutional investor
+CANR;NOWA;Not Entitled-Waiver - Investor is not entitled to cancellation rights under compliance rules as the investor has agreed to waive those rights
+CANR;NOXO;Not Entitled-Execution Only - Investor is not entitled to cancellation rights under compliance rules, as the investor is an execution's only client
+CANR;VALI;Cooling-Off - Investor is entitled to a cooling off period with cancellation rights under compliance rules
+
+CASH;CCFA;Client Cash Flow - Cash movement relates to client cash flow (contribution or withdrawal)
+CASH;CHAR;Charges/Fees - Cash movement relates to charges/fees
+CASH;CHKA;Cheques - Cash movement relates to cheques
+CASH;CLLE;Collections - Cash movement relates to collections
+CASH;CLRA;Cash Letter/Cheques Remittance - Cash movement relates to cash letters/cheques remittance
+CASH;DCRE;Documentary Credit - Cash movement relates to documentary credit
+CASH;ECKA;Eurocheques - Cash movement relates to eurocheques
+CASH;FEXA;Foreign Exchange - Cash movement relates to foreign exchange
+CASH;FMVA;Futures Margin Variation - Cash movement relates to futures margin variation
+CASH;IMFA;Investment Management Fees - Cash movement relates to investment management fees
+CASH;INTA;Cash Interest on Long Cash Balance - Cash movement relates to interest on a long cash balance
+CASH;STAM;Stamp Duty - Cash movement relates to stamp duty
+CASH;TAXA;Tax Reclaim - Cash movement relates to a tax reclaim
+CASH;TCFA;Trust/Custody Fees - Cash movement relates to trust/custody fees
+CASH;TCKA;Travellers Cheques - Cash movement relates to travellers cheques
+CASH;VDAA;Value Date Adjustment - Cash movement relates to value date adjustment
+CASH;WITH;Withholding Tax - Cash movement relates to withholding tax
+
+CASY;ABEC;EBA EURO Clearing (EBA) - Settle money through EBA EURO Clearing (EBA)
+CASY;ARTI;ARTIS (AT) - Settle money through ARTIS (AT)
+CASY;AUCL;Payment Delivery System/RITF-RTGS (AU) - Settle money through Payment Delivery System/RITF-RTGS (AU)
+CASY;AVPS;AVP (NZ) - Settle money through AVP (NZ)
+CASY;BELS;ELLIPS (BE) - Settle money through ELLIPS (BE)
+CASY;BOFI;BOF (FI) - Settle money through BOF (FI)
+CASY;BOJS;Bank of Japan System - Settle money through Bank of Japan System
+CASY;BRLI;BIREL (IT) - Settle money through BIREL (IT)
+CASY;DELS;EUROLINK SYSTEM (DE) - Settle money through EUROLINK SYSTEM (DE)
+CASY;DKCS;DEBES (DK) - Settle money through DEBES (DK)
+CASY;EAFD;EAF - EURO ACCESS FRANKFURT (DE) - Settle money through EAF - EURO ACCESS FRANKFURT (DE)
+CASY;EBAC;EBA EURO Clearing (Members) - Settle money through EBA EURO Clearing (Members)
+CASY;EPMS;EPM - ECB Payment Mechanism - Settle money through EPM - ECB Payment Mechanism
+CASY;HERM;HERMES EURO (GR) - Settle money through HERMES EURO (GR)
+CASY;HSVP;HSVP (HR) - Settle money through HSVP (HR)
+CASY;IRIS;IRIS (IE) - Settle money through IRIS (IE)
+CASY;LIPS;LIPS GROSS (LU) - Settle money through LIPS GROSS (LU)
+CASY;LVTS;LVTS (CA) - Settle money through LVTS (CA)
+CASY;NICS;NICS (NO) - Settle money through NICS (NO)
+CASY;PCHS;Payment System Switzerland (CH) - Settle money through Payment System Switzerland (CH)
+CASY;PEGE;Payment System in Egypt (EG) - Settle money through Payment System in Egypt (EG)
+CASY;PNSF;PNS (FR) - Settle money through PNS (FR)
+CASY;PVEV;PVE (VE) - Settle money through PVE (VE)
+CASY;RIXS;RIX (SE) - Settle money through RIX (SE)
+CASY;SAMO;SAMOS (ZA) - Settle money through SAMOS (ZA)
+CASY;SEPI;SEPI (ES) - Settle money through SEPI (ES)
+CASY;SITS;SIT (SI) - Settle money through SIT (SI)
+CASY;SLBE;SLBE (ES) - Settle money through SLBE (ES)
+CASY;SPGT;SPGT (PT) - Settle money through SPGT (PT)
+CASY;TARG;TARGET - Settle money through TARGET
+CASY;TBFF;TBF - Transferts Banque De France (FR) - Settle money through TBF - Transferts Banque De France (FR)
+CASY;TOPN;TOP (NL) - Settle money through TOP (NL)
+CASY;VIBE;VIBER (HU) - Settle money through VIBER (HU)
+CASY;ZENG;Zengin - Settle money through Zengin
+
+COAL;INIT;Initiation - First call for collateral
+COAL;TERM;Termination - End of exposure
+COAL;VARI;Variation - Addition of collateral
+
+COLL;ACCT;Accepted - Collateral specified is accepted
+COLL;BCOL;Other Collateral - Either a Bank Guarantee or Letter of Credit
+COLL;CCOL;Cash Collateral - Collateral is cash
+COLL;REJT;Rejected - Collateral specified is rejected
+COLL;SCOL;Securities Collateral - Collateral is securities
+
+DEND;IPNC;Instruction Processed - Instruction has been processed and cannot be cancelled
+
+DEPO;CLNT;Call/Notice - Call/notice deposit
+DEPO;FIXT;Fixed Term - Fixed term deposit
+
+DPLO;BORR;The Sender, or the institution/corporate on behalf of which the message is sent is the borrower (receives the principal amount and pays the interest)
+DPLO;LEND;The Sender, or the institution/corporate on behalf of which the message is sent is the lender (pays the principal amount and receives the interest)
+
+EFFD;FUTU;Future - SSI update is to be applied to future trades
+EFFD;OUTS;Outstanding Trade - SSI update is effective for all trades settling on and after effective date irrespective of trade date
+EFFD;RCON;Reconfirmation - SSI update is effective for all trades settling on and after effective date irrespective of trade date and they need to be reconfirmed
+EFFD;SETT;Settlement Date - SSI update is effective on the settlement date
+EFFD;TRAD;Trade Date - SSI update is effective for all trades booked on and after effective date
+
+FROM;AVAI;Available Sub-balance - Financial instruments are available for any purpose
+FROM;AWAS;Available With No Additional Status - Balance of financial instruments that are freely available with no specific additional status
+FROM;BLCA;Blocked Corporate Action - Balance of financial instrument blocked following a corporate action, including proxy activities
+FROM;BLOK;Blocked Sub-balance - Balance of financial instruments that are blocked
+FROM;BLOT;Blocked Trading - Balance of financial instruments that are blocked for trading
+FROM;BLOV;Blocked Authenticity - Balance of financial instruments that are blocked for verification of authenticity
+FROM;BORR;Borrowed Sub-balance - Balance of financial instruments that have been borrowed from another party
+FROM;CLEN;Tax Exempt Sub-balance - Balance of tax exempt financial instruments
+FROM;COLA;Eligible for Collateral Purposes - Balance of securities that are eligible for use for collateral purposes
+FROM;COLI;Collateral In Sub-balance - Balance of securities that belong to a third party and that are held for the purpose of collateralisation
+FROM;COLO;Collateral Out Sub-balance - Balance of securities that belong to the safekeeping account indicated within this message, and are deposited with a third party for the purpose of collateralisation
+FROM;DIRT;Taxable Sub-balance - Balance of taxable financial instruments
+FROM;DRAW;Drawn - Balance of securities that are drawn for redemption
+FROM;ISSU;Issued - Balance for issued financial instrument where legal documentation has been received
+FROM;LOAN;Loan Out Sub-balance - Balance of financial instruments that have been loaned to a third party
+FROM;LODE;Pending On Loan Delivery - Balance of financial instruments that are pending delivery in relation to a lending transaction
+FROM;MARG;Derivatives Margin Sub-balance - Balance of securities that belong to and is kept in the safekeeping account indicated within this message, and that are used as collateral for derivatives
+FROM;NOMI;Registered Sub-balance - Balance of financial instruments that are registered (in nominee name or in the name of the beneficial owner)
+FROM;OTHR;Unclassified Sub-balance - Balance of financial instrument that cannot be categorised, that is, is not identified with one of the existing sub-balance types
+FROM;PECA;Pending Corporate Action Receipt - Balance of financial instrument pending receipt following a corporate action
+FROM;PEDA;Pending Corporate Action Delivery - Balance of financial instrument pending delivery following a corporate action
+FROM;PLED;Pledged Sub-balance - Balance of securities that belong to and is kept in the safekeeping account indicated within this message, and that are pledged
+FROM;QUAS;Quasi-Issued - Balance for issued financial instrument where legal documentation has not yet been received
+FROM;REGO;Registration Sub-balance - Balance of financial instruments currently being processed by the institution responsible for registering the new beneficial owner (or nominee)
+FROM;RSTR;Restricted Sub-balance - Balance of financial instruments that may only be sold under certain conditions or require legal documents
+FROM;SPOS;In Street Name Sub-balance - Balance of financial instruments that remain registered in the name of the prior beneficial owner
+FROM;TRAN;Transshipment Sub-balance - Balance of physical securities that are in the process of being transferred from one depository/agent to another
+FROM;UNRG;Unregistered Sub-balance - Balance of securities that could not be registered due to foreign ownership limitation
+
+FXTR;REVS;Reverse Indicator
+
+MARK;ANYY;Any - Any market area. This code is the superset of all the market area codes
+MARK;CASH;Cash - Bank to bank cash movements. This code is not related to the other market area codes. It includes transactions such as bank notes and remittances
+MARK;COLL;Collections - Collections
+MARK;COMM;Commodities - Precious metals and other commodities such as palm oil
+MARK;COPA;Commercial Payments - Payment in which one of the parties is not a financial institution
+MARK;DERI;Derivatives - Futures contracts, options, swaps, etc
+MARK;DOCC;Documentary Credits - Documentary credits
+MARK;FOEX;Foreign Exchange - Foreign Exchange, including spot, forwards, and non-deliverable forwards
+MARK;GUAR;Guarantees - Guarantees
+MARK;LETT;Letters of Credit - Letters of credit
+MARK;LOAN;Loans - Loans and deposits
+MARK;MMKT;Money Markets - Interbank loans and deposits
+MARK;NDLF;Non Deliverable Forward - FX forward trade for which only balance is settled
+MARK;OPTI;Options - FX Options, swaptions, etc
+MARK;SECU;Securities - Bonds, equities, capital markets, etc
+MARK;TFIN;Trade Finance - Documentary credits, collections, guarantees, letters of credit. TFIN is a superset of COLL, DOCC, GUAR, and LETT
+MARK;TREA;Treasury - Cash management (financial trading) activities. TREA is a superset of COMM, DERI, FOEX, MMKT, NDLF, and OPTI
+
+ORGV;FAMT;Face Amount - Quantity expressed as an amount representing the face amount, that is, the principal, of a debt instrument
+
+PACK;LATE;Market Deadline Missed - Instruction was received after market deadline
+PACK;RQWV;Accepted Without Voting Rights - Instruction registration is accepted but the registration is not in full, that is, not with voting rights
+
+PEND;CONF;Confirmation Of Payment - Prior payment credited to account based contractual income collection agreement has been collected from issuer
+PEND;IPNC;Cancel Not Possible - Instruction has been processed and cannot be cancelled
+PEND;VLDA;Valid for Tax Authorities - For tax reclaim, the event is pending, the tax reclaim is valid for the tax authorities
+
+PMTH;COVE;Cover - Direct payment (that is, MT 103 with MT 202 COV as a cover) is permitted
+
+PRCD;PREF;Preferred - The preferred SSI for a currency and market area
+
+PRCO;FULL;Full - Pre-allocate shares only if fully dealt
+PRCO;NOFR;No Fraction - No fractional shares are allowed
+PRCO;PROR;Pro-Rate - In the case of a partial fill, pro-rate the allocations
+PRCO;RDUP;Round Up - In the case of fractional shares, round up to the nearest whole number
+PRCO;RDWN;Round Down - In the case of fractional shares, round down to the nearest whole number
+PRCO;SPEC;Specific - In the case of a partial fill, pre-allocate according to the amounts shown in a linked allocation instruction
+
+PRIC;FAVG;Benchmark Weighted Average - Price is weighted average price of the benchmark prices at the time of each partial fill
+PRIC;MAVG;All Markets Weighted Average - Price is weighted average price of all market executions during the completion of the order
+PRIC;TRAD;Benchmark - Price is a benchmark price relating to the current partial fills (for example, last trade tick from market)
+
+PRIT;APCP;Settlement Instructions for Amounts Payable by the Loan/Deposit Counterparty
+PRIT;APFM;Settlement Instructions for Amounts Payable by the Investor
+PRIT;IPCP;Settlement Instructions for Interests Payable by the Loan/Deposit Counterparty
+PRIT;IPFM;Settlement Instructions for Interests Payable by the Investor
+
+REAS;CHAR;Charges/fees - FX trade is for the payment of charges/fees
+REAS;EQUI;Equity - FX trade is for the settlement of an equity trade
+REAS;FXID;Fixed Income - FX trade is for the settlement of a fixed income securities trade
+REAS;INCO;Income - FX trade is as a result of income (dividend and interest) proceeds
+REAS;OTHR;Other - Other underlying reason for the FX transaction. See Transaction Reason Narrative
+REAS;TAXE;Tax - FX trade is for the payment of tax
+
+RECP;NOPA;No Payment - Money will not be paid
+RECP;PAYO;Pay Out - Money is to be paid by Party A to Party B
+RECP;RECE;Receive - Money is to be received by Party A and paid by Party B
+
+REJT;BENO;Beneficial Ownership Disagreement - Disagreement in beneficial ownership
+REJT;BPAR;Business Partner Number Rejection - Unrecognised or invalid Business Partner Number
+REJT;BREF;Bank Reference Number Rejection - Unrecognised or invalid Bank Reference Number
+REJT;CONL;Concentration Limit Exceeded - Concentration limit was exceeded
+REJT;CPTY;Unknown Deal/Exposure - Deal or exposure is unknown
+REJT;DADR;Address Details Rejection - Address details are incorrect or cannot be recognised
+REJT;DISC;Disagree with Call Amount - Party A does not agree with the call amount
+REJT;DISE;Disagree with Exposure Amount - Party A does not agree with the exposure amount
+REJT;DORD;Registration Request Data and Order Rejection - Disagreement between the data on the registration request and the order
+REJT;ICOL;Insufficient Collateral - Insufficient collateral proposed
+REJT;INEL;Ineligible Collateral - Ineligible piece of collateral
+REJT;MCER;Missing Certificate - Missing certificate
+REJT;MLEG;Missing Legal Power - Missing legal power for transfer
+REJT;OWNT;Type of Ownership Rejection - Type of ownership indicated is not correct
+REJT;PODU;Possible Duplicate - Possible duplicate instruction
+REJT;REQM;Missing Registration Request - Registration request to be completed by the buyer and to be forwarded to the issuer is missing
+REJT;REQW;Wrong Registration Request - Registration request to be completed by the buyer and to be forwarded to the issuer is wrong. You have used the registration request of a different issuer/registrar
+REJT;RREA;Disagreement in registration reason - Registration reason indicated is not correct
+REJT;SIGN;Invalid Signature - Registration request does not have a valid signature of the owner of the financial instrument
+REJT;SSID;Standing Settlement Instruction Rejection - Standing Settlement Instruction is unknown or invalid
+REJT;STAM;Not Stamped or Signed - Financial instrument has not been stamped and/or duly signed
+REJT;STAT;Missing Statutes - Missing statutes or commercial register or other legal documents
+REJT;WBKG;Wrong Bank Quoted - Wrong bank is quoted on the bank guarantee or documentary credit
+REJT;WSET;Wrong Settlement Parties - Settlement parties are incorrect
+
+REMO;NARR;Narrative Reason - See narrative field for reason
+
+REQU;506;MT 506 Collateral and Exposure Statement
+REQU;507;MT 507 Collateral Status and Processing Advice
+REQU;509;MT 509 Trade Status Message
+REQU;510;MT 510 Registration Status and Processing Advice
+REQU;535;MT 535 Statement of Holdings
+REQU;536;MT 536 Statement of Transactions
+REQU;537;MT 537 Statement of Pending Transactions
+REQU;538;MT 538 Statement of Intra-Position Advices
+REQU;548;MT 548 Settlement Status and Processing Advice
+REQU;558;MT 558 Triparty Collateral Status and Processing Advice
+REQU;567;MT 567 Corporate Action Status and Processing Advice
+REQU;569;MT 569 Triparty Collateral and Exposure Statement
+REQU;575;MT 575 Report of Combined Activity
+REQU;576;MT 576 Statement of Open Orders
+REQU;586;MT 586 Statement of Settlement Allegements
+
+RERC;PACK;Acknowledged/Accepted - Registration has been acknowledged/accepted by the issuer/registrar
+RERC;REJT;Rejected - Registration has been rejected by the issuer/registrar
+
+REST;ACCP;Partly Accepted - A part of the collateral is accepted, a part rejected
+REST;ACCT;Accepted - The claim, substitution, proposal is fully accepted
+REST;REJT;Rejected - The claim, substitution, proposal is fully rejected
+REST;SUBR;Partly Accepted - Party A agrees with the return part of the substitution and accepts to wait for the proposal of the new collateral
+
+RMTH;EXAC;Exact - Exact number
+RMTH;RDDN;Round Down - Round down to the nearest whole number
+RMTH;RDUP;Round Up - Round up to the nearest whole number
+
+RPOR;TTRE;Regulatory - Trade details are to be reported to a regulatory organisation. This stock regulatory organisation is identified in sequence E Other Parties
+
+SCOL;DVDS;Delivery Against Delivery - Delivery against delivery
+SCOL;DVPT;Delivery Against Payment - Delivery against payment
+SCOL;FOPT;Delivery Free of Payment - Delivery free of payment
+
+SSIP;NEWS;New - Individual SSI is new
+SSIP;NONE;No SSI - No longer any SSI for currency and market area
+SSIP;RECO;Re-confirmation - Individual SSI is re-confirmed
+
+SSIR;ALLL;All - SSI update notification is to be distributed to all SWIFT users
+
+STCO;NSSP;Standing Settlement Parties Override - Standing settlement parties have to be overridden
+
+TILI;CLOS;At the Closing - Order to be executed at or around the closing price
+TILI;FAKI;Fill and Kill - Order to be executed as much as possible. Non-executed parts of a FAK are deleted
+TILI;FIKI;Fill or Kill - Market or limit order that is to be executed in its entirety as soon as it is submitted; if not so executed, the order is to be cancelled
+TILI;GDAY;Good for the Day - Order that, if not executed, expires at the end of the trading day on which the order is entered
+TILI;GTCA;Good until Cancelled - Order that remains in effect until it is either executed or cancelled
+TILI;GTHD;Good through Date - Order that, if not executed, expires at the end of the specified expiry date
+TILI;GTMO;Good for the Month - Order that, if not executed, expires at the end of the month on which the order is entered
+TILI;GTNM;Good until the End of Next Month - Order that, if not executed, expires at the end of next month
+TILI;GTXO;Good till Crossed - Order that remains in effect until crossed
+TILI;IOCA;Immediate or Cancel - Market or limit order to be executed in whole or in part as soon as it is submitted; any portion not so executed is to be cancelled
+TILI;OPEN;At the Opening - Market or limit order to be executed at the opening of the stock exchange or not at all; all or part of any order not executed at the opening is treated as cancelled
+
+TLDE;CONF;This is an instruction to settle a first confirmation
+TLDE;MATU;This is an instruction to settle a liquidation of a fixed loan/deposit
+TLDE;ROLL;This is an instruction to settle a mutually agreed rollover/renewal with/without change in the principal amount and the interest to be settled or added/substracted from that amount
+
+TOBA;AVAI;Available Sub-balance - Financial instruments are available for any purpose
+TOBA;AWAS;Available With No Additional Status - Balance of financial instruments that are freely available with no specific additional status
+TOBA;BLCA;Blocked Corporate Action - Balance of financial instrument blocked following a corporate action, including proxy activities
+TOBA;BLOK;Blocked Sub-balance - Balance of financial instruments that are blocked
+TOBA;BLOT;Blocked Trading - Balance of financial instruments that are blocked for trading
+TOBA;BLOV;Blocked Authenticity - Balance of financial instruments that are blocked for verification of authenticity
+TOBA;BORR;Borrowed Sub-balance - Balance of financial instruments that have been borrowed from another party
+TOBA;CLEN;Tax Exempt Sub-balance - Balance of tax exempt financial instruments
+TOBA;COLA;Eligible for Collateral Purposes - Balance of securities that are eligible for use for collateral purposes
+TOBA;COLI;Collateral In Sub-balance - Balance of securities that belong to a third party and that are held for the purpose of collateralisation
+TOBA;COLO;Collateral Out Sub-balance - Balance of securities that belong to the safekeeping account indicated within this message, and are deposited with a third party for the purpose of collateralisation
+TOBA;DIRT;Taxable Sub-balance - Balance of taxable financial instruments
+TOBA;DRAW;Drawn - Balance of securities that are drawn for redemption
+TOBA;ISSU;Issued - Balance for issued financial instrument where legal documentation has been received
+TOBA;LOAN;Loan Out Sub-balance - Balance of financial instruments that have been loaned to a third party
+TOBA;LODE;Pending On Loan Delivery - Balance of financial instruments that are pending delivery in relation to a lending transaction
+TOBA;MARG;Derivatives Margin Sub-balance - Balance of securities that belong to and is kept in the safekeeping account indicated within this message, and that are used as collateral for derivatives
+TOBA;NOMI;Registered Sub-balance - Balance of financial instruments that are registered (in nominee name or in the name of the beneficial owner)
+TOBA;OTHR;Unclassified Sub-balance - Balance of financial instrument that cannot be categorised, that is, is not identified with one of the existing sub-balance types
+TOBA;PECA;Pending Corporate Action Receipt - Balance of financial instrument pending receipt following a corporate action
+TOBA;PEDA;Pending Corporate Action Delivery - Balance of financial instrument pending delivery following a corporate action
+TOBA;PLED;Pledged Sub-balance - Balance of securities that belong to and is kept in the safekeeping account indicated within this message, and that are pledged
+TOBA;QUAS;Quasi-Issued - Balance for issued financial instrument where legal documentation has not yet been received
+TOBA;REGO;Registration Sub-balance - Balance of financial instruments currently being processed by the institution responsible for registering the new beneficial owner (or nominee)
+TOBA;RSTR;Restricted Sub-balance - Balance of financial instruments that may only be sold under certain conditions or require legal documents
+TOBA;SPOS;In Street Name Sub-balance - Balance of financial instruments that remain registered in the name of the prior beneficial owner
+TOBA;TRAN;Transshipment Sub-balance - Balance of physical securities that are in the process of being transferred from one depository/agent to another
+TOBA;UNRG;Unregistered Sub-balance - Balance of securities that could not be registered due to foreign ownership limitation
+
+TOOR;ALNO;All or None - A round-lot market or limit-price order which must be executed in its entirety or not at all; unlike 'fill or kill', these orders are not cancelled if not executed as soon as received
+TOOR;BCSE;Buy Contra Short Exempt - Order to buy contra short exempt
+TOOR;BCSH;Buy Contra Short - Order to buy contra short
+TOOR;BMIN;Buy Minus - Order to buy at a price lower than the current market price. This is an order to buy a stated amount of a financial instrument provided that its price is not higher than the last sale if the last ...
+TOOR;CARE;Carefully - Order that is not to be executed as a whole because it may disturb the price
+TOOR;COMB;Combination Order - Order that is linked to another order to buy or sell and must be executed as a unit, both or none, or cancelled as a unit
+TOOR;DISC;Discretionary - Order where the executing broker or investment manager decides on the quantity or price
+TOOR;DNIN;Do Not Increase - Limit order to buy or stop order to sell or stop limit order that is not to be increased in shares on the ex-dividend date as a result of a stock dividend or distribution
+TOOR;DNRE;Do Not Reduce - Limit order to buy or stop order to sell, or stop-limit order to sell that is not to be reduced in price by the amount of an ordinary cash dividend. Applies only to ordinary stock dividends; should ...
+TOOR;ICEB;Iceberg Order - Type of limit order whose overall quantity is not transparent to the market. Rather, only a client-defined part of the order is shown to the market (the 'tip of the iceberg'). Upon execution of the ...
+TOOR;LIWI;Limit With - Order to be executed at a limit price, with a round-lot (or board-lot) sales; valid only for odd lot orders
+TOOR;LIWO;Limit Without - Order to be executed at a limit price, without a round-lot (or board-lot) sales; valid only for odd lot orders
+TOOR;LMTO;Limit Order - Order to buy at the indicated price limit or lower or an order to sell at the indicated limit price or higher
+TOOR;MAKT;At Market - Order to buy or sell a specified amount of a financial instrument at the quoted market price or better
+TOOR;MANH;Market Not Held - Order to buy or sell a specified amount of a financial instrument at the quoted market price or better with some discretion on the price limit
+TOOR;MTLO;Market to Limit Order - Type of order that couples the high possibility of execution (Market Order) with a protection against unwanted price fluctuations (Limit Order)
+TOOR;MUTO;Market Until Touched - Order to buy or sell a specified amount of a financial instrument at the quoted market price or better with some discretion on the price limit
+TOOR;NOHE;Not Held - Order that may be executed in partials or outside the hours of the exchange or other exchange rules
+TOOR;ORLI;Order Lie - Order that is related to another order where the second order may be cancelled without cancelling the first. Normally, the sell order must be executed before the buy order
+TOOR;SLOS;Stop Loss - Order to sell that sets the sell price below the market price
+TOOR;SPLU;Sell Plus - Order to sell a stated amount provided that the price is not lower than the last sale price if the last sale was a plus or zero plus tick and not lower than the last sale minus the minimum fractional ...
+TOOR;SSEX;Sell Short Exempt - Order to sell short which is exempt from short-sale rules
+TOOR;SSHO;Sell Short - Order to sell a financial instrument that the seller does not own; a sale effected by delivering a financial instrument borrowed by or for the account of the seller
+TOOR;STLI;Stop Limit - Stop order to buy (sell) that becomes a limit order at the limit price when the financial instrument trades at or above (below) the stop price after the order is submitted
+TOOR;STOP;Stop Order - Order to buy that becomes a market order when the financial instrument trades at or above the stop price after the order is submitted or an order to sell which becomes a market order when the ...
+
+TRAN;CASH;Clean Cash Activity - Transaction relates to clean cash
+TRAN;FOEX;Foreign Exchange - Foreign exchange trades
+TRAN;METL;Metal - Metals trades
+TRAN;MMKT;Money Markets - Money markets trades
+TRAN;NDLF;Non Deliverable Forward - FX forward trades for which only balance is settled
+TRAN;OPTI;Options - FX options, swaptions, etc
+
+TRSE;AUCT;Auctions - Orders that are traded in regularly occurring auctions: orders are accumulated and executed on the basis of defined algorithms
+TRSE;CONT;Continuous - Orders that are executed directly against each other as they hit the marketplace
+
+UDTP;CASH;Cash - SSI Update notification is for a cash SSI
