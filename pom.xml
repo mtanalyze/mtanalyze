@@ -46,7 +46,9 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <lucene.version>9.12.3</lucene.version>
         <es.client.version>9.5.3</es.client.version>
+        <maven.compiler.target>17</maven.compiler.target>
     </properties>
+
 
     <dependencyManagement>
         <dependencies>
@@ -171,7 +173,6 @@
                 <artifactId>forbiddenapis</artifactId>
                 <version>3.10</version>
                 <configuration>
-                    <release>${maven.compiler.release}</release>
                     <bundledSignatures>
                         <!-- jdk-unsafe and jdk-deprecated are left out: both flag default-locale/
                              charset calls (String#toUpperCase(), new String(byte[]),
