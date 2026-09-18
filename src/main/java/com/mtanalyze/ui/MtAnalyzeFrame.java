@@ -1588,13 +1588,22 @@ public class MtAnalyzeFrame extends JFrame {
 
         private void notifyProwideLog(ImportBatch batch) {
             if (batch.prowideLog.isEmpty()) return;
-            String body = "<html>" + String.join("<br>", batch.prowideLog) + "</html>";
+            String body = "<html>" + batch.prowideLog.stream()
+                .map(EntryTab::escapeHtml)
+                .collect(java.util.stream.Collectors.joining("<br>")) + "</html>";
             NotificationPanel.Type type = batch.prowideLog.stream()
                 .anyMatch(s -> s.startsWith("[SEVERE"))
                 ? NotificationPanel.Type.ERROR : NotificationPanel.Type.WARNING;
             detailCtrl.notificationPanel().addNotification(type, "Parser log", body);
             switchDetailCard(DetailPanelController.NOTIFICATIONS);
             detailCtrl.expandIfNeeded();
+        }
+
+        /** Escapes a log line for embedding in the HTML notification body -- entries now echo raw
+         *  input chunks (see {@link ProwideLogCapture}), which may contain characters like
+         *  {@code <}/{@code &} that would otherwise be misread as markup. */
+        private static String escapeHtml(String s) {
+            return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
         }
 
         private void selectFirstRow() {

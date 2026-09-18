@@ -52,17 +52,6 @@ public final class NameValueConverter {
     private static final Pattern TAG_CODE_PAT = Pattern.compile("\\d{2}[A-Z]+|5R");
 
     /**
-     * Unicode C1 control characters (U+0080-U+009F) -- never valid in SWIFT FIN text. Seen in
-     * practice as a stray SS2 (U+008E) inside a {@code 35B} description (bytes {@code C2 8E}):
-     * some upstream export step decoded a single Windows-1252 byte (where 0x8E is "Ž") as
-     * Latin-1 instead, which leaves that byte range as raw C1 controls rather than Windows-1252's
-     * printable characters, then re-encoded the resulting control codepoint as UTF-8. Which
-     * printable character was actually intended isn't recoverable from the corrupted byte alone,
-     * so these are stripped rather than guessed at.
-     */
-    private static final Pattern C1_CONTROL_CHARS = Pattern.compile("[\\u0080-\\u009F]");
-
-    /**
      * Tag order shared by the repeating party subsequences {@code SETPRTY},
      * {@code CSHPRTY} and {@code CONFPRTY}. Such a subsequence repeats under the
      * same bare sequence code, so the boundary between two parties is only visible
@@ -141,7 +130,6 @@ public final class NameValueConverter {
     /** Mutable working state threaded through {@link #convert} as it walks the Name-Value fields. */
     private static final class ConvertState {
         AbstractMT swiftMessage = AbstractMT.create(599);
-        String lastSequence = "";
         int setPrtyTagIndex = -1;
         int mt;
     }
@@ -158,8 +146,7 @@ public final class NameValueConverter {
     }
 
     private static String normalizeLine(String line) {
-        String normalized = C1_CONTROL_CHARS.matcher(line).replaceAll("");
-        normalized = normalized.replace("&#x0d;", "\n");
+        String normalized = line.replace("&#x0d;", "\n");
         normalized = MIDNIGHT_SUFFIX.matcher(normalized).replaceAll("");
         // Known export quirk: MT 558's RELA reference sometimes arrives without its
         // A3 (LINK) sequence prefix.
@@ -255,7 +242,9 @@ public final class NameValueConverter {
 
         closeStaleSequences(seq, st);
 
-        boolean freshSequence = !st.lastSequence.equals(seq);
+        boolean alreadyOpen = !sequenceStack.isEmpty()
+            && sequenceStack.get(sequenceStack.size() - 1).equals(seq);
+        boolean freshSequence = !alreadyOpen;
         if (freshSequence) {
             closeSequence("16R", st.mt, seq, st.swiftMessage);
             sequenceStack.add(seq);
@@ -264,18 +253,21 @@ public final class NameValueConverter {
 
         handlePartySequenceBoundary(seq, tagFields, freshSequence, st);
         appendField(tagFields, value, line, st);
-        st.lastSequence = seq;
     }
 
+    /**
+     * Closes every currently open sequence that is not an ancestor of (or equal to) {@code seq},
+     * walking the stack from the innermost sequence outward. A field returning to an
+     * already-open, shallower ancestor (e.g. a {@code B1a}-level field arriving between two
+     * {@code B1a2}-level ones) must leave that ancestor open rather than closing and immediately
+     * reopening it -- reopening it here would wrap the remainder of the message in a spurious
+     * duplicate sequence instead of continuing the one already in progress.
+     */
     private void closeStaleSequences(String seq, ConvertState st) {
-        if (seq.contains(st.lastSequence) || sequenceStack.isEmpty()) return;
-        String last = sequenceStack.get(sequenceStack.size() - 1);
-        closeSequence("16S", st.mt, last, st.swiftMessage);
-        sequenceStack.remove(sequenceStack.size() - 1);
-        if (sequenceStack.isEmpty()) return;
-        last = sequenceStack.get(sequenceStack.size() - 1);
-        if (!seq.contains(last)) {
-            closeSequence("16S", st.mt, last, st.swiftMessage);
+        while (!sequenceStack.isEmpty()) {
+            String top = sequenceStack.get(sequenceStack.size() - 1);
+            if (seq.startsWith(top)) return;
+            closeSequence("16S", st.mt, top, st.swiftMessage);
             sequenceStack.remove(sequenceStack.size() - 1);
         }
     }

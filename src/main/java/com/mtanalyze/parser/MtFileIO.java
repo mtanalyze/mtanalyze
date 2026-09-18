@@ -740,6 +740,23 @@ public final class MtFileIO {
                    .replace('ü', '}');
     }
 
+    /**
+     * Keeps only the character range SWIFT FIN content actually uses: printable ASCII
+     * (0x20-0x7E) plus tab/CR/LF for line structure. Called once every chunk has already
+     * passed through {@link #fixMainframeEncoding} (which needs its {@code ä}/{@code ü}
+     * markers intact), so this only ever strips genuine noise -- typically a stray byte
+     * left behind by a mis-decoded upstream export step -- rather than guessing what such
+     * a byte was meant to be.
+     */
+    public static String keepAsciiOnly(String s) {
+        StringBuilder sb = new StringBuilder(s.length());
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (c == '\t' || c == '\n' || c == '\r' || (c >= 0x20 && c <= 0x7E)) sb.append(c);
+        }
+        return sb.toString();
+    }
+
     public static String stripIndentation(String text) {
         StringBuilder sb = new StringBuilder();
         for (String line : text.split(NEWLINE_PATTERN, -1)) {

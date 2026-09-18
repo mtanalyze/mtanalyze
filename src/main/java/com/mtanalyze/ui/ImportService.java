@@ -117,10 +117,15 @@ final class ImportService {
         return batch;
     }
 
+    /** Longest input-chunk excerpt echoed alongside a parse error, so the offending line is
+     *  identifiable in the notification instead of just a generic error count. */
+    private static final int MAX_ERROR_INPUT_ECHO = 300;
+
     void parseChunkIntoBatch(String chunk, String mtOverride, ImportBatch batch,
                              String sourceFile, MessageOrigin origin, int maxEntries) {
         if (batch.entryCount >= maxEntries) { batch.limitReached = true; return; }
         try {
+            ProwideLogCapture.setCurrentInput(chunk);
             AbstractMT mt = parseWithTruncationRecovery(chunk, mtOverride);
             if (mt == null) return;
             if (maskAmountsEnabled) maskTagsStartingWith(mt, MASKED_AMOUNT_TAG_PREFIX);
@@ -131,14 +136,17 @@ final class ImportService {
                 if (type == null || !batch.mtTypeFilter.contains(type)) return;
             }
             SwiftMessage msg = new SwiftMessage(mt, sourceFile != null ? new File(sourceFile) : null, origin);
+            int newEntries = EntryPanelModel.parseAndDecorate(msg, batch.knownKeys, batch.columnDefs).size();
             batch.messages.add(msg);
-            batch.entryCount += EntryPanelModel.parseAndDecorate(msg, batch.knownKeys, batch.columnDefs).size();
+            batch.entryCount += newEntries;
             batch.totalParsed++;
         } catch (Exception ex) {
             batch.errors++;
             String msg = ex.getMessage();
-            if (msg != null && !msg.isBlank())
-                batch.prowideLog.add("[SEVERE ] " + msg);
+            String echoed = chunk.length() > MAX_ERROR_INPUT_ECHO
+                ? chunk.substring(0, MAX_ERROR_INPUT_ECHO) + "…" : chunk;
+            batch.prowideLog.add("[SEVERE ] " + (msg != null && !msg.isBlank() ? msg : ex.toString())
+                + " | input: " + echoed);
         }
     }
 
@@ -179,6 +187,7 @@ final class ImportService {
      * and risks losing structure that {@link AbstractMT#parse} cannot always recover.
      */
     private static AbstractMT parseWithTruncationRecovery(String chunk, String mtOverride) throws SwiftParseException {
+        chunk = MtFileIO.keepAsciiOnly(chunk);
         if (NameValueConverter.isSequenceCodeFormat(chunk)) {
             return new NameValueConverter().convert(chunk);
         }

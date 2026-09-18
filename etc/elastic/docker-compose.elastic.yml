@@ -1,0 +1,46 @@
+version: "3.8"
+
+# Local Elasticsearch + Kibana for mtanalyze's Elasticsearch feature (com.mtanalyze.elastic).
+# Version pinned to the es.client.version used in pom.xml (9.5.3) to avoid client/server
+# compatibility issues. Security is disabled -- local dev only, do not use as-is in production.
+#
+# Usage:
+#   docker compose -f docker-compose.elastic.yml up -d
+#   Elasticsearch: http://localhost:9200
+#   Kibana:        http://localhost:5601
+#
+# In mtanalyze: Settings > Advanced > Elasticsearch
+#   host=localhost  port=9200  scheme=http  username=  password=  index=swift-messages
+
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:9.5.3
+    container_name: mtanalyze-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - xpack.security.http.ssl.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    volumes:
+      - mtanalyze-es-data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health | grep -q '\"status\":\"green\"\\|\"status\":\"yellow\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:9.5.3
+    container_name: mtanalyze-kibana
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+
+volumes:
+  mtanalyze-es-data:

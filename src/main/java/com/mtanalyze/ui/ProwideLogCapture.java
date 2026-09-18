@@ -30,11 +30,17 @@ import java.util.logging.Logger;
  * records are guaranteed to arrive regardless of whether Prowide loggers were initialised
  * before this capture started.  Only WARNING+ records whose logger name starts with
  * {@code com.prowidesoftware} are kept; all others pass through silently.
- * Duplicate messages (same text repeated per chunk) are deduplicated.
+ * Duplicate (message, input chunk) pairs are deduplicated.
+ *
+ * <p>A single capture spans a whole batch (import of many chunks) rather than one chunk each,
+ * since attaching/detaching a JUL handler per chunk would be too costly for large imports.
+ * To still tell which input chunk a given Prowide warning came from, {@link #setCurrentInput}
+ * records the chunk currently being parsed in a thread-local that {@link CollectingHandler}
+ * reads at publish time -- cheap to update per chunk, unlike the handler itself.
  *
  * <pre>
  *   try (ProwideLogCapture cap = ProwideLogCapture.start()) {
- *       // ... Prowide calls ...
+ *       // ... Prowide calls, with setCurrentInput(chunk) before each one ...
  *       batch.prowideLog.addAll(cap.stop());
  *   }
  * </pre>
@@ -42,8 +48,18 @@ import java.util.logging.Logger;
 final class ProwideLogCapture implements AutoCloseable {
 
     private static final Logger JUL_ROOT = Logger.getLogger("");
+    private static final ThreadLocal<String> CURRENT_INPUT = new ThreadLocal<>();
+
+    /** Maximum length of the input chunk echoed alongside a captured Prowide warning. */
+    private static final int MAX_INPUT_ECHO = 300;
 
     private final CollectingHandler handler = new CollectingHandler();
+
+    /** Records the chunk about to be parsed, so any Prowide warning it triggers can be
+     *  attributed to it. Call this right before each parse attempt within a capture. */
+    static void setCurrentInput(String chunk) {
+        CURRENT_INPUT.set(chunk);
+    }
 
     private ProwideLogCapture() {
         handler.setLevel(Level.WARNING);
@@ -86,6 +102,12 @@ final class ProwideLogCapture implements AutoCloseable {
             if (r.getThrown() != null)
                 sb.append(" → ").append(r.getThrown().getClass().getSimpleName())
                   .append(": ").append(r.getThrown().getMessage());
+            String input = CURRENT_INPUT.get();
+            if (input != null && !input.isBlank()) {
+                String echoed = input.length() > MAX_INPUT_ECHO
+                    ? input.substring(0, MAX_INPUT_ECHO) + "…" : input;
+                sb.append(" | input: ").append(echoed);
+            }
             seen.add(sb.toString());
         }
 
