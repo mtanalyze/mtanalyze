@@ -130,24 +130,32 @@ final class ImportService {
             if (mt == null) return;
             if (maskAmountsEnabled) maskTagsStartingWith(mt, MASKED_AMOUNT_TAG_PREFIX);
             if (maskQuantitiesEnabled) maskTagsStartingWith(mt, MASKED_QUANTITY_TAG_PREFIX);
-            if (!batch.mtTypeFilter.isEmpty()) {
-                com.prowidesoftware.swift.model.SwiftBlock2 b2 = mt.getSwiftMessage().getBlock2();
-                String type = b2 != null ? b2.getMessageType() : null;
-                if (type == null || !batch.mtTypeFilter.contains(type)) return;
-            }
+            if (!matchesTypeFilter(mt, batch.mtTypeFilter)) return;
             SwiftMessage msg = new SwiftMessage(mt, sourceFile != null ? new File(sourceFile) : null, origin);
             int newEntries = EntryPanelModel.parseAndDecorate(msg, batch.knownKeys, batch.columnDefs).size();
             batch.messages.add(msg);
             batch.entryCount += newEntries;
             batch.totalParsed++;
         } catch (Exception ex) {
-            batch.errors++;
-            String msg = ex.getMessage();
-            String echoed = chunk.length() > MAX_ERROR_INPUT_ECHO
-                ? chunk.substring(0, MAX_ERROR_INPUT_ECHO) + "…" : chunk;
-            batch.prowideLog.add("[SEVERE ] " + (msg != null && !msg.isBlank() ? msg : ex.toString())
-                + " | input: " + echoed);
+            recordParseError(batch, chunk, ex);
         }
+    }
+
+    /** Whether {@code mt}'s message type passes an empty-or-matching {@code mtTypeFilter}. */
+    private static boolean matchesTypeFilter(AbstractMT mt, java.util.Set<String> mtTypeFilter) {
+        if (mtTypeFilter.isEmpty()) return true;
+        com.prowidesoftware.swift.model.SwiftBlock2 b2 = mt.getSwiftMessage().getBlock2();
+        String type = b2 != null ? b2.getMessageType() : null;
+        return type != null && mtTypeFilter.contains(type);
+    }
+
+    private static void recordParseError(ImportBatch batch, String chunk, Exception ex) {
+        batch.errors++;
+        String msg = ex.getMessage();
+        String reason = msg != null && !msg.isBlank() ? msg : ex.toString();
+        String echoed = chunk.length() > MAX_ERROR_INPUT_ECHO
+            ? chunk.substring(0, MAX_ERROR_INPUT_ECHO) + "…" : chunk;
+        batch.prowideLog.add("[SEVERE ] " + reason + " | input: " + echoed);
     }
 
     /** Wraps the first parse failure Prowide reports while retrying with a shortened candidate. */
@@ -177,7 +185,7 @@ final class ImportService {
     /**
      * Parses a chunk, retrying with the last (incomplete) block4 line dropped each
      * time Prowide rejects it. A message cut off mid-tag would otherwise fail to
-     * parse even after {@link MtFileIO#repairTruncated}, discarding the entire
+     * parse even after MtFileIO#repairTruncated, discarding the entire
      * chunk instead of the handful of well-formed tags before the broken one.
      *
      * <p>A Name-Value line using bare sequence codes (no explicit {@code :16R:}/
