@@ -17,42 +17,17 @@ MT Analyze is a single self-contained JAR — no installation, no admin rights.
 2. Double-click it, or run:
 
 ```bash
-java -jar MT-Analyze-2.0.2.jar
+java -jar MT-Analyze-2.0.6.jar
 ```
 
 ## Supported MT Types
 
 | Group                              | MT Types                   |
 |------------------------------------|-----------------------------|
-| Loan/Deposit Instruction           | MT 321                     |
-| Netting Statement                  | MT 370                     |
-| Foreign Exchange Orders            | MT 380, 381                |
-| Registration                       | MT 500, 501, 519            |
-| Registration Status                | MT 510                      |
-| Order to Buy or Sell               | MT 502                     |
-| Collateral Management              | MT 503, 504, 505, 506, 507 |
-| Collateral Adjustment              | MT 581                     |
-| Intra-Position Advice              | MT 508, 524, 538           |
-| Client Advice of Execution         | MT 513                     |
-| Securities Lending                 | MT 516, 526                |
-| Trade Confirmation and Allegement  | MT 509, 514, 515, 517, 518 |
-| Order and Activity Reports         | MT 575, 576                |
-| Transaction Processing             | MT 530                     |
 | Securities Statements              | MT 535, 536, 537           |
 | Settlement Instructions            | MT 540, 541, 542, 543      |
 | Settlement Confirmations           | MT 544, 545, 546, 547      |
 | Settlement Advise                  | MT 548                     |
-| Request for Statement/Status       | MT 549                     |
-| Triparty Agent                     | MT 527, 558, 569           |
-| Corporate Actions                  | MT 564, 565, 566, 567, 568 |
-| Settlement Allegements             | MT 578, 586                |
-| Charges and Adjustments            | MT 590, 591                |
-| Request for Cancellation           | MT 592                     |
-| Queries and Answers                | MT 595, 596                |
-| Free Format / Proprietary Message  | MT 598, 599                |
-| Standing Settlement Instructions   | MT 670, 671                |
-| Cash Reports                       | MT 941, 942                |
-| Cash Statements                    | MT 940, 950                |
 
 ---
 
