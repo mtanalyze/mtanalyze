@@ -447,6 +447,7 @@ public class MtEntryPanel extends JPanel {
             String mtVal = rowEntry.data().get(EntryPanelModel.MT_COL_KEY);
             if (mtVal != null && mtVal.length() > 2) popup.add(makeIsoDocItem(mtVal));
             addGenerateConfirmationItem(popup, modelRow, rowEntry);
+            addGenerateInstructionItem(popup, modelRow, mtVal);
         }
 
         // ── Display ───────────────────────────────────────────────────────
@@ -573,6 +574,31 @@ public class MtEntryPanel extends JPanel {
         String text = new com.mtanalyze.export.Mt54xGenerator().generate(msg, entry);
         showGeneratedSource("Generated MT " + confirmType + " – Settlement Confirmation", text);
         host.setStatus("Generated MT " + confirmType + " from MT 536 entry.");
+    }
+
+    /**
+     * Adds the "Generate MT 54x Instruction" item for settlement confirmations
+     * (MT 544 - 547), which reconstructs the original instruction (MT 540 - 543).
+     */
+    private void addGenerateInstructionItem(JPopupMenu popup, int modelRow, String mtVal) {
+        String instructionType = com.mtanalyze.export.Mt54xInstructionGenerator.instructionTypeFor(mtVal);
+        if (instructionType == null) return;
+        JMenuItem item = new JMenuItem(
+                "Generate MT " + instructionType + " (Settlement Instruction)",
+                ToolbarIcons.menuViewSource());
+        item.addActionListener(ae -> generateInstruction(modelRow, mtVal, instructionType));
+        popup.add(item);
+    }
+
+    private void generateInstruction(int modelRow, String mtVal, String instructionType) {
+        SwiftMessage msg = model.getMessageForRow(modelRow);
+        if (msg == null) {
+            host.setStatus("No SWIFT message for selected entry.");
+            return;
+        }
+        String text = new com.mtanalyze.export.Mt54xInstructionGenerator().generate(msg);
+        showGeneratedSource("Generated MT " + instructionType + " – Settlement Instruction", text);
+        host.setStatus("Generated MT " + instructionType + " from " + mtVal.replace("MT", "MT ") + " confirmation.");
     }
 
     /** Opens a non-modal source window showing the given SWIFT message text. */

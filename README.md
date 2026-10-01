@@ -20,6 +20,40 @@ MT Analyze is a single self-contained JAR — no installation, no admin rights.
 java -jar MT-Analyze-2.0.6.jar
 ```
 
+### Memory Settings for Large Message Volumes
+
+All loaded messages are kept in memory as parsed objects — roughly **16 KB of heap per message** (measured with ~40k MT 5xx messages; about 70 % of it is strings). Without `-Xmx`, the JVM caps the heap at a quarter of physical RAM (e.g. 2 GB on an 8 GB machine), which is not enough for more than about 60k messages.
+
+| Messages | Live heap (approx.) | Recommended `-Xmx` |
+|----------|---------------------|--------------------|
+| 50k      | 0.8 GB              | 2g                 |
+| 100k     | 1.6 GB              | 3g–4g              |
+| 150k     | 2.4 GB              | 4g–5g              |
+
+Leave at least 2–3 GB of RAM for the OS and the Lucene index (it is memory-mapped outside the heap). Example for 150k messages on an 8 GB machine:
+
+```bash
+java -Xms2g -Xmx5g -XX:+UseStringDeduplication -XX:+HeapDumpOnOutOfMemoryError -jar MT-Analyze-2.0.6.jar
+```
+
+- `-Xms2g` avoids repeated heap resizing while loading.
+- `-XX:+UseStringDeduplication` shares identical string contents (tag names, qualifiers, BICs, ISINs) and noticeably reduces heap usage.
+- G1 is the default collector and works well; ZGC is not recommended on machines with only 2 CPU cores.
+
+On Windows, a `MT-Analyze.bat` next to the jar makes the settings permanent (`javaw` starts without a console window):
+
+```bat
+@echo off
+start "" javaw -Xms2g -Xmx5g -XX:+UseStringDeduplication -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=%TEMP% -jar "%~dp0MT-Analyze-2.0.6.jar"
+```
+
+To check the effective settings and actual usage of a running instance:
+
+```bash
+jcmd <pid> VM.flags            # look for MaxHeapSize
+jcmd <pid> GC.class_histogram  # live objects after a full GC
+```
+
 ## Supported MT Types
 
 | Group                              | MT Types                   |
