@@ -499,17 +499,18 @@ final class EntryPanelModel {
     // ── Static helpers ─────────────────────────────────────────────────────
 
     /** MT types whose row sequence is a direct, unconditional mapping from the message type. */
-    private static final Map<String, String> SIMPLE_ROW_SEQUENCES = Map.of(
-        "535", "SUBBAL",
-        "537", "TRANS",
-        "564", "CAOPTN",
-        "530", "REQD",
-        "567", "STAT",
-        "500", "CLTDET",
-        "501", "CLTDET",
-        "670", "SSIDET",
-        "671", "SSIDET",
-        "321", "SETDET"
+    private static final Map<String, String> SIMPLE_ROW_SEQUENCES = Map.ofEntries(
+        Map.entry("535", "SUBBAL"),
+        Map.entry("537", "TRANS"),
+        Map.entry("564", "CAOPTN"),
+        Map.entry("530", "REQD"),
+        Map.entry("567", "STAT"),
+        Map.entry("500", "CLTDET"),
+        Map.entry("501", "CLTDET"),
+        Map.entry("670", "SSIDET"),
+        Map.entry("671", "SSIDET"),
+        Map.entry("321", "SETDET"),
+        Map.entry("586", "ALLDET")
     );
 
     /**
@@ -520,7 +521,7 @@ final class EntryPanelModel {
      * group don't even use {@code :16R:}/{@code :16S:} sequences, so they'd already fall
      * through to flat mode via the generic check at the bottom of this method; they're
      * listed explicitly anyway so the mapping stays discoverable in one place. MT 509,
-     * 502-507, 510, 513, 519, 524, 538, 549, 575, 576 and 586 do have repeating/optional
+     * 502-507, 510, 513, 519, 524, 538, 549, 575 and 576 do have repeating/optional
      * sub-sequences (e.g. MT 506's Exposure Details and Collateral Details both repeat at
      * the top level, MT 503/504/505/507 have a repeating Collateral/Settlement Details
      * block followed by a trailing single Additional Information sequence), but none of
@@ -542,7 +543,7 @@ final class EntryPanelModel {
         "370", "380", "381", "941",
         "502", "503", "504", "505", "506", "507", "508",
         "510", "513", "516", "519", "524", "526", "538", "549",
-        "575", "576", "581", "586", "590", "591", "592", "595", "596", "598"
+        "575", "576", "581", "590", "591", "592", "595", "596", "598"
     );
 
     static String detectRowSequence(AbstractMT mt) {

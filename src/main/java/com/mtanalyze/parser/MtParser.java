@@ -77,7 +77,8 @@ public class MtParser {
         } else if ("TRANS".equals(rowSeqName) || "CAOPTN".equals(rowSeqName)
                 || "REQD".equals(rowSeqName) || "STAT".equals(rowSeqName)
                 || "SECDET".equals(rowSeqName) || "VALDET".equals(rowSeqName) || "TRANSDET".equals(rowSeqName)
-                || "CLTDET".equals(rowSeqName) || "SSIDET".equals(rowSeqName) || "SETDET".equals(rowSeqName)) {
+                || "CLTDET".equals(rowSeqName) || "SSIDET".equals(rowSeqName) || "SETDET".equals(rowSeqName)
+                || "ALLDET".equals(rowSeqName)) {
             parseTransMode(b4);
         } else {
             ParseState state = new ParseState();
@@ -146,12 +147,16 @@ public class MtParser {
         final Deque<String>  rowSeqStack = new ArrayDeque<>();
         int rowDepth;
         int rowNum;
+
+        /** Header tags seen since the last row closed; reset whenever a new row starts. */
+        final List<Tag>            trailingTags = new ArrayList<>();
+        final Map<String, String>  trailingData = new LinkedHashMap<>();
     }
 
     /**
      * Wrapper-less row mode (MT 537: TRANS, MT 564: CAOPTN, MT 530: REQD, MT 567: STAT,
      * MT 569: SECDET/VALDET/TRANSDET depending on message content, MT 500/501: CLTDET,
-     * MT 670/671: SSIDET, MT 321: SETDET): each
+     * MT 670/671: SSIDET, MT 321: SETDET, MT 586: ALLDET): each
      * :16R:{rowSeqName}...:16S:{rowSeqName} block is one row. Unlike
      * MT 535/536 there is no SUBSAFE/FIN wrapper around the row sequence, so the row is
      * recognised wherever it occurs in block4 (right after GENL, or nested inside repeated
@@ -160,9 +165,12 @@ public class MtParser {
      * Tags before the first row sequence (e.g. GENL, USECU, CADETL) are header fields inherited by
      * every row; tags inside a row are labelled by their nearest enclosing 16R (TRANSDET, LINK,
      * SETPRTY, STAT, REAS, SECMOVE, CASHMOVE...).
+     * Tags after the last row sequence (e.g. a trailing ADDINFO sequence in MT 564/586) are
+     * added to every row as well, so they aren't silently dropped.
      */
     private void parseTransMode(SwiftTagListBlock b4) {
         TransParseState st = new TransParseState();
+        int firstEntry = entries.size();
 
         for (Tag t : b4.getTags()) {
             String name = t.getName() != null ? t.getName() : "";
@@ -170,6 +178,13 @@ public class MtParser {
                 handleTransHeaderTag(t, name, st);
             } else {
                 handleTransRowTag(t, name, st);
+            }
+        }
+
+        if (st.rowNum > 0 && !st.trailingTags.isEmpty()) {
+            for (Entry e : entries.subList(firstEntry, entries.size())) {
+                e.data().putAll(st.trailingData);
+                st.trailingTags.forEach(e.parentContext()::append);
             }
         }
 
@@ -192,7 +207,12 @@ public class MtParser {
             st.rowSeqStack.clear();
             st.rowDepth = 1;
             st.currentTags.add(t);
-        } else if ("16R".equals(name)) {
+            st.trailingTags.clear();
+            st.trailingData.clear();
+            return;
+        }
+        if (st.rowNum > 0) st.trailingTags.add(t);
+        if ("16R".equals(name)) {
             st.headerSeqStack.push(nvl(t.getValue()));
             st.headerTags.add(t);
         } else if ("16S".equals(name)) {
@@ -200,7 +220,12 @@ public class MtParser {
             st.headerTags.add(t);
         } else {
             String seq = st.headerSeqStack.isEmpty() ? "" : st.headerSeqStack.peek();
-            registerTag(seq, t, st.headerData, st.headerCounts);
+            if (st.rowNum > 0) {
+                registerTag(seq, t, st.trailingData, st.headerCounts);
+                st.headerData.putAll(st.trailingData);
+            } else {
+                registerTag(seq, t, st.headerData, st.headerCounts);
+            }
             st.headerTags.add(t);
         }
     }
