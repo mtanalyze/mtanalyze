@@ -17,7 +17,7 @@ MT Analyze is a single self-contained JAR — no installation, no admin rights.
 2. Double-click it, or run:
 
 ```bash
-java -jar MT-Analyze-2.0.7.jar
+java -jar MT-Analyze-2.0.8.jar
 ```
 
 ## Supported MT Types
