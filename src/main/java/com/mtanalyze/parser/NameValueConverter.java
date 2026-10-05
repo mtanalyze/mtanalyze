@@ -302,12 +302,25 @@ public final class NameValueConverter {
             // A field with no qualifier segment (e.g. 23G, 35B -- plain, unqualified generic
             // fields) arrives here as a single-element tagFields; SWIFT's own syntax for
             // those has no "::qualifier//" prefix, just the raw value.
-            String fieldValue = tagFields.length >= 2 ? (tagFields[1] + "//" + value) : value;
+            String fieldValue = tagFields.length >= 2
+                ? (tagFields[1] + qualifierSeparator(tagFields[0], value) + value)
+                : value;
             st.swiftMessage.append(Field.getField(tagFields[0], fieldValue));
         } catch (Exception ex) {
             logger.warning(line);
             logger.severe(ex.getMessage());
         }
+    }
+
+    /**
+     * Separator between qualifier and data. Plain {@code :QUAL//data} fields take {@code "//"}, but
+     * some values already carry their own slash: a leading one ({@code 97A:SAFE=/33642}, i.e.
+     * {@code :SAFE//33642}) or an issuer code ({@code 95R:TRAG=CEDE/119YD}, {@code 22F:AUTA=CEDE/AUTO},
+     * i.e. {@code :TRAG/CEDE/119YD}). Those take a single {@code "/"}, otherwise one slash too many results.
+     */
+    private static String qualifierSeparator(String tag, String value) {
+        boolean issuerCode = (tag.startsWith("95") || tag.startsWith("22")) && value.contains("/");
+        return (value.startsWith("/") || issuerCode) ? "/" : "//";
     }
 
     private void closeAllSequences(ConvertState st) {

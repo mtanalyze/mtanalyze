@@ -121,10 +121,11 @@ public class MtLucene implements AutoCloseable {
      * Only tags whose name starts with one of these prefixes are indexed. These
      * are the fields that actually carry searchable business content (references,
      * identifiers, narratives, parties, amounts, dates); structural tags such as
-     * {@code 16R}/{@code 16S} or {@code 23G} are skipped.
+     * {@code 16R}/{@code 16S} are skipped. {@code 23G} (function of the message,
+     * e.g. {@code CANC}) is indexed so cancellations can be searched.
      */
     private static final List<String> INDEXABLE_TAG_PREFIXES =
-            List.of("20", "35", "70", "94", "95", "97", "98");
+            List.of("20", "23G", "35", "70", "94", "95", "97", "98");
 
     /** Fields matched verbatim (see {@link SwiftMtAnalyzer}). */
     private static final Set<String> KEYWORD_FIELDS = Set.of(
