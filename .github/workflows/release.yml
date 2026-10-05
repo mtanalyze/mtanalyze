@@ -31,7 +31,10 @@ jobs:
       - name: Rename JAR with release tag
         run: |
           TAG="${{ github.event.release.tag_name || inputs.tag }}"
-          mv target/MT-Analyze-*.jar "target/MT-Analyze-${TAG}.jar"
+          SRC=$(ls target/MT-Analyze-*.jar | head -n 1)
+          DST="target/MT-Analyze-${TAG}.jar"
+          # Tag may equal the POM version, then the JAR already has the right name
+          [ "$SRC" = "$DST" ] || mv "$SRC" "$DST"
 
       - name: Upload JAR to release
         uses: softprops/action-gh-release@v2
