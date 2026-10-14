@@ -42,7 +42,8 @@ final class SettingsDialog {
 
     record Config(CsvKeys csv, ThemeConfig theme, SystemKeys system, PowerUserConfig powerUser,
                   ColumnStatsConfig columnStats,
-                  MaskingConfig masking, MaskingConfig quantityMasking, LuceneConfig lucene, ElasticConfig elastic) {
+                  MaskingConfig masking, MaskingConfig quantityMasking, LuceneConfig lucene, ElasticConfig elastic,
+                  MtSearchConfig mtsearch) {
         record CsvKeys(String fieldSep, String decimalSep) {
         }
 
@@ -68,6 +69,16 @@ final class SettingsDialog {
                               String indexPrefKey, String maxHitsPrefKey,
                               String defaultHost, int defaultPort, String defaultScheme,
                               String defaultIndex, int defaultMaxHits, Runnable onChange) {
+        }
+
+        /**
+         * mtsearch "Search Messages" settings, stored directly in {@link Preferences}: the
+         * switch and the folder of the index written by the mtsearch command-line tool (read-only
+         * here). {@code onChange} re-applies them to the running service and refreshes the
+         * mtsearch menu's enabled state.
+         */
+        record MtSearchConfig(String enabledPrefKey, String dirPrefKey, String maxHitsPrefKey,
+                              String defaultDir, int defaultMaxHits, Runnable onChange) {
         }
 
         record SystemKeys(Supplier<String> getSender, Supplier<String> getReceiver,
@@ -111,7 +122,8 @@ final class SettingsDialog {
                                JCheckBox luceneEnabled, JTextField luceneDir, JTextField luceneMaxHits,
                                JCheckBox elasticEnabled, JTextField elasticHost, JTextField elasticPort, JTextField elasticScheme,
                                JTextField elasticUsername, JPasswordField elasticPassword,
-                               JTextField elasticIndex, JTextField elasticMaxHits) {
+                               JTextField elasticIndex, JTextField elasticMaxHits,
+                               JCheckBox mtsearchEnabled, JTextField mtsearchDir, JTextField mtsearchMaxHits) {
     }
 
     static void show(Frame owner, Preferences prefs, Config cfg, HintDictionary dict) {
@@ -167,18 +179,27 @@ final class SettingsDialog {
                 prefs.get(cfg.elastic.indexPrefKey, cfg.elastic.defaultIndex), 18);
         JTextField elasticMaxHitsField = new JTextField(
                 String.valueOf(prefs.getInt(cfg.elastic.maxHitsPrefKey, cfg.elastic.defaultMaxHits)), 6);
+        JCheckBox mtsearchEnabledCheck = new JCheckBox("Enable mtsearch",
+                prefs.getBoolean(cfg.mtsearch.enabledPrefKey, false));
+        JTextField mtsearchDirField = new JTextField(
+                prefs.get(cfg.mtsearch.dirPrefKey, cfg.mtsearch.defaultDir), 24);
+        mtsearchDirField.setToolTipText("Leave empty for the default: " + cfg.mtsearch.defaultDir);
+        JTextField mtsearchMaxHitsField = new JTextField(
+                String.valueOf(prefs.getInt(cfg.mtsearch.maxHitsPrefKey, cfg.mtsearch.defaultMaxHits)), 6);
         FormFields fields = new FormFields(
                 fieldSepField, decimalSepField,
                 senderField, receiverField,
                 maxEntriesField, logSwiftStartField, logNewlineTokenField,
                 luceneEnabledCheck, luceneDirField, luceneMaxHitsField,
                 elasticEnabledCheck, elasticHostField, elasticPortField, elasticSchemeField,
-                elasticUsernameField, elasticPasswordField, elasticIndexField, elasticMaxHitsField);
+                elasticUsernameField, elasticPasswordField, elasticIndexField, elasticMaxHitsField,
+                mtsearchEnabledCheck, mtsearchDirField, mtsearchMaxHitsField);
 
         JPanel generalPanel  = buildGeneralPanel(darkModeCheck, powerUserCheck, columnStatsCheck, fields);
         JPanel advancedPanel = buildAdvancedPanel(fields, maskAmountsCheck, maskQuantitiesCheck);
         JPanel lucenePanel   = buildLucenePanel(fields, cfg.lucene);
         JPanel elasticPanel  = buildElasticPanel(fields, cfg.elastic);
+        JPanel mtsearchPanel = buildMtSearchPanel(fields, cfg.mtsearch);
 
         // ---- User Dictionary tab ----
         DefaultTableModel dictModel = new DefaultTableModel(
@@ -209,6 +230,7 @@ final class SettingsDialog {
         tabs.addTab("Advanced",        advancedPanel);
         tabs.addTab("Lucene",          lucenePanel);
         tabs.addTab("Elasticsearch",   elasticPanel);
+        tabs.addTab("mtsearch",        mtsearchPanel);
         tabs.addTab("User Dictionary", dictPanel);
 
         JButton ok     = new JButton("OK");
@@ -374,6 +396,58 @@ final class SettingsDialog {
     }
 
     // -----------------------------------------------------------------------
+    // mtsearch tab
+    // -----------------------------------------------------------------------
+
+    private static JPanel buildMtSearchPanel(FormFields fields, Config.MtSearchConfig mtsearch) {
+        FormPanel fp = new FormPanel();
+        JPanel form = fp.panel;
+        GridBagConstraints lc = fp.lc;
+        GridBagConstraints fc = fp.fc;
+
+        int row = 0;
+        addSectionSeparator(form, row++, "mtsearch");
+        FormPanel.addRow(form, lc, fc, row++, "", fields.mtsearchEnabled);
+
+        JButton browse = new JButton("Browse…");
+        browse.addActionListener(e -> {
+            JFileChooser fcr = FileChoosers.create();
+            fcr.setDialogTitle("Select mtsearch Index Directory (swift-index)");
+            fcr.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+            String cur = fields.mtsearchDir.getText().trim();
+            if (!cur.isEmpty()) fcr.setSelectedFile(new File(cur));
+            if (fcr.showOpenDialog(SwingUtilities.getWindowAncestor(form)) == JFileChooser.APPROVE_OPTION)
+                fields.mtsearchDir.setText(fcr.getSelectedFile().getAbsolutePath());
+        });
+        JPanel dirRow = new JPanel(new BorderLayout(4, 0));
+        dirRow.add(fields.mtsearchDir, BorderLayout.CENTER);
+        dirRow.add(browse,             BorderLayout.EAST);
+        FormPanel.addRow(form, lc, fc, row++, "Index directory:", dirRow);
+        FormPanel.addRow(form, lc, fc, row++, "Search hits (max.):", fields.mtsearchMaxHits);
+
+        JButton reset = new JButton(RESET_TO_DEFAULTS);
+        reset.addActionListener(e -> {
+            fields.mtsearchDir.setText(mtsearch.defaultDir);
+            fields.mtsearchMaxHits.setText(String.valueOf(mtsearch.defaultMaxHits));
+        });
+        JPanel resetWrap = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        resetWrap.add(reset);
+        FormPanel.addRow(form, lc, fc, row, "", resetWrap);
+
+        setEnabledRecursively(dirRow, fields.mtsearchEnabled.isSelected());
+        fields.mtsearchMaxHits.setEnabled(fields.mtsearchEnabled.isSelected());
+        reset.setEnabled(fields.mtsearchEnabled.isSelected());
+        fields.mtsearchEnabled.addItemListener(e -> {
+            boolean on = fields.mtsearchEnabled.isSelected();
+            setEnabledRecursively(dirRow, on);
+            fields.mtsearchMaxHits.setEnabled(on);
+            reset.setEnabled(on);
+        });
+
+        return form;
+    }
+
+    // -----------------------------------------------------------------------
     // Elasticsearch tab
     // -----------------------------------------------------------------------
 
@@ -469,6 +543,18 @@ final class SettingsDialog {
             JOptionPane.showMessageDialog(dlg, luceneDirError, INVALID_INPUT, JOptionPane.WARNING_MESSAGE);
             return false;
         }
+        Integer mtsearchMaxHits = parsePositiveInt(fields.mtsearchMaxHits.getText().trim());
+        if (mtsearchMaxHits == null) {
+            JOptionPane.showMessageDialog(dlg, "mtsearch search hits (max.) must be a positive whole number.",
+                    INVALID_INPUT, JOptionPane.WARNING_MESSAGE);
+            return false;
+        }
+        String mtsearchDir = fields.mtsearchDir.getText().trim();
+        if (!mtsearchDir.isEmpty() && fields.mtsearchEnabled.isSelected() && !new File(mtsearchDir).isDirectory()) {
+            JOptionPane.showMessageDialog(dlg, "mtsearch index directory does not exist:\n" + mtsearchDir,
+                    INVALID_INPUT, JOptionPane.WARNING_MESSAGE);
+            return false;
+        }
         if (logSwiftStart.isEmpty()) {
             JOptionPane.showMessageDialog(dlg, "SWIFT start marker must not be empty.",
                     INVALID_INPUT, JOptionPane.WARNING_MESSAGE);
@@ -507,6 +593,11 @@ final class SettingsDialog {
         prefs.put(cfg.lucene.dirPrefKey, luceneDir);
         prefs.putInt(cfg.lucene.maxHitsPrefKey, luceneMaxHits);
         cfg.lucene.onChange.run();
+
+        prefs.putBoolean(cfg.mtsearch.enabledPrefKey, fields.mtsearchEnabled.isSelected());
+        prefs.put(cfg.mtsearch.dirPrefKey, mtsearchDir);
+        prefs.putInt(cfg.mtsearch.maxHitsPrefKey, mtsearchMaxHits);
+        cfg.mtsearch.onChange.run();
 
         prefs.putBoolean(cfg.elastic.enabledPrefKey, fields.elasticEnabled.isSelected());
         prefs.put(cfg.elastic.hostPrefKey, fields.elasticHost.getText().trim());

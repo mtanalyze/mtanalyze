@@ -52,7 +52,8 @@ public final class FrameMenuBar {
         JRadioButtonMenuItem  menuSource,
         JRadioButtonMenuItem  menuComponents,
         JMenu                 luceneMenu,
-        JMenu                 elasticMenu
+        JMenu                 elasticMenu,
+        JMenu                 mtsearchMenu
     ) {}
 
     // -----------------------------------------------------------------------
@@ -98,6 +99,9 @@ public final class FrameMenuBar {
         Runnable          onIndexMessagesElastic,
         Runnable          onSearchMessagesElastic,
         Runnable          onClearIndexElastic,
+        // mtsearch menu – read-only search in an index written by the mtsearch tool
+        Runnable          onSearchMessagesMtSearch,
+        Runnable          onShowMtSearchInfo,
         // Shared by both menus
         Runnable          onShowStatistics,
         Runnable          onCheckRepository
@@ -225,6 +229,12 @@ public final class FrameMenuBar {
         elasticMenu.add(item("Check Repository...", ToolbarIcons.menuCheckRepository(), null, cb.onCheckRepository()));
         elasticMenu.add(item("Statistics...", ToolbarIcons.menuStatistics(), null, cb.onShowStatistics()));
 
+        // ── mtsearch menu (index written by the mtsearch command-line tool) ──
+        JMenu mtsearchMenu = new JMenu("mtsearch");
+        mtsearchMenu.add(item("Search Messages...", ToolbarIcons.menuSearch(), "ctrl shift M", cb.onSearchMessagesMtSearch()));
+        mtsearchMenu.addSeparator();
+        mtsearchMenu.add(item("Index Info...", ToolbarIcons.menuStatistics(), null, cb.onShowMtSearchInfo()));
+
         // ── Help menu ─────────────────────────────────────────────────────
         JMenuItem helpItem = new JMenuItem("Help...", ToolbarIcons.menuHelp());
         helpItem.setAccelerator(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F1, 0));
@@ -242,6 +252,7 @@ public final class FrameMenuBar {
         menuBar.add(viewMenu);
         menuBar.add(luceneMenu);
         menuBar.add(elasticMenu);
+        menuBar.add(mtsearchMenu);
         menuBar.add(helpMenu);
 
         menuBar.add(Box.createHorizontalGlue());
@@ -258,7 +269,7 @@ public final class FrameMenuBar {
             importMenu, exportMenu, importExportLeadingSeparator, importExportMiddleSeparator,
             searchBtn,
             menuNotifications, menuTags, menuCompare, menuSource, menuComponents,
-            luceneMenu, elasticMenu);
+            luceneMenu, elasticMenu, mtsearchMenu);
     }
 
     // -----------------------------------------------------------------------

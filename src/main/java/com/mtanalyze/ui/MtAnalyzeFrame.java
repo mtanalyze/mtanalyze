@@ -30,6 +30,7 @@ import com.mtanalyze.export.ExcelExport;
 import com.mtanalyze.export.MtExport;
 import com.mtanalyze.lucene.MessageIndexService;
 import com.mtanalyze.lucene.MtLucene;
+import com.mtanalyze.search.MtSearchReader;
 import com.mtanalyze.elastic.ElasticIndexService;
 import com.mtanalyze.elastic.MtElastic;
 import com.mtanalyze.ui.view.NotificationPanel;
@@ -85,6 +86,7 @@ public class MtAnalyzeFrame extends JFrame {
     private final transient MessageIndexService messageIndex  = new MessageIndexService();
     private final transient MessageIndexService mt536Index    = new MessageIndexService();
     private final transient ElasticIndexService elasticIndex  = new ElasticIndexService();
+    private final transient MtSearchReader     mtsearchReader = new MtSearchReader();
     private final transient HintDictionary      dict          = new HintDictionary();
     private final transient MtEntryPanel.PrefKeys prefKeys;
 
@@ -113,6 +115,7 @@ public class MtAnalyzeFrame extends JFrame {
     private JSeparator         importExportMiddleSeparator;
     private JMenu              luceneMenu;
     private JMenu              elasticMenu;
+    private JMenu              mtsearchMenu;
 
     private static final Preferences PREFS = Preferences.userNodeForPackage(MtAnalyzeFrame.class);
     private static final String PREF_COL_ORDER  = "col_order";
@@ -134,6 +137,9 @@ public class MtAnalyzeFrame extends JFrame {
     private static final String PREF_MASK_QUANTITIES_ENABLED = "mask_quantities_enabled";
     private static final String PREF_LUCENE_ENABLED        = "lucene_enabled";
     private static final String PREF_ELASTIC_ENABLED       = "elastic_enabled";
+    private static final String PREF_MTSEARCH_ENABLED      = "mtsearch_enabled";
+    private static final String PREF_MTSEARCH_DIR          = "mtsearch_index_dir";
+    private static final String PREF_MTSEARCH_MAX_HITS     = "mtsearch_max_hits";
     private static final String PREF_LUCENE_DIR            = "lucene_index_dir";
     private static final String PREF_LUCENE_MAX_HITS       = "lucene_max_hits";
     private static final String PREF_ELASTIC_HOST          = "elastic_host";
@@ -149,6 +155,7 @@ public class MtAnalyzeFrame extends JFrame {
     /** Last Lucene / Elasticsearch query string, pre-filled into the "Search Messages" dialog. */
     private String lastLuceneQuery = "";
     private String lastElasticQuery = "";
+    private String lastMtSearchQuery = "";
     private String lastMt536Query = "";
 
     private JRadioButtonMenuItem menuNotifications;
@@ -187,6 +194,7 @@ public class MtAnalyzeFrame extends JFrame {
         setupStatusBar();
         applyLuceneConfig();
         applyElasticConfig();
+        applyMtSearchConfig();
         applyMaskingConfig();
         assembleMainLayout();
         openNewTab();
@@ -222,6 +230,7 @@ public class MtAnalyzeFrame extends JFrame {
         menuComponents       = items.menuComponents();
         luceneMenu           = items.luceneMenu();
         elasticMenu          = items.elasticMenu();
+        mtsearchMenu         = items.mtsearchMenu();
     }
 
     private FrameMenuBar.Callbacks createMenuCallbacks() {
@@ -263,6 +272,8 @@ public class MtAnalyzeFrame extends JFrame {
             this::onIndexMessagesElastic,
             this::onSearchMessagesElastic,
             this::onClearElasticIndex,
+            this::onSearchMessagesMtSearch,
+            this::onShowMtSearchInfo,
             this::onShowStatistics,
             this::onCheckRepository
         );
@@ -336,18 +347,27 @@ public class MtAnalyzeFrame extends JFrame {
 
     /** Prompts for a Lucene query string and shows the matching messages in a new tab. */
     private void onSearchMessages() {
-        runSearch("Lucene", lastLuceneQuery, q -> lastLuceneQuery = q,
+        runSearch("Use Lucene ▸ Index Messages first if the index is empty.", lastLuceneQuery, q -> lastLuceneQuery = q,
             messageIndex::search, messageIndex::maxHits, MtLucene.SwiftHit::rawMessage);
     }
 
     /** Prompts for a query_string search and shows the matching messages in a new tab. */
     private void onSearchMessagesElastic() {
-        runSearch("Elasticsearch", lastElasticQuery, q -> lastElasticQuery = q,
+        runSearch("Use Elasticsearch ▸ Index Messages first if the index is empty.", lastElasticQuery,
+            q -> lastElasticQuery = q,
             elasticIndex::search, elasticIndex::maxHits, MtElastic.SwiftHit::rawMessage);
     }
 
-    /** Shared query-and-load flow for the Lucene / Elasticsearch "Search Messages" items. */
-    private <H> void runSearch(String indexLabel, String lastQuery, Consumer<String> saveQuery,
+    /** Prompts for a Lucene query string and searches the index written by the mtsearch tool. */
+    private void onSearchMessagesMtSearch() {
+        runSearch("Fill the index first with the mtsearch tool (indexlog / indexlogdir).\nIndex: "
+                + mtsearchReader.indexDir(),
+            lastMtSearchQuery, q -> lastMtSearchQuery = q,
+            mtsearchReader::search, mtsearchReader::maxHits, Function.identity());
+    }
+
+    /** Shared query-and-load flow for the Lucene / Elasticsearch / mtsearch "Search Messages" items. */
+    private <H> void runSearch(String emptyHint, String lastQuery, Consumer<String> saveQuery,
             QueryRunner<H> runner, IntSupplier maxHits, Function<H, String> rawMessage) {
         String query = promptQuery(lastQuery);
         if (query == null || query.isBlank()) return;
@@ -373,7 +393,7 @@ public class MtAnalyzeFrame extends JFrame {
         if (hits.isEmpty()) {
             JOptionPane.showMessageDialog(this,
                 "No indexed messages match:\n" + trimmed
-                    + "\n\n(Use " + indexLabel + " ▸ Index Messages first if the index is empty.)",
+                    + "\n\n(" + emptyHint + ")",
                 SEARCH_MESSAGES, JOptionPane.INFORMATION_MESSAGE);
             return;
         }
@@ -604,7 +624,10 @@ public class MtAnalyzeFrame extends JFrame {
                 PREF_ELASTIC_INDEX, PREF_ELASTIC_MAX_HITS,
                 ElasticIndexService.DEFAULT_HOST, ElasticIndexService.DEFAULT_PORT,
                 ElasticIndexService.DEFAULT_SCHEME, ElasticIndexService.DEFAULT_INDEX,
-                ElasticIndexService.DEFAULT_MAX_HITS, this::applyElasticConfig)),
+                ElasticIndexService.DEFAULT_MAX_HITS, this::applyElasticConfig),
+            new SettingsDialog.Config.MtSearchConfig(PREF_MTSEARCH_ENABLED, PREF_MTSEARCH_DIR, PREF_MTSEARCH_MAX_HITS,
+                MtSearchReader.defaultIndexDir().toString(), MtSearchReader.DEFAULT_MAX_HITS,
+                this::applyMtSearchConfig)),
             dict);
     }
 
@@ -631,6 +654,27 @@ public class MtAnalyzeFrame extends JFrame {
         setMenuEnabled(elasticMenu, isElasticEnabled());
     }
 
+    /** Shows the index folder and the number of messages in it. */
+    private void onShowMtSearchInfo() {
+        try {
+            long count = mtsearchReader.documentCount();
+            JOptionPane.showMessageDialog(this,
+                "Index: " + mtsearchReader.indexDir() + "\nMessages: " + count
+                    + (count == 0 ? "\n\n(No index found or it is empty. Fill it with the mtsearch tool.)" : ""),
+                "mtsearch", JOptionPane.INFORMATION_MESSAGE);
+        } catch (IOException ex) {
+            JOptionPane.showMessageDialog(this, "Could not read the index:\n" + ex.getMessage(),
+                ERROR_TITLE, JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    /** Re-applies the persisted mtsearch index directory to the running service. */
+    private void applyMtSearchConfig() {
+        mtsearchReader.configure(PREFS.get(PREF_MTSEARCH_DIR, ""),
+            PREFS.getInt(PREF_MTSEARCH_MAX_HITS, MtSearchReader.DEFAULT_MAX_HITS));
+        setMenuEnabled(mtsearchMenu, isMtSearchEnabled());
+    }
+
     /** Re-applies the persisted "mask 19xx/36xx tag values" import settings to the import service. */
     private void applyMaskingConfig() {
         importService.setMaskAmountsEnabled(isMaskAmountsEnabled());
@@ -647,6 +691,10 @@ public class MtAnalyzeFrame extends JFrame {
 
     private boolean isLuceneEnabled() {
         return PREFS.getBoolean(PREF_LUCENE_ENABLED, false);
+    }
+
+    private boolean isMtSearchEnabled() {
+        return PREFS.getBoolean(PREF_MTSEARCH_ENABLED, false);
     }
 
     private boolean isElasticEnabled() {

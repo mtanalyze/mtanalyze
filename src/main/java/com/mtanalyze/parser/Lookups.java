@@ -149,7 +149,9 @@ public final class Lookups {
     private static String stripQualifierPrefix(String raw, String q) {
         String s = raw.replaceFirst("^:\\s*" + q + "//", "");
         if (s.length() < raw.length()) return s;
-        s = raw.replaceFirst("^:\\s*" + q + "/[^/]*/", "");
+        // Single slash: the value starts with its own issuer / data source scheme
+        // (":BUYR/CEDE/7004700", ":BUYR/SCOM/DE12345") -- keep it, it is part of the value.
+        s = raw.replaceFirst("^:\\s*" + q + "/", "");
         if (s.length() < raw.length()) return s;
         s = raw.replaceFirst("^" + q + "[ \t]+", "");
         if (s.length() < raw.length()) return s;
