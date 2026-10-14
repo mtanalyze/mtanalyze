@@ -6,7 +6,7 @@
 
     <groupId>com.mtanalyze</groupId>
     <artifactId>mtanalyze</artifactId>
-    <version>2.0.10-SNAPSHOT</version>
+    <version>2.0.12-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>MT Analyze</name>
@@ -45,13 +45,37 @@
         <maven.compiler.release>17</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <lucene.version>9.12.3</lucene.version>
-        <es.client.version>9.5.3</es.client.version>
+        <es.client.version>9.5.5</es.client.version>
+        <jackson2.version>2.22.3</jackson2.version>
+        <jackson3.version>3.2.3</jackson3.version>
+        <httpclient5.version>5.6.5</httpclient5.version>
         <maven.compiler.target>17</maven.compiler.target>
     </properties>
 
 
     <dependencyManagement>
         <dependencies>
+            <!-- Transitive Jackson / HttpClient 5 versions of elasticsearch-java auf gepatchte Staende
+                 angehoben (Mend-Findings zu jackson-core/-databind 2.x und 3.x sowie httpclient5) -->
+            <dependency>
+                <groupId>com.fasterxml.jackson</groupId>
+                <artifactId>jackson-bom</artifactId>
+                <version>${jackson2.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>tools.jackson</groupId>
+                <artifactId>jackson-bom</artifactId>
+                <version>${jackson3.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents.client5</groupId>
+                <artifactId>httpclient5</artifactId>
+                <version>${httpclient5.version}</version>
+            </dependency>
             <!-- Transitiv via poi-ooxml; auf fixe Version wegen CVE-2026-49844 angehoben -->
             <dependency>
                 <groupId>org.apache.logging.log4j</groupId>
@@ -109,7 +133,6 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>2.21.4</version>
         </dependency>
         <dependency>
             <groupId>jakarta.json</groupId>
