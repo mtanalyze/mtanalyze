@@ -67,9 +67,13 @@ public class SourcePanel extends RoundedPanel implements EntrySelectionListener 
 
         textPane = new JTextPane() {
             @Override public boolean getScrollableTracksViewportWidth() { return false; }
+            @Override public void copy() {
+                if (!copyFormatted(getSelectionStart(), getSelectionEnd())) super.copy();
+            }
         };
         textPane.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
         textPane.setEditable(false);
+        textPane.setBackground(Color.WHITE);
         textPane.addMouseListener(new MouseAdapter() {
             @Override public void mousePressed (MouseEvent e) { if (e.isPopupTrigger()) showPopup(e); }
             @Override public void mouseReleased(MouseEvent e) { if (e.isPopupTrigger()) showPopup(e); }
@@ -164,6 +168,100 @@ public class SourcePanel extends RoundedPanel implements EntrySelectionListener 
     @Override public void onSingleEntry(Entry entry, SwiftMessage message) { showMessage(message.raw().message()); }
     @Override public void onMultipleEntries(List<Entry> entries)           { clear(); }
     @Override public void onDeselect()                                     { clear(); }
+
+    // -----------------------------------------------------------------------
+    // Rich-text copy (HTML for Outlook / Word)
+    // -----------------------------------------------------------------------
+
+    private boolean copyFormatted(int start, int end) {
+        if (end <= start) return false;
+        StyledDocument doc = textPane.getStyledDocument();
+        try {
+            String plain = doc.getText(start, end - start);
+            String html = buildHtml(doc, start, end);
+            Toolkit.getDefaultToolkit().getSystemClipboard()
+                    .setContents(new RichSelection(html, plain), null);
+            return true;
+        } catch (BadLocationException | RuntimeException e) {
+            return false;
+        }
+    }
+
+    private static String buildHtml(StyledDocument doc, int start, int end) throws BadLocationException {
+        StringBuilder sb = new StringBuilder("<div style=\"font-family:Consolas,'Courier New',monospace;font-size:10pt\">");
+        int pos = start;
+        while (pos < end) {
+            Element para = doc.getParagraphElement(pos);
+            int pEnd = Math.min(para.getEndOffset(), end);
+            float indent = StyleConstants.getLeftIndent(para.getAttributes());
+            sb.append("<p style=\"margin:0 0 0 ").append(Math.round(indent))
+              .append("pt;font-family:Consolas,'Courier New',monospace;font-size:10pt\">");
+            int runPos = pos;
+            while (runPos < pEnd) {
+                Element leaf = doc.getCharacterElement(runPos);
+                int runEnd = Math.min(leaf.getEndOffset(), pEnd);
+                String text = doc.getText(runPos, runEnd - runPos).replace("\n", "");
+                if (!text.isEmpty()) {
+                    AttributeSet a = leaf.getAttributes();
+                    Color fg = StyleConstants.getForeground(a);
+                    boolean bold = StyleConstants.isBold(a);
+                    boolean styled = bold || (fg != null && !fg.equals(Color.BLACK));
+                    if (styled) {
+                        sb.append("<span style=\"");
+                        if (fg != null) sb.append(String.format("color:#%06X;", fg.getRGB() & 0xFFFFFF));
+                        if (bold) sb.append("font-weight:bold;");
+                        sb.append("\">");
+                    }
+                    sb.append(escapeHtml(text));
+                    if (styled) sb.append("</span>");
+                }
+                runPos = runEnd;
+            }
+            sb.append("</p>");
+            pos = pEnd;
+            if (para.getEndOffset() >= doc.getLength()) break;
+        }
+        return sb.append("</div>").toString();
+    }
+
+    private static String escapeHtml(String t) {
+        StringBuilder sb = new StringBuilder(t.length() + 16);
+        for (char c : t.toCharArray()) {
+            switch (c) {
+                case '<' -> sb.append("&lt;");
+                case '>' -> sb.append("&gt;");
+                case '&' -> sb.append("&amp;");
+                case ' ' -> sb.append("&nbsp;");
+                default  -> sb.append(c);
+            }
+        }
+        return sb.toString();
+    }
+
+    private static final class RichSelection implements java.awt.datatransfer.Transferable {
+        private static final java.awt.datatransfer.DataFlavor HTML;
+        static {
+            java.awt.datatransfer.DataFlavor f;
+            try { f = new java.awt.datatransfer.DataFlavor("text/html;class=java.lang.String"); }
+            catch (ClassNotFoundException e) { f = java.awt.datatransfer.DataFlavor.stringFlavor; }
+            HTML = f;
+        }
+        private final String html;
+        private final String plain;
+        RichSelection(String html, String plain) { this.html = html; this.plain = plain; }
+        @Override public java.awt.datatransfer.DataFlavor[] getTransferDataFlavors() {
+            return new java.awt.datatransfer.DataFlavor[] { HTML, java.awt.datatransfer.DataFlavor.stringFlavor };
+        }
+        @Override public boolean isDataFlavorSupported(java.awt.datatransfer.DataFlavor f) {
+            return HTML.equals(f) || java.awt.datatransfer.DataFlavor.stringFlavor.equals(f);
+        }
+        @Override public Object getTransferData(java.awt.datatransfer.DataFlavor f)
+                throws java.awt.datatransfer.UnsupportedFlavorException {
+            if (HTML.equals(f)) return html;
+            if (java.awt.datatransfer.DataFlavor.stringFlavor.equals(f)) return plain;
+            throw new java.awt.datatransfer.UnsupportedFlavorException(f);
+        }
+    }
 
     // -----------------------------------------------------------------------
     // Search
