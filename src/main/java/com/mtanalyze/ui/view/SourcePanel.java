@@ -194,8 +194,10 @@ public class SourcePanel extends RoundedPanel implements EntrySelectionListener 
             Element para = doc.getParagraphElement(pos);
             int pEnd = Math.min(para.getEndOffset(), end);
             float indent = StyleConstants.getLeftIndent(para.getAttributes());
-            sb.append("<p style=\"margin:0 0 0 ").append(Math.round(indent))
-              .append("pt;font-family:Consolas,'Courier New',monospace;font-size:10pt\">");
+            sb.append("<p style=\"margin:0;font-family:Consolas,'Courier New',monospace;font-size:10pt\">");
+            // Word/Outlook ignore CSS margins unreliably, so indent with non-breaking spaces
+            if (pos == para.getStartOffset())
+                sb.append("&nbsp;".repeat(Math.round(indent / 16f) * 4));
             int runPos = pos;
             while (runPos < pEnd) {
                 Element leaf = doc.getCharacterElement(runPos);
